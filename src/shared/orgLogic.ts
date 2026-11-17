@@ -133,10 +133,10 @@ export function inferTpPkkPokja(jabatan?: string, explicitPokja?: string): strin
   if (exp) return exp;
   const lower = String(jabatan || '').trim().toLowerCase();
   if (lower.includes('pembina')) return 'Pembina';
-  if (/\bpokja\s*(iv|4)\b/i.test(lower)) return 'POKJA IV';
-  if (/\bpokja\s*(iii|3)\b/i.test(lower)) return 'POKJA III';
-  if (/\bpokja\s*(ii|2)\b/i.test(lower)) return 'POKJA II';
-  if (/\bpokja\s*(i|1)\b/i.test(lower)) return 'POKJA I';
+  if (/\bpokja[\s-]*(iv|4)\b/i.test(lower)) return 'POKJA IV';
+  if (/\bpokja[\s-]*(iii|3)\b/i.test(lower)) return 'POKJA III';
+  if (/\bpokja[\s-]*(ii|2)\b/i.test(lower)) return 'POKJA II';
+  if (/\bpokja[\s-]*(i|1)\b/i.test(lower)) return 'POKJA I';
   return 'Pengurus Inti';
 }
 

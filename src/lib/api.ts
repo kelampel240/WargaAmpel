@@ -199,7 +199,13 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
       );
     }
     if (!res.ok || data.error) {
-      throw new Error(String(data.error || `Permintaan GAS gagal (${res.status})`));
+      const errMsg = String(data.error || `Permintaan GAS gagal (${res.status})`);
+      if (errMsg.includes('Entitas organisasi tidak valid')) {
+        throw new Error(
+          'Script Google Apps Script (Code.gs) pada Web App Anda masih versi lama sehingga belum mendukung entitas terbaru (TP PKK / Sekolah / Balai RW). Salin ulang isi gas/Code.gs & gas/SetupDatabase.gs ke editor Apps Script, jalankan setupDatabase(), lalu pilih Deploy → Kelola deployment → Edit → Versi baru.'
+        );
+      }
+      throw new Error(errMsg);
     }
     if (url === '/api/admin/test-gas') {
       return { ok: true, status: res.status, preview: text.slice(0, 300) } as unknown as T;

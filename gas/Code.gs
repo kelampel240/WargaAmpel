@@ -1802,10 +1802,10 @@ function inferTpPkkPokjaGas_(jabatan, explicitPokja) {
   if (exp) return exp;
   var lower = String(jabatan || '').trim().toLowerCase();
   if (lower.indexOf('pembina') !== -1) return 'Pembina';
-  if (/\bpokja\s*(iv|4)\b/i.test(lower)) return 'POKJA IV';
-  if (/\bpokja\s*(iii|3)\b/i.test(lower)) return 'POKJA III';
-  if (/\bpokja\s*(ii|2)\b/i.test(lower)) return 'POKJA II';
-  if (/\bpokja\s*(i|1)\b/i.test(lower)) return 'POKJA I';
+  if (/\bpokja[\s-]*(iv|4)\b/i.test(lower)) return 'POKJA IV';
+  if (/\bpokja[\s-]*(iii|3)\b/i.test(lower)) return 'POKJA III';
+  if (/\bpokja[\s-]*(ii|2)\b/i.test(lower)) return 'POKJA II';
+  if (/\bpokja[\s-]*(i|1)\b/i.test(lower)) return 'POKJA I';
   return 'Pengurus Inti';
 }
 
@@ -2011,7 +2011,7 @@ function saveOrgPhotoToDrive_(fotoInput, prefixName) {
 
 function createOrgItem(payload, token) {
   var actor = verifyTokenAndRole_(token, ['SUPER_ADMIN', 'OPERATOR']);
-  var entity = payload.entity;
+  var entity = String(payload.entity || '').trim().toLowerCase();
   var now = new Date().toISOString();
   var idPrefix = entity === 'tp_pkk' ? 'PKK' : entity.toUpperCase();
   var id = idPrefix + '-' + Date.now();
@@ -2050,7 +2050,7 @@ function createOrgItem(payload, token) {
 
 function updateOrgItem(payload, token) {
   var actor = verifyTokenAndRole_(token, ['SUPER_ADMIN', 'OPERATOR']);
-  var entity = payload.entity;
+  var entity = String(payload.entity || '').trim().toLowerCase();
   var id = payload.id;
   var sheetName = 'ORG_' + String(entity).toUpperCase();
   var idCol = getOrgIdColGas_(entity);
@@ -2095,7 +2095,7 @@ function updateOrgItem(payload, token) {
 
 function deleteOrgItem(payload, token) {
   var actor = verifyTokenAndRole_(token, ['SUPER_ADMIN', 'OPERATOR']);
-  var entity = payload.entity;
+  var entity = String(payload.entity || '').trim().toLowerCase();
   var id = payload.id;
   var sheetName = 'ORG_' + String(entity).toUpperCase();
   var idCol = getOrgIdColGas_(entity);
@@ -2123,7 +2123,7 @@ function saveOrgSettings(payload, token) {
 
 function importOrgBatch(payload, token) {
   var actor = verifyTokenAndRole_(token, ['SUPER_ADMIN', 'OPERATOR']);
-  var entity = payload.entity;
+  var entity = String(payload.entity || '').trim().toLowerCase();
   var items = payload.items || [];
   if (!items.length) throw new Error('Daftar data Excel untuk diimpor kosong.');
   var sheetName = 'ORG_' + String(entity).toUpperCase();

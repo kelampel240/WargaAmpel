@@ -2121,7 +2121,7 @@ export const OrgAdminManager: React.FC<OrgAdminManagerProps> = ({ userRole, onOr
       {/* EXCEL IMPORT MODAL */}
       {importEntity && data && (
         <ExcelImportModal
-          title={`Import Excel — ${importEntity.toUpperCase()}`}
+          title={`Import Excel — ${importEntity.replace('_', ' ').toUpperCase()}`}
           subtitle="Unggah file Excel (.xlsx/.xls) atau CSV untuk menambah banyak data sekaligus. Anda juga dapat mengunduh contoh template terlebih dahulu."
           onClose={() => setImportEntity(null)}
           onDownloadTemplate={() => downloadOrgEntityTemplate(importEntity)}
