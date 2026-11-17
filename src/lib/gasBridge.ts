@@ -185,6 +185,17 @@ export function mapRestToGasCall(
   if (pathname === '/api/admin/export' && upperMethod === 'GET') {
     return { action: 'exportReportCsv', payload: {}, token: token || undefined };
   }
+  if (pathname === '/api/admin/backup-json' && upperMethod === 'GET') {
+    return { action: 'getBackupJson', payload: {}, token: token || undefined };
+  }
+  const driveLinkMatch = pathname.match(/^\/api\/admin\/evidence\/([^/]+)\/drive-link$/);
+  if (driveLinkMatch && upperMethod === 'PATCH') {
+    return {
+      action: 'updateEvidenceDriveLink',
+      payload: { ...bodyObj, idBukti: decodeURIComponent(driveLinkMatch[1]) },
+      token: token || undefined,
+    };
+  }
   if (pathname === '/api/admin/test-gas' && upperMethod === 'POST') {
     return { action: 'ping', payload: bodyObj, token: token || undefined };
   }

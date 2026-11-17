@@ -97,23 +97,55 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
         ? parsedBody.url.trim()
         : gasUrl;
 
-    // Gunakan text/plain agar browser GitHub Pages tidak memicu CORS preflight OPTIONS ke Google Apps Script
-    const res = await fetch(targetUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({
-        action: spec.action,
-        payload: spec.payload,
-        token: spec.token || '',
-      }),
-    });
+    const publicGetActions = new Set([
+      'ping',
+      'getPublicServices',
+      'getPublicAnnouncements',
+      'getPublicOrgStructure',
+    ]);
+
+    let res: Response;
+    try {
+      // Gunakan text/plain agar browser GitHub Pages tidak memicu CORS preflight OPTIONS ke Google Apps Script
+      res = await fetch(targetUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: spec.action,
+          payload: spec.payload,
+          token: spec.token || '',
+        }),
+      });
+    } catch (postErr) {
+      if (publicGetActions.has(spec.action)) {
+        try {
+          const sep = targetUrl.includes('?') ? '&' : '?';
+          res = await fetch(`${targetUrl}${sep}action=${encodeURIComponent(spec.action)}`, {
+            method: 'GET',
+          });
+        } catch {
+          throw new Error(
+            'Gagal terhubung ke backend Google Apps Script (CORS/jaringan). Pastikan Code.gs sudah ditempel di Apps Script, di-deploy ulang sebagai "New version", dan akses disetel ke "Anyone".'
+          );
+        }
+      } else {
+        const msg = (postErr as Error)?.message || '';
+        if (msg === 'Failed to fetch' || msg.toLowerCase().includes('network')) {
+          throw new Error(
+            'Gagal terhubung ke backend Google Apps Script (CORS/jaringan). Pastikan Code.gs sudah ditempel di Apps Script, di-deploy ulang sebagai "New version", dan akses disetel ke "Anyone".'
+          );
+        }
+        throw postErr;
+      }
+    }
+
     const text = await res.text();
     let data: Record<string, unknown> = {};
     try {
       data = JSON.parse(text || '{}') as Record<string, unknown>;
     } catch {
       throw new Error(
-        'Backend Google Apps Script mengembalikan halaman HTML, bukan JSON. Pastikan di Apps Script (Deploy → Manage deployments) akses disetel ke "Anyone" (Siapa saja) dan SPREADSHEET_ID pada Code.gs sudah diisi.'
+        'Backend Google Apps Script mengembalikan halaman HTML, bukan JSON. Pastikan di Apps Script (Deploy → Manage deployments → Edit → New version) akses disetel ke "Anyone" dan Code.gs berisi fungsi doGet/doPost.'
       );
     }
     if (!res.ok || data.error) {

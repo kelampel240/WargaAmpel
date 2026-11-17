@@ -45,6 +45,9 @@ function doGet(e) {
   if (action === 'getPublicAnnouncements') {
     return jsonResponse(getPublicAnnouncements());
   }
+  if (action === 'getPublicOrgStructure') {
+    return jsonResponse(getPublicOrgStructure());
+  }
   if (action === 'getDriveEvidence') {
     return jsonResponse(getDriveEvidence(params.idBukti, params.ticketId, params.token));
   }
@@ -160,6 +163,10 @@ function doPost(e) {
       case 'exportReport':
       case 'exportReportCsv':
         return jsonResponse(exportReportCsv(token));
+      case 'getBackupJson':
+        return jsonResponse(getBackupJson(token));
+      case 'updateEvidenceDriveLink':
+        return jsonResponse(updateEvidenceDriveLink(payload, token));
       case 'getPublicOrgStructure':
         return jsonResponse(getPublicOrgStructure());
       case 'getAdminOrgStructure':
@@ -1737,3 +1744,37 @@ function importPetugasBatch(payload, token) {
   logActivity_(actor, 'IMPORT_PETUGAS', 'PETUGAS', 'Mengimpor ' + count + ' data petugas.');
   return { ok: true, count: count };
 }
+
+function getBackupJson(token) {
+  verifyTokenAndRole_(token, ['PETUGAS', 'OPERATOR', 'KEPALA_DESA', 'SUPER_ADMIN']);
+  return {
+    exportedAt: new Date().toISOString(),
+    desa: CONFIG.NAMA_DESA,
+    warga: sheetToObjects_('WARGA'),
+    petugas: sheetToObjects_('PETUGAS'),
+    kategoriLayanan: sheetToObjects_('KATEGORI_LAYANAN'),
+    laporan: sheetToObjects_('LAPORAN'),
+    tindakLanjut: sheetToObjects_('TINDAK_LANJUT'),
+    buktiDokumen: sheetToObjects_('BUKTI_DOKUMEN'),
+    pengumuman: sheetToObjects_('PENGUMUMAN'),
+    pengaturan: sheetToObjects_('PENGATURAN'),
+    logAktivitas: sheetToObjects_('LOG_AKTIVITAS')
+  };
+}
+
+function updateEvidenceDriveLink(payload, token) {
+  var actor = verifyTokenAndRole_(token, ['PETUGAS', 'OPERATOR', 'KEPALA_DESA', 'SUPER_ADMIN']);
+  var idBukti = payload.idBukti || '';
+  var rows = sheetToObjects_('BUKTI_DOKUMEN');
+  var sh = getSheet_('BUKTI_DOKUMEN');
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i].ID_BUKTI === idBukti) {
+      if (payload.driveFileId) sh.getRange(rows[i]._rowIndex, 6).setValue(String(payload.driveFileId));
+      if (payload.driveUrl) sh.getRange(rows[i]._rowIndex, 7).setValue(String(payload.driveUrl));
+      logActivity_(actor, 'LINK_DRIVE_EVIDENCE', idBukti, 'Tautkan bukti ke Google Drive');
+      return { ok: true };
+    }
+  }
+  throw new Error('Data bukti tidak ditemukan.');
+}
+
