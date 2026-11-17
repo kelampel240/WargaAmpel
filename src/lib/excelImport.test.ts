@@ -249,3 +249,32 @@ test('parseOrgImportExcel normalizes Excel numeric phone numbers without leading
   assert.equal(parsed[2].error, null);
   assert.equal(parsed[2].payload.noHp, '');
 });
+
+test('parseOrgImportExcel parses TP PKK rows and infers Pembina / POKJA automatically', () => {
+  const buf = createWorkbookBuffer([
+    {
+      name: 'TP PKK',
+      rows: [
+        {
+          Urutan: 1,
+          Nama: 'Ibu Lurah Ampel',
+          Jabatan: 'Pembina PKK',
+          Bidang: 'Pembinaan TP PKK',
+        },
+        {
+          Urutan: 2,
+          Nama: 'Siti Aisyah',
+          Jabatan: 'Sekretaris POKJA III',
+        },
+      ],
+    },
+  ]);
+
+  const parsed = parseOrgImportExcel(buf, 'tp_pkk', sampleOrgRef);
+  assert.equal(parsed.length, 2);
+  assert.equal(parsed[0].error, null);
+  assert.equal(parsed[0].payload.pokja, 'Pembina');
+  assert.equal(parsed[1].error, null);
+  assert.equal(parsed[1].payload.pokja, 'POKJA III');
+});
+

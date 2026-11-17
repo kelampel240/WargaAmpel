@@ -190,6 +190,19 @@ export function buildOrgStructureSheets(data: AdminOrgStructureResponse): ExcelS
     Status: k.AKTIF ? 'Aktif' : 'Nonaktif',
   }));
 
+  const tpPkkRows = (data.tpPkk || []).map((p, idx) => ({
+    No: idx + 1,
+    Urutan: p.URUTAN,
+    Nama: p.NAMA,
+    Jabatan: p.JABATAN,
+    'Unsur / Pokja': p.POKJA || '-',
+    Bidang: p.BIDANG || '-',
+    'No. HP': p.NO_HP || '-',
+    'Tampilkan HP Publik': p.TAMPILKAN_HP ? 'Ya' : 'Tidak',
+    'Tampil Publik': p.TAMPILKAN_PUBLIK ? 'Ya' : 'Tidak',
+    Status: p.AKTIF ? 'Aktif' : 'Nonaktif',
+  }));
+
   const lpmkRows = data.lpmk.map((l, idx) => ({
     No: idx + 1,
     Urutan: l.URUTAN,
@@ -296,6 +309,7 @@ export function buildOrgStructureSheets(data: AdminOrgStructureResponse): ExcelS
 
   return [
     { name: 'Kelurahan', rows: kelurahanRows },
+    { name: 'TP PKK', rows: tpPkkRows },
     { name: 'LPMK', rows: lpmkRows },
     { name: 'Daftar RW', rows: rwRows },
     { name: 'Daftar RT', rows: rtRows },
@@ -315,13 +329,14 @@ export function exportOrgStructureToExcel(
 
 const ENTITY_SHEET_INDEX: Record<OrgEntityType, number> = {
   kelurahan: 0,
-  lpmk: 1,
-  rw: 2,
-  rt: 3,
-  kader: 4,
-  sekolah: 5,
-  guru: 6,
-  balai_rw: 7,
+  tp_pkk: 1,
+  lpmk: 2,
+  rw: 3,
+  rt: 4,
+  kader: 5,
+  sekolah: 6,
+  guru: 7,
+  balai_rw: 8,
 };
 
 export function exportOrgEntityToExcel(
@@ -348,6 +363,44 @@ export function downloadOrgEntityTemplate(entity: OrgEntityType): void {
           Jabatan: 'Staf Pelayanan Umum',
           'Wilayah Tugas': 'Kelurahan Ampel',
           'No. HP': '081234567890',
+          'Tampilkan HP Publik': 'Tidak',
+          'Tampil Publik': 'Ya',
+          Status: 'Aktif',
+        },
+      ],
+    },
+    tp_pkk: {
+      name: 'TP PKK',
+      rows: [
+        {
+          Urutan: 1,
+          Nama: 'Contoh Pembina PKK',
+          Jabatan: 'Pembina PKK',
+          'Unsur / Pokja': 'Pembina',
+          Bidang: 'Pembinaan TP PKK Kelurahan Ampel',
+          'No. HP': '081234567890',
+          'Tampilkan HP Publik': 'Tidak',
+          'Tampil Publik': 'Ya',
+          Status: 'Aktif',
+        },
+        {
+          Urutan: 2,
+          Nama: 'Contoh Ketua PKK',
+          Jabatan: 'Ketua PKK',
+          'Unsur / Pokja': 'Pengurus Inti',
+          Bidang: 'Koordinator Umum TP PKK',
+          'No. HP': '081234567891',
+          'Tampilkan HP Publik': 'Tidak',
+          'Tampil Publik': 'Ya',
+          Status: 'Aktif',
+        },
+        {
+          Urutan: 3,
+          Nama: 'Contoh Ketua POKJA I',
+          Jabatan: 'Ketua POKJA I',
+          'Unsur / Pokja': 'POKJA I',
+          Bidang: 'Penghayatan Pancasila & Gotong Royong',
+          'No. HP': '081234567892',
           'Tampilkan HP Publik': 'Tidak',
           'Tampil Publik': 'Ya',
           Status: 'Aktif',

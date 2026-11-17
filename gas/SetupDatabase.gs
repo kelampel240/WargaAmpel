@@ -68,6 +68,11 @@ function setupDatabase() {
       'FOTO_URL', 'NO_HP', 'TAMPILKAN_HP', 'TAMPILKAN_PUBLIK', 'AKTIF',
       'URUTAN', 'CREATED_AT', 'UPDATED_AT'
     ],
+    ORG_TP_PKK: [
+      'ID_PKK', 'NAMA', 'JABATAN', 'POKJA', 'BIDANG',
+      'FOTO_URL', 'NO_HP', 'TAMPILKAN_HP', 'TAMPILKAN_PUBLIK', 'AKTIF',
+      'URUTAN', 'CREATED_AT', 'UPDATED_AT'
+    ],
     ORG_LPMK: [
       'ID_LPMK', 'NAMA', 'JABATAN', 'BIDANG', 'FOTO_URL', 'NO_HP',
       'TAMPILKAN_HP', 'TAMPILKAN_PUBLIK', 'AKTIF', 'URUTAN', 'CREATED_AT', 'UPDATED_AT'
@@ -233,6 +238,18 @@ function setupDatabase() {
     shKel.appendRow(['KEL-001', 'H. Ahmad Fauzi, S.Sos.', 'Lurah / Kepala Desa Ampel', 'LURAH', 'Wilayah Desa Ampel', '', '081234500101', false, true, true, 1, nowOrg, nowOrg]);
     shKel.appendRow(['KEL-002', 'Siti Nurhayati, S.AP.', 'Kasi Pemerintahan & Pelayanan Umum', 'KASI', 'Pelayanan Administrasi', '', '081234500102', true, true, true, 2, nowOrg, nowOrg]);
     shKel.appendRow(['KEL-003', 'Dewi Kartika Sari', 'Staf Administrasi & Pelayanan Warga', 'STAF', 'Loket Surat & Pengaduan', '', '081234500104', false, true, true, 3, nowOrg, nowOrg]);
+  }
+  var shPkk = ss.getSheetByName('ORG_TP_PKK');
+  if (shPkk && shPkk.getLastRow() <= 1) {
+    shPkk.appendRow(['PKK-001', 'Pembina TP PKK Kelurahan Ampel', 'Pembina PKK', 'Pembina', 'Pembinaan & Pendampingan Program TP PKK Kelurahan Ampel', '', "'081234500801", false, true, true, 1, nowOrg, nowOrg]);
+    shPkk.appendRow(['PKK-002', 'Ketua TP PKK Kelurahan Ampel', 'Ketua PKK', 'Pengurus Inti', 'Koordinator Utama Gerakan Pemberdayaan & Kesejahteraan Keluarga', '', "'081234500802", false, true, true, 2, nowOrg, nowOrg]);
+    shPkk.appendRow(['PKK-003', 'Wakil Ketua TP PKK', 'Wakil PKK', 'Pengurus Inti', 'Pendampingan Program & Koordinasi Lintas Pokja', '', "'081234500803", false, true, true, 3, nowOrg, nowOrg]);
+    shPkk.appendRow(['PKK-004', 'Sekretaris TP PKK', 'Sekretaris PKK', 'Pengurus Inti', 'Administrasi Surat, Notulensi & Dokumentasi Kegiatan PKK', '', "'081234500804", false, true, true, 4, nowOrg, nowOrg]);
+    shPkk.appendRow(['PKK-005', 'Bendahara TP PKK', 'Bendahara PKK', 'Pengurus Inti', 'Pengelolaan Administrasi Keuangan & Inventaris PKK', '', "'081234500805", false, true, true, 5, nowOrg, nowOrg]);
+    shPkk.appendRow(['PKK-006', 'Koordinator POKJA I PKK', 'Ketua POKJA I', 'POKJA I', 'Penghayatan & Pengamalan Pancasila serta Gotong Royong', '', "'081234500806", false, true, true, 6, nowOrg, nowOrg]);
+    shPkk.appendRow(['PKK-007', 'Koordinator POKJA II PKK', 'Ketua POKJA II', 'POKJA II', 'Pendidikan, Keterampilan & Pengembangan Kehidupan Berkoperasi', '', "'081234500807", false, true, true, 7, nowOrg, nowOrg]);
+    shPkk.appendRow(['PKK-008', 'Koordinator POKJA III PKK', 'Ketua POKJA III', 'POKJA III', 'Pangan, Sandang, Perumahan & Tata Laksana Rumah Tangga', '', "'081234500808", false, true, true, 8, nowOrg, nowOrg]);
+    shPkk.appendRow(['PKK-009', 'Koordinator POKJA IV PKK', 'Ketua POKJA IV', 'POKJA IV', 'Kesehatan, Kelestarian Lingkungan Hidup & Perencanaan Sehat', '', "'081234500809", false, true, true, 9, nowOrg, nowOrg]);
   }
   var shLpmk = ss.getSheetByName('ORG_LPMK');
   if (shLpmk && shLpmk.getLastRow() <= 1) {

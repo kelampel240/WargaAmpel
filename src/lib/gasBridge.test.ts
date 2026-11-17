@@ -51,6 +51,10 @@ test('mapRestToGasCall maps public, auth, reporting, and admin routes accurately
   assert.equal(createSchool.action, 'createOrgItem');
   assert.equal(createSchool.payload.entity, 'sekolah');
 
+  const createTpPkk = mapRestToGasCall('/api/admin/org/tp_pkk', 'POST', { nama: 'Ibu Ketua', jabatan: 'Ketua PKK' }, 'tok-1');
+  assert.equal(createTpPkk.action, 'createOrgItem');
+  assert.equal(createTpPkk.payload.entity, 'tp_pkk');
+
   const importGuru = mapRestToGasCall('/api/admin/org/guru/import', 'POST', { items: [] }, 'tok-1');
   assert.equal(importGuru.action, 'importOrgBatch');
   assert.equal(importGuru.payload.entity, 'guru');

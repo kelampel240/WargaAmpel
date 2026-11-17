@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Award,
   Building,
   Building2,
   Clock,
@@ -31,6 +32,13 @@ export function getCategoryMeta(kategori: OrgPublicProfile['kategori']): {
         Icon: Landmark,
         badgeBg: 'bg-[#0F2942] text-amber-300',
         badgeText: 'text-[#0F2942]',
+      };
+    case 'TP_PKK':
+      return {
+        label: 'TP PKK Kelurahan Ampel',
+        Icon: Award,
+        badgeBg: 'bg-rose-50 text-rose-900 border border-[#D4AF37]',
+        badgeText: 'text-rose-900',
       };
     case 'LPMK':
       return {
@@ -280,6 +288,12 @@ export const OrgProfileDetailModal: React.FC<OrgProfileModalProps> = ({ profile,
               <div className="px-4 py-3 flex justify-between gap-4">
                 <dt className="text-slate-600 font-medium">Tingkat Jabatan</dt>
                 <dd className="font-bold text-[#0F2942]">{profile.tingkat}</dd>
+              </div>
+            )}
+            {profile.pokja && (
+              <div className="px-4 py-3 flex justify-between gap-4">
+                <dt className="text-slate-600 font-medium">Unsur / Pokja</dt>
+                <dd className="font-bold text-[#0F2942]">{profile.pokja}</dd>
               </div>
             )}
             {profile.jenjang && (

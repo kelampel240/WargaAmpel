@@ -1744,18 +1744,27 @@ function getOrgDisplaySettingsGas_() {
   var settings = sheetToObjects_('PENGATURAN');
   var map = {};
   settings.forEach(function(s) { map[s.KUNCI] = s.NILAI; });
-  var defaultOrder = ['KELURAHAN', 'LPMK_RW_RT', 'KADER', 'SEKOLAH_GURU', 'BALAI_RW'];
+  var defaultOrder = ['KELURAHAN', 'TP_PKK', 'LPMK_RW_RT', 'KADER', 'SEKOLAH_GURU', 'BALAI_RW'];
   var parsedOrder = parseJsonSafe_(map.ORG_URUTAN_BAGIAN, defaultOrder);
-  if (!Array.isArray(parsedOrder) || !parsedOrder.length) parsedOrder = defaultOrder;
+  if (!Array.isArray(parsedOrder) || !parsedOrder.length) parsedOrder = defaultOrder.slice();
+  if (parsedOrder.indexOf('TP_PKK') === -1) {
+    var kelIdx = parsedOrder.indexOf('KELURAHAN');
+    if (kelIdx >= 0) {
+      parsedOrder.splice(kelIdx + 1, 0, 'TP_PKK');
+    } else {
+      parsedOrder.unshift('TP_PKK');
+    }
+  }
   defaultOrder.forEach(function(k) {
     if (parsedOrder.indexOf(k) === -1) parsedOrder.push(k);
   });
   var parsedVis = parseJsonSafe_(map.ORG_TAMPILKAN_BAGIAN, {});
   return {
-    pengumumanBeranda: map.ORG_PENGUMUMAN || 'Kenali jajaran pemerintahan, LPMK, pengurus RW/RT, kader pelayanan, sekolah, guru, serta alamat Balai RW di Warga Ampel.',
+    pengumumanBeranda: map.ORG_PENGUMUMAN || 'Kenali jajaran pemerintahan, TP PKK Kelurahan Ampel, LPMK, pengurus RW/RT, kader pelayanan, sekolah, guru, serta alamat Balai RW di Warga Ampel.',
     urutanBagian: parsedOrder,
     tampilkanBagian: {
       kelurahan: parsedVis.kelurahan !== false,
+      tpPkk: parsedVis.tpPkk !== false,
       lpmk: parsedVis.lpmk !== false,
       rwRt: parsedVis.rwRt !== false,
       kader: parsedVis.kader !== false,
@@ -1773,8 +1782,36 @@ function getOrgSheetIfExists_(name) {
   }
 }
 
+function ensureOrgSheetExists_(name, headers) {
+  var ss = getSpreadsheet_();
+  var sh = ss.getSheetByName(name);
+  if (!sh) {
+    sh = ss.insertSheet(name);
+    sh.appendRow(headers);
+    sh.getRange(1, 1, 1, headers.length)
+      .setFontWeight('bold')
+      .setBackground('#0F2942')
+      .setFontColor('#FFFFFF');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+function inferTpPkkPokjaGas_(jabatan, explicitPokja) {
+  var exp = String(explicitPokja || '').trim();
+  if (exp) return exp;
+  var lower = String(jabatan || '').trim().toLowerCase();
+  if (lower.indexOf('pembina') !== -1) return 'Pembina';
+  if (/\bpokja\s*(iv|4)\b/i.test(lower)) return 'POKJA IV';
+  if (/\bpokja\s*(iii|3)\b/i.test(lower)) return 'POKJA III';
+  if (/\bpokja\s*(ii|2)\b/i.test(lower)) return 'POKJA II';
+  if (/\bpokja\s*(i|1)\b/i.test(lower)) return 'POKJA I';
+  return 'Pengurus Inti';
+}
+
 function getOrgIdColGas_(entity) {
   if (entity === 'kelurahan') return 'ID_KELURAHAN';
+  if (entity === 'tp_pkk') return 'ID_PKK';
   if (entity === 'lpmk') return 'ID_LPMK';
   if (entity === 'rw') return 'ID_RW';
   if (entity === 'rt') return 'ID_RT';
@@ -1795,6 +1832,7 @@ function buildMapsUrlGas_(customUrl, fallbackQuery) {
 
 function getPublicOrgStructure() {
   var kelRaw = sheetToObjects_('ORG_KELURAHAN').filter(function(k) { return isTrueFlag_(k.AKTIF) && isTrueFlag_(k.TAMPILKAN_PUBLIK); });
+  var tpPkkRaw = getOrgSheetIfExists_('ORG_TP_PKK').filter(function(p) { return isTrueFlag_(p.AKTIF) && isTrueFlag_(p.TAMPILKAN_PUBLIK); });
   var lpmkRaw = sheetToObjects_('ORG_LPMK').filter(function(l) { return isTrueFlag_(l.AKTIF) && isTrueFlag_(l.TAMPILKAN_PUBLIK); });
   var rwRaw = sheetToObjects_('ORG_RW').filter(function(r) { return isTrueFlag_(r.AKTIF) && isTrueFlag_(r.TAMPILKAN_PUBLIK); });
   var rtRaw = sheetToObjects_('ORG_RT').filter(function(t) { return isTrueFlag_(t.AKTIF) && isTrueFlag_(t.TAMPILKAN_PUBLIK); });
@@ -1821,6 +1859,17 @@ function getPublicOrgStructure() {
         tingkat: k.TINGKAT, wilayahTugas: k.WILAYAH_TUGAS || '', fotoUrl: k.FOTO_URL || undefined,
         noHp: allowHp && cleanHp ? cleanHp : undefined,
         waUrl: buildWaUrlGas_(cleanHp, allowHp), tampilkanHp: allowHp, urutan: Number(k.URUTAN) || 1
+      };
+    }),
+    tpPkk: tpPkkRaw.sort(sortUrutan).map(function(p) {
+      var allowHp = isTrueFlag_(p.TAMPILKAN_HP);
+      var cleanHp = normalizePhoneRead_(p.NO_HP);
+      return {
+        id: p.ID_PKK, kategori: 'TP_PKK', nama: p.NAMA, jabatan: p.JABATAN,
+        pokja: inferTpPkkPokjaGas_(p.JABATAN, p.POKJA), bidang: p.BIDANG || '',
+        fotoUrl: p.FOTO_URL || undefined,
+        noHp: allowHp && cleanHp ? cleanHp : undefined,
+        waUrl: buildWaUrlGas_(cleanHp, allowHp), tampilkanHp: allowHp, urutan: Number(p.URUTAN) || 1
       };
     }),
     lpmk: lpmkRaw.sort(sortUrutan).map(function(l) {
@@ -1918,6 +1967,7 @@ function getPublicOrgStructure() {
 function getAdminOrgStructure(token) {
   verifyTokenAndRole_(token, ['PETUGAS', 'OPERATOR', 'KEPALA_DESA', 'SUPER_ADMIN']);
   var kel = sheetToObjects_('ORG_KELURAHAN');
+  var tpPkk = getOrgSheetIfExists_('ORG_TP_PKK');
   var lpmk = sheetToObjects_('ORG_LPMK');
   var rw = sheetToObjects_('ORG_RW');
   var rt = sheetToObjects_('ORG_RT');
@@ -1926,13 +1976,14 @@ function getAdminOrgStructure(token) {
   var guru = getOrgSheetIfExists_('ORG_GURU');
   var balaiRw = getOrgSheetIfExists_('ORG_BALAI_RW');
   return {
-    kelurahan: kel, lpmk: lpmk, rw: rw, rt: rt, kader: kader,
+    kelurahan: kel, tpPkk: tpPkk, lpmk: lpmk, rw: rw, rt: rt, kader: kader,
     sekolah: sekolah, guru: guru, balaiRw: balaiRw,
     displaySettings: getOrgDisplaySettingsGas_(),
     summary: {
       totalLurah: kel.filter(function(k) { return k.TINGKAT === 'LURAH'; }).length,
       totalKasi: kel.filter(function(k) { return k.TINGKAT === 'KASI'; }).length,
       totalStaf: kel.filter(function(k) { return k.TINGKAT === 'STAF'; }).length,
+      totalTpPkk: tpPkk.length,
       totalLpmk: lpmk.length, totalRw: rw.length, totalRt: rt.length, totalKader: kader.length,
       totalSekolah: sekolah.length, totalGuru: guru.length, totalBalaiRw: balaiRw.length
     }
@@ -1962,7 +2013,8 @@ function createOrgItem(payload, token) {
   var actor = verifyTokenAndRole_(token, ['SUPER_ADMIN', 'OPERATOR']);
   var entity = payload.entity;
   var now = new Date().toISOString();
-  var id = entity.toUpperCase() + '-' + Date.now();
+  var idPrefix = entity === 'tp_pkk' ? 'PKK' : entity.toUpperCase();
+  var id = idPrefix + '-' + Date.now();
   var allowHp = payload.tampilkanHp === true;
   var showPub = payload.tampilkanPublik !== false;
   var active = payload.aktif !== false;
@@ -1972,6 +2024,9 @@ function createOrgItem(payload, token) {
 
   if (entity === 'kelurahan') {
     getSheet_('ORG_KELURAHAN').appendRow([id, payload.nama, payload.jabatan, payload.tingkat || 'STAF', payload.wilayahTugas || '', resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, now, now]);
+  } else if (entity === 'tp_pkk') {
+    var shPkk = ensureOrgSheetExists_('ORG_TP_PKK', ['ID_PKK', 'NAMA', 'JABATAN', 'POKJA', 'BIDANG', 'FOTO_URL', 'NO_HP', 'TAMPILKAN_HP', 'TAMPILKAN_PUBLIK', 'AKTIF', 'URUTAN', 'CREATED_AT', 'UPDATED_AT']);
+    shPkk.appendRow([id, payload.nama, payload.jabatan, inferTpPkkPokjaGas_(payload.jabatan, payload.pokja), payload.bidang || '', resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, now, now]);
   } else if (entity === 'lpmk') {
     getSheet_('ORG_LPMK').appendRow([id, payload.nama, payload.jabatan, payload.bidang || '', resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, now, now]);
   } else if (entity === 'rw') {
@@ -2016,6 +2071,8 @@ function updateOrgItem(payload, token) {
   var rowVals = [];
   if (entity === 'kelurahan') {
     rowVals = [id, payload.nama, payload.jabatan, payload.tingkat || 'STAF', payload.wilayahTugas || '', resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, target.CREATED_AT, now];
+  } else if (entity === 'tp_pkk') {
+    rowVals = [id, payload.nama, payload.jabatan, inferTpPkkPokjaGas_(payload.jabatan, payload.pokja), payload.bidang || '', resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, target.CREATED_AT, now];
   } else if (entity === 'lpmk') {
     rowVals = [id, payload.nama, payload.jabatan, payload.bidang || '', resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, target.CREATED_AT, now];
   } else if (entity === 'rw') {
@@ -2058,8 +2115,8 @@ function saveOrgSettings(payload, token) {
   return saveSettings({
     settings: [
       { KUNCI: 'ORG_PENGUMUMAN', NILAI: payload.pengumumanBeranda || '' },
-      { KUNCI: 'ORG_URUTAN_BAGIAN', NILAI: JSON.stringify(payload.urutanBagian || ['KELURAHAN', 'LPMK_RW_RT', 'KADER', 'SEKOLAH_GURU', 'BALAI_RW']) },
-      { KUNCI: 'ORG_TAMPILKAN_BAGIAN', NILAI: JSON.stringify(payload.tampilkanBagian || { kelurahan: true, lpmk: true, rwRt: true, kader: true, sekolahGuru: true, balaiRw: true }) }
+      { KUNCI: 'ORG_URUTAN_BAGIAN', NILAI: JSON.stringify(payload.urutanBagian || ['KELURAHAN', 'TP_PKK', 'LPMK_RW_RT', 'KADER', 'SEKOLAH_GURU', 'BALAI_RW']) },
+      { KUNCI: 'ORG_TAMPILKAN_BAGIAN', NILAI: JSON.stringify(payload.tampilkanBagian || { kelurahan: true, tpPkk: true, lpmk: true, rwRt: true, kader: true, sekolahGuru: true, balaiRw: true }) }
     ]
   }, token);
 }
@@ -2070,13 +2127,16 @@ function importOrgBatch(payload, token) {
   var items = payload.items || [];
   if (!items.length) throw new Error('Daftar data Excel untuk diimpor kosong.');
   var sheetName = 'ORG_' + String(entity).toUpperCase();
-  var sh = getSheet_(sheetName);
+  var sh = entity === 'tp_pkk'
+    ? ensureOrgSheetExists_('ORG_TP_PKK', ['ID_PKK', 'NAMA', 'JABATAN', 'POKJA', 'BIDANG', 'FOTO_URL', 'NO_HP', 'TAMPILKAN_HP', 'TAMPILKAN_PUBLIK', 'AKTIF', 'URUTAN', 'CREATED_AT', 'UPDATED_AT'])
+    : getSheet_(sheetName);
   var now = new Date().toISOString();
   var baseTs = Date.now();
   var rowsToAppend = [];
   for (var i = 0; i < items.length; i++) {
     var item = items[i] || {};
-    var id = entity.toUpperCase() + '-' + baseTs + '-' + i;
+    var idPrefix = entity === 'tp_pkk' ? 'PKK' : entity.toUpperCase();
+    var id = idPrefix + '-' + baseTs + '-' + i;
     var allowHp = item.tampilkanHp === true;
     var showPub = item.tampilkanPublik !== false;
     var active = item.aktif !== false;
@@ -2085,6 +2145,8 @@ function importOrgBatch(payload, token) {
     var hp = formatPhoneForSheet_(item.noHp);
     if (entity === 'kelurahan') {
       rowsToAppend.push([id, item.nama, item.jabatan, item.tingkat || 'STAF', item.wilayahTugas || '', foto, hp, allowHp, showPub, active, order, now, now]);
+    } else if (entity === 'tp_pkk') {
+      rowsToAppend.push([id, item.nama, item.jabatan, inferTpPkkPokjaGas_(item.jabatan, item.pokja), item.bidang || '', foto, hp, allowHp, showPub, active, order, now, now]);
     } else if (entity === 'lpmk') {
       rowsToAppend.push([id, item.nama, item.jabatan, item.bidang || '', foto, hp, allowHp, showPub, active, order, now, now]);
     } else if (entity === 'rw') {

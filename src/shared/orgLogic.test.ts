@@ -52,6 +52,34 @@ function makeMinimalDb(): SiwargaDatabase {
         UPDATED_AT: '',
       },
     ],
+    ORG_TP_PKK: [
+      {
+        ID_PKK: 'PKK-1',
+        NAMA: 'Pembina PKK Ampel',
+        JABATAN: 'Pembina PKK',
+        POKJA: 'Pembina',
+        BIDANG: 'Pembinaan PKK',
+        NO_HP: '081234500801',
+        TAMPILKAN_HP: false,
+        TAMPILKAN_PUBLIK: true,
+        AKTIF: true,
+        URUTAN: 1,
+        CREATED_AT: '',
+        UPDATED_AT: '',
+      },
+      {
+        ID_PKK: 'PKK-2',
+        NAMA: 'Ketua Pokja I',
+        JABATAN: 'Ketua POKJA I',
+        NO_HP: '081234500802',
+        TAMPILKAN_HP: true,
+        TAMPILKAN_PUBLIK: true,
+        AKTIF: true,
+        URUTAN: 2,
+        CREATED_AT: '',
+        UPDATED_AT: '',
+      },
+    ],
     ORG_LPMK: [
       {
         ID_LPMK: 'LPMK-1',
@@ -187,6 +215,11 @@ test('sanitizePublicOrgData hides inactive profiles, strips hidden phone numbers
   assert.equal(pub.kelurahan[0].nama, 'Budi Santoso');
   assert.equal(pub.kelurahan[0].noHp, undefined);
   assert.equal(pub.kelurahan[0].waUrl, null);
+
+  assert.equal(pub.tpPkk.length, 2);
+  assert.equal(pub.tpPkk[0].pokja, 'Pembina');
+  assert.equal(pub.tpPkk[1].pokja, 'POKJA I');
+  assert.equal(pub.tpPkk[1].waUrl, 'https://wa.me/6281234500802');
 
   assert.equal(pub.lpmk[0].noHp, '081299988877');
   assert.equal(pub.lpmk[0].waUrl, 'https://wa.me/6281299988877');

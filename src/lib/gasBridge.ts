@@ -229,7 +229,7 @@ export function mapRestToGasCall(
     return { action: 'saveOrgSettings', payload: bodyObj, token: token || undefined };
   }
   const orgImportMatch = pathname.match(
-    /^\/api\/admin\/org\/(kelurahan|lpmk|rw|rt|kader|sekolah|guru|balai_rw)\/import$/
+    /^\/api\/admin\/org\/(kelurahan|tp_pkk|lpmk|rw|rt|kader|sekolah|guru|balai_rw)\/import$/
   );
   if (orgImportMatch && upperMethod === 'POST') {
     return {
@@ -239,7 +239,7 @@ export function mapRestToGasCall(
     };
   }
   const orgPostMatch = pathname.match(
-    /^\/api\/admin\/org\/(kelurahan|lpmk|rw|rt|kader|sekolah|guru|balai_rw)$/
+    /^\/api\/admin\/org\/(kelurahan|tp_pkk|lpmk|rw|rt|kader|sekolah|guru|balai_rw)$/
   );
   if (orgPostMatch && upperMethod === 'POST') {
     return {
@@ -249,7 +249,7 @@ export function mapRestToGasCall(
     };
   }
   const orgItemMatch = pathname.match(
-    /^\/api\/admin\/org\/(kelurahan|lpmk|rw|rt|kader|sekolah|guru|balai_rw)\/([^/]+)$/
+    /^\/api\/admin\/org\/(kelurahan|tp_pkk|lpmk|rw|rt|kader|sekolah|guru|balai_rw)\/([^/]+)$/
   );
   if (orgItemMatch && upperMethod === 'PUT') {
     return {

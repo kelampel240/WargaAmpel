@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import {
+  inferTpPkkPokja,
   isValidIndonesianPhone,
   normalizeIndonesianPhone,
   OrgEntityType,
@@ -17,6 +18,7 @@ export interface ParsedImportRow {
 
 const ENTITY_SHEET_NAMES: Record<OrgEntityType, string[]> = {
   kelurahan: ['Kelurahan'],
+  tp_pkk: ['TP PKK', 'TP PKK Kelurahan Ampel', 'PKK'],
   lpmk: ['LPMK'],
   rw: ['Daftar RW', 'RW'],
   rt: ['Daftar RT', 'RT'],
@@ -209,6 +211,12 @@ export function parseOrgImportExcel(
       const wilayahTugas = pickStr(n, ['Wilayah Tugas', 'Wilayah', 'WILAYAH_TUGAS']);
       payload = { ...payload, tingkat, wilayahTugas };
       detail = `${tingkat} · ${jabatan}`;
+    } else if (entity === 'tp_pkk') {
+      const pokjaRaw = pickStr(n, ['Unsur / Pokja', 'Unsur', 'Pokja', 'POKJA']);
+      const pokja = inferTpPkkPokja(jabatan, pokjaRaw);
+      const bidang = pickStr(n, ['Bidang', 'Bidang / Tugas', 'BIDANG']);
+      payload = { ...payload, pokja, bidang };
+      detail = pokja ? `${pokja} · ${jabatan}` : jabatan;
     } else if (entity === 'lpmk') {
       const bidang = pickStr(n, ['Bidang', 'Bidang / Seksi', 'BIDANG']);
       payload = { ...payload, bidang };

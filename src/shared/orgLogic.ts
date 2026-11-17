@@ -119,6 +119,7 @@ export function buildMapsUrl(customUrl: string | undefined, fallbackQuery: strin
 
 export type OrgEntityType =
   | 'kelurahan'
+  | 'tp_pkk'
   | 'lpmk'
   | 'rw'
   | 'rt'
@@ -126,6 +127,18 @@ export type OrgEntityType =
   | 'sekolah'
   | 'guru'
   | 'balai_rw';
+
+export function inferTpPkkPokja(jabatan?: string, explicitPokja?: string): string {
+  const exp = String(explicitPokja || '').trim();
+  if (exp) return exp;
+  const lower = String(jabatan || '').trim().toLowerCase();
+  if (lower.includes('pembina')) return 'Pembina';
+  if (/\bpokja\s*(iv|4)\b/i.test(lower)) return 'POKJA IV';
+  if (/\bpokja\s*(iii|3)\b/i.test(lower)) return 'POKJA III';
+  if (/\bpokja\s*(ii|2)\b/i.test(lower)) return 'POKJA II';
+  if (/\bpokja\s*(i|1)\b/i.test(lower)) return 'POKJA I';
+  return 'Pengurus Inti';
+}
 
 export function validateOrgInput(
   entity: OrgEntityType,
@@ -225,6 +238,7 @@ export function validateOrgInput(
 
 const DEFAULT_SECTION_ORDER: OrgSectionKey[] = [
   'KELURAHAN',
+  'TP_PKK',
   'LPMK_RW_RT',
   'KADER',
   'SEKOLAH_GURU',
@@ -244,6 +258,14 @@ export function extractOrgDisplaySettings(
       const validSet = parsed.filter((item): item is OrgSectionKey =>
         DEFAULT_SECTION_ORDER.includes(item as OrgSectionKey)
       );
+      if (!validSet.includes('TP_PKK')) {
+        const kelIdx = validSet.indexOf('KELURAHAN');
+        if (kelIdx >= 0) {
+          validSet.splice(kelIdx + 1, 0, 'TP_PKK');
+        } else {
+          validSet.unshift('TP_PKK');
+        }
+      }
       for (const fallbackKey of DEFAULT_SECTION_ORDER) {
         if (!validSet.includes(fallbackKey)) {
           validSet.push(fallbackKey);
@@ -257,6 +279,7 @@ export function extractOrgDisplaySettings(
 
   let tampilkanBagian = {
     kelurahan: true,
+    tpPkk: true,
     lpmk: true,
     rwRt: true,
     kader: true,
@@ -268,6 +291,7 @@ export function extractOrgDisplaySettings(
     if (parsed && typeof parsed === 'object') {
       tampilkanBagian = {
         kelurahan: parsed.kelurahan !== false,
+        tpPkk: parsed.tpPkk !== false,
         lpmk: parsed.lpmk !== false,
         rwRt: parsed.rwRt !== false,
         kader: parsed.kader !== false,
@@ -282,7 +306,7 @@ export function extractOrgDisplaySettings(
   return {
     pengumumanBeranda: getVal(
       'ORG_PENGUMUMAN',
-      'Informasi pengurus, struktur organisasi, fasilitas pendidikan, dan Balai RW di Warga Ampel diperbarui secara berkala oleh Pemerintah Kelurahan.'
+      'Informasi pengurus, struktur organisasi, TP PKK Kelurahan Ampel, fasilitas pendidikan, dan Balai RW di Warga Ampel diperbarui secara berkala oleh Pemerintah Kelurahan.'
     ),
     urutanBagian,
     tampilkanBagian,
@@ -312,6 +336,26 @@ export function sanitizePublicOrgData(db: SiwargaDatabase): PublicOrgStructureRe
         waUrl,
         tampilkanHp: allowHp,
         urutan: k.URUTAN,
+      };
+    });
+
+  const tpPkk: OrgPublicProfile[] = (db.ORG_TP_PKK || [])
+    .filter((p) => p.AKTIF && p.TAMPILKAN_PUBLIK)
+    .sort((a, b) => a.URUTAN - b.URUTAN)
+    .map((p) => {
+      const allowHp = Boolean(p.TAMPILKAN_HP);
+      return {
+        id: p.ID_PKK,
+        kategori: 'TP_PKK',
+        nama: p.NAMA,
+        jabatan: p.JABATAN,
+        pokja: inferTpPkkPokja(p.JABATAN, p.POKJA),
+        bidang: p.BIDANG,
+        fotoUrl: p.FOTO_URL || undefined,
+        noHp: allowHp && p.NO_HP ? p.NO_HP : undefined,
+        waUrl: buildWhatsAppUrl(p.NO_HP, allowHp),
+        tampilkanHp: allowHp,
+        urutan: p.URUTAN,
       };
     });
 
@@ -493,6 +537,7 @@ export function sanitizePublicOrgData(db: SiwargaDatabase): PublicOrgStructureRe
 
   return {
     kelurahan,
+    tpPkk,
     lpmk,
     rw,
     rt,
@@ -509,6 +554,7 @@ export function computeAdminOrgSummary(db: SiwargaDatabase): AdminOrgStructureRe
     totalLurah: db.ORG_KELURAHAN.filter((k) => k.TINGKAT === 'LURAH').length,
     totalKasi: db.ORG_KELURAHAN.filter((k) => k.TINGKAT === 'KASI').length,
     totalStaf: db.ORG_KELURAHAN.filter((k) => k.TINGKAT === 'STAF').length,
+    totalTpPkk: (db.ORG_TP_PKK || []).length,
     totalLpmk: db.ORG_LPMK.length,
     totalRw: db.ORG_RW.length,
     totalRt: db.ORG_RT.length,
@@ -525,6 +571,7 @@ export interface OrgSearchFilters {
   category:
     | 'ALL'
     | 'KELURAHAN'
+    | 'TP_PKK'
     | 'LPMK'
     | 'RW'
     | 'RT'

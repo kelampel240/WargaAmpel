@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ArrowDown,
   ArrowUp,
+  Award,
   Building,
   Building2,
   CheckCircle2,
@@ -22,13 +23,14 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { isValidIndonesianPhone, OrgEntityType } from '../shared/orgLogic';
+import { inferTpPkkPokja, isValidIndonesianPhone, OrgEntityType } from '../shared/orgLogic';
 import {
   AdminOrgStructureResponse,
   OrgKelurahanLevel,
   PublicOrgStructureResponse,
   SchoolJenjang,
   SheetLogAktivitas,
+  TP_PKK_JABATAN_OPTIONS,
   UserRole,
 } from '../shared/types';
 import { apiFetch, readFileAsBase64 } from '../lib/api';
@@ -49,6 +51,7 @@ import {
 
 type AdminOrgTab =
   | 'kelurahan'
+  | 'tp_pkk'
   | 'lpmk'
   | 'rw'
   | 'rt'
@@ -64,6 +67,7 @@ interface FormState {
   nama: string;
   jabatan: string;
   tingkat: OrgKelurahanLevel;
+  pokja: string;
   bidang: string;
   wilayahTugas: string;
   nomorRw: string;
@@ -88,6 +92,7 @@ const emptyForm = (): FormState => ({
   nama: '',
   jabatan: '',
   tingkat: 'STAF',
+  pokja: '',
   bidang: '',
   wilayahTugas: '',
   nomorRw: '',
@@ -144,9 +149,10 @@ export const OrgAdminManager: React.FC<OrgAdminManagerProps> = ({ userRole, onOr
     PublicOrgStructureResponse['displaySettings']
   >({
     pengumumanBeranda: '',
-    urutanBagian: ['KELURAHAN', 'LPMK_RW_RT', 'KADER', 'SEKOLAH_GURU', 'BALAI_RW'],
+    urutanBagian: ['KELURAHAN', 'TP_PKK', 'LPMK_RW_RT', 'KADER', 'SEKOLAH_GURU', 'BALAI_RW'],
     tampilkanBagian: {
       kelurahan: true,
+      tpPkk: true,
       lpmk: true,
       rwRt: true,
       kader: true,
@@ -202,6 +208,10 @@ export const OrgAdminManager: React.FC<OrgAdminManagerProps> = ({ userRole, onOr
     }
     if (entity === 'kelurahan' && data) {
       base.urutan = data.kelurahan.length + 1;
+    } else if (entity === 'tp_pkk' && data) {
+      base.jabatan = 'Pembina PKK';
+      base.pokja = 'Pembina';
+      base.urutan = (data.tpPkk || []).length + 1;
     } else if (entity === 'lpmk' && data) {
       base.urutan = data.lpmk.length + 1;
     } else if (entity === 'rw' && data) {
@@ -234,6 +244,22 @@ export const OrgAdminManager: React.FC<OrgAdminManagerProps> = ({ userRole, onOr
         jabatan: String(item.JABATAN || ''),
         tingkat: (item.TINGKAT as OrgKelurahanLevel) || 'STAF',
         wilayahTugas: String(item.WILAYAH_TUGAS || ''),
+        fotoUrl: String(item.FOTO_URL || ''),
+        noHp: String(item.NO_HP || ''),
+        tampilkanHp: Boolean(item.TAMPILKAN_HP),
+        tampilkanPublik: item.TAMPILKAN_PUBLIK !== false,
+        aktif: item.AKTIF !== false,
+        urutan: Number(item.URUTAN) || 1,
+      });
+    } else if (entity === 'tp_pkk') {
+      const jabatanStr = String(item.JABATAN || '');
+      setForm({
+        ...emptyForm(),
+        id: String(item.ID_PKK),
+        nama: String(item.NAMA || ''),
+        jabatan: jabatanStr,
+        pokja: inferTpPkkPokja(jabatanStr, String(item.POKJA || '')),
+        bidang: String(item.BIDANG || ''),
         fotoUrl: String(item.FOTO_URL || ''),
         noHp: String(item.NO_HP || ''),
         tampilkanHp: Boolean(item.TAMPILKAN_HP),
@@ -419,6 +445,7 @@ export const OrgAdminManager: React.FC<OrgAdminManagerProps> = ({ userRole, onOr
       namaBalai: form.nama.trim(),
       jabatan: form.jabatan.trim(),
       tingkat: form.tingkat,
+      pokja: modalEntity === 'tp_pkk' ? inferTpPkkPokja(form.jabatan, form.pokja) : form.pokja.trim(),
       bidang: form.bidang.trim(),
       wilayahTugas: form.wilayahTugas.trim(),
       nomorRw: form.nomorRw.trim(),
@@ -572,6 +599,7 @@ export const OrgAdminManager: React.FC<OrgAdminManagerProps> = ({ userRole, onOr
         { label: 'Lurah', value: data.summary.totalLurah },
         { label: 'Kasi', value: data.summary.totalKasi },
         { label: 'Staf Kelurahan', value: data.summary.totalStaf },
+        { label: 'TP PKK Ampel', value: data.summary.totalTpPkk ?? (data.tpPkk || []).length },
         { label: 'Pengurus LPMK', value: data.summary.totalLpmk },
         { label: 'Daftar RW', value: data.summary.totalRw },
         { label: 'Daftar RT', value: data.summary.totalRt },
@@ -648,6 +676,7 @@ export const OrgAdminManager: React.FC<OrgAdminManagerProps> = ({ userRole, onOr
         {(
           [
             { id: 'kelurahan', label: 'Kelurahan', Icon: Landmark },
+            { id: 'tp_pkk', label: 'TP PKK Ampel', Icon: Award },
             { id: 'lpmk', label: 'LPMK', Icon: Building2 },
             { id: 'rw', label: 'Daftar RW', Icon: Users },
             { id: 'rt', label: 'Daftar RT', Icon: Home },
@@ -765,6 +794,92 @@ export const OrgAdminManager: React.FC<OrgAdminManagerProps> = ({ userRole, onOr
                         </td>
                       </tr>
                     ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* TP PKK KELURAHAN AMPEL TAB */}
+          {activeTab === 'tp_pkk' && data && (
+            <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-display text-lg font-bold text-[#0F2942]">
+                    TP PKK Kelurahan Ampel (Pembina, Pengurus Inti &amp; POKJA I–IV)
+                  </h3>
+                  <p className="text-sm text-slate-600">
+                    Berkedudukan sejajar Pemerintah Kelurahan dan bersifat independen (tidak mengikat pada pihak mana pun).
+                  </p>
+                </div>
+                {renderEntityActionButtons('tp_pkk', 'Tambah Pengurus TP PKK', 'TP PKK')}
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
+                      <th className="py-3 px-3">Urut</th>
+                      <th className="py-3 px-3">Nama &amp; Bidang</th>
+                      <th className="py-3 px-3">Unsur / Pokja &amp; Jabatan</th>
+                      <th className="py-3 px-3">HP &amp; Privasi</th>
+                      <th className="py-3 px-3">Status</th>
+                      <th className="py-3 px-3 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {(data.tpPkk || []).length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-slate-500">
+                          Belum ada data TP PKK Kelurahan Ampel. Klik &ldquo;Tambah Pengurus TP PKK&rdquo; atau Import Excel untuk mengisi data.
+                        </td>
+                      </tr>
+                    ) : (
+                      (data.tpPkk || []).map((p) => (
+                        <tr key={p.ID_PKK} className="hover:bg-slate-50">
+                          <td className="py-3 px-3 font-mono font-bold">{p.URUTAN}</td>
+                          <td className="py-3 px-3">
+                            <p className="font-bold text-[#0F2942]">{p.NAMA}</p>
+                            <p className="text-xs text-slate-600">{p.BIDANG || '-'}</p>
+                          </td>
+                          <td className="py-3 px-3">
+                            <span className="inline-block px-2 py-0.5 rounded bg-rose-50 text-rose-900 border border-rose-200 text-xs font-bold mr-1.5">
+                              {inferTpPkkPokja(p.JABATAN, p.POKJA)}
+                            </span>
+                            <span className="text-slate-800 font-medium">{p.JABATAN}</span>
+                          </td>
+                          <td className="py-3 px-3 text-xs">
+                            <p className="font-mono">{p.NO_HP || '-'}</p>
+                            <p className={p.TAMPILKAN_HP ? 'text-emerald-700 font-semibold' : 'text-slate-500'}>
+                              {p.TAMPILKAN_HP ? 'HP Tampil Publik' : 'HP Disembunyikan'}
+                            </p>
+                          </td>
+                          <td className="py-3 px-3 text-xs">
+                            <span className={`font-bold ${p.AKTIF && p.TAMPILKAN_PUBLIK ? 'text-emerald-700' : 'text-amber-700'}`}>
+                              {p.AKTIF ? (p.TAMPILKAN_PUBLIK ? 'Aktif · Publik' : 'Aktif · Tersembunyi') : 'Nonaktif'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-right whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => openEditModal('tp_pkk', p as unknown as Record<string, unknown>)}
+                              aria-label={`Ubah ${p.NAMA}`}
+                              className="px-2.5 py-1.5 text-xs font-bold border border-slate-300 rounded-lg hover:bg-slate-100 mr-1.5 cursor-pointer"
+                            >
+                              Ubah
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteTarget({ entity: 'tp_pkk', id: p.ID_PKK, label: p.NAMA })}
+                              aria-label={`Hapus ${p.NAMA}`}
+                              className="px-2.5 py-1.5 text-xs font-bold border border-rose-300 text-rose-700 rounded-lg hover:bg-rose-50 cursor-pointer"
+                            >
+                              Hapus
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1328,6 +1443,8 @@ export const OrgAdminManager: React.FC<OrgAdminManagerProps> = ({ userRole, onOr
                         {idx + 1}.{' '}
                         {sec === 'KELURAHAN'
                           ? 'Bagian A — Pemerintahan Kelurahan'
+                          : sec === 'TP_PKK'
+                          ? 'Kolom Sejajar — TP PKK Kelurahan Ampel (Independen)'
                           : sec === 'LPMK_RW_RT'
                           ? 'Bagian B — Lembaga Kemasyarakatan (LPMK, RW, RT)'
                           : sec === 'KADER'
@@ -1365,6 +1482,7 @@ export const OrgAdminManager: React.FC<OrgAdminManagerProps> = ({ userRole, onOr
                   {(
                     [
                       { key: 'kelurahan', label: 'Tampilkan Pemerintahan Kelurahan' },
+                      { key: 'tpPkk', label: 'Tampilkan TP PKK Kelurahan Ampel (Sejajar Kelurahan)' },
                       { key: 'lpmk', label: 'Tampilkan Lembaga LPMK' },
                       { key: 'rwRt', label: 'Tampilkan Daftar RW & RT' },
                       { key: 'kader', label: 'Tampilkan Data Kader per RT' },
@@ -1736,22 +1854,107 @@ export const OrgAdminManager: React.FC<OrgAdminManagerProps> = ({ userRole, onOr
                       <label className="block text-xs font-bold text-[#0F2942] mb-1">
                         {modalEntity === 'guru' ? 'Mata Pelajaran / Jabatan *' : 'Jabatan *'}
                       </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder={
-                          modalEntity === 'guru'
-                            ? 'Mis. Guru Kelas IV / Guru Matematika'
-                            : 'Mis. Ketua RT 01 / Kader Posyandu'
-                        }
-                        value={form.jabatan}
-                        onChange={(e) => setForm((p) => ({ ...p, jabatan: e.target.value }))}
-                        className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
-                      />
+                      {modalEntity === 'tp_pkk' ? (
+                        <div className="space-y-2">
+                          <select
+                            value={
+                              (TP_PKK_JABATAN_OPTIONS as readonly string[]).includes(form.jabatan)
+                                ? form.jabatan
+                                : '__CUSTOM__'
+                            }
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '__CUSTOM__') {
+                                setForm((p) => ({
+                                  ...p,
+                                  jabatan: (TP_PKK_JABATAN_OPTIONS as readonly string[]).includes(p.jabatan)
+                                    ? ''
+                                    : p.jabatan,
+                                }));
+                              } else {
+                                setForm((p) => ({
+                                  ...p,
+                                  jabatan: val,
+                                  pokja: inferTpPkkPokja(val),
+                                }));
+                              }
+                            }}
+                            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white"
+                          >
+                            {TP_PKK_JABATAN_OPTIONS.map((opt) => (
+                              <option key={opt} value={opt}>
+                                {opt}
+                              </option>
+                            ))}
+                            <option value="__CUSTOM__">Jabatan Lainnya (Tulis Manual)</option>
+                          </select>
+                          {!(TP_PKK_JABATAN_OPTIONS as readonly string[]).includes(form.jabatan) && (
+                            <input
+                              type="text"
+                              required
+                              placeholder="Tulis jabatan TP PKK..."
+                              value={form.jabatan}
+                              onChange={(e) =>
+                                setForm((p) => ({
+                                  ...p,
+                                  jabatan: e.target.value,
+                                  pokja: inferTpPkkPokja(e.target.value, p.pokja),
+                                }))
+                              }
+                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <input
+                          type="text"
+                          required
+                          placeholder={
+                            modalEntity === 'guru'
+                              ? 'Mis. Guru Kelas IV / Guru Matematika'
+                              : 'Mis. Ketua RT 01 / Kader Posyandu'
+                          }
+                          value={form.jabatan}
+                          onChange={(e) => setForm((p) => ({ ...p, jabatan: e.target.value }))}
+                          className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
+                        />
+                      )}
                     </div>
                   </div>
 
-                  {modalEntity === 'lpmk' ? (
+                  {modalEntity === 'tp_pkk' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-[#0F2942] mb-1">
+                          Unsur / Kelompok Kerja
+                        </label>
+                        <select
+                          value={form.pokja || inferTpPkkPokja(form.jabatan)}
+                          onChange={(e) => setForm((p) => ({ ...p, pokja: e.target.value }))}
+                          className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white"
+                        >
+                          <option value="Pembina">Pembina</option>
+                          <option value="Pengurus Inti">Pengurus Inti</option>
+                          <option value="POKJA I">POKJA I</option>
+                          <option value="POKJA II">POKJA II</option>
+                          <option value="POKJA III">POKJA III</option>
+                          <option value="POKJA IV">POKJA IV</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#0F2942] mb-1">
+                          Bidang / Keterangan Tugas
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Mis. Kesehatan, Gizi & Lingkungan"
+                          value={form.bidang}
+                          onChange={(e) => setForm((p) => ({ ...p, bidang: e.target.value }))}
+                          className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg"
+                        />
+                      </div>
+                    </div>
+                  ) : modalEntity === 'lpmk' ? (
                     <div>
                       <label className="block text-xs font-bold text-[#0F2942] mb-1">Bidang / Seksi</label>
                       <input

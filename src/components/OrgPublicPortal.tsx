@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Award,
   Building,
   Building2,
   ChevronRight,
@@ -26,6 +27,7 @@ import { OrgProfileCard, OrgProfileDetailModal } from './OrgProfileCard';
 type OrgMenuTab =
   | 'beranda'
   | 'kelurahan'
+  | 'tp_pkk'
   | 'lpmk'
   | 'rw'
   | 'rt'
@@ -47,6 +49,7 @@ export const OrgPublicPortal: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<
     | 'ALL'
     | 'KELURAHAN'
+    | 'TP_PKK'
     | 'LPMK'
     | 'RW'
     | 'RT'
@@ -88,6 +91,7 @@ export const OrgPublicPortal: React.FC = () => {
     if (!data) return [];
     return [
       ...data.kelurahan,
+      ...(data.tpPkk || []),
       ...data.lpmk,
       ...data.rw,
       ...data.rt,
@@ -127,22 +131,27 @@ export const OrgPublicPortal: React.FC = () => {
     resetFilters();
   };
 
-  // Section renderers for Bagian A, Bagian B, Bagian C, Bagian D (Sekolah & Guru), Bagian E (Balai RW)
-  const renderBagianKelurahan = () => {
+  // Section renderers for Bagian A (Pemerintahan Kelurahan & Kolom Sejajar TP PKK Kelurahan Ampel), Bagian B, Bagian C, Bagian D, Bagian E
+  const renderBagianKelurahan = (inParallelColumns = false) => {
     if (!data) return null;
     const lurah = data.kelurahan.filter((k) => k.tingkat === 'LURAH');
     const kasi = data.kelurahan.filter((k) => k.tingkat === 'KASI');
     const staf = data.kelurahan.filter((k) => k.tingkat === 'STAF');
+    const gridClass = inParallelColumns
+      ? 'grid grid-cols-1 sm:grid-cols-2 gap-4'
+      : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
 
     return (
-      <section aria-labelledby="bagian-a-heading" className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs">
+      <section aria-labelledby="bagian-a-heading" className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs h-full">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-6">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-xl bg-[#0F2942] text-amber-300 border border-[#D4AF37] flex items-center justify-center shrink-0">
               <Landmark className="w-6 h-6" aria-hidden="true" />
             </div>
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-800">Bagian A</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-800">
+                Bagian A · Tingkat Kelurahan
+              </span>
               <h2 id="bagian-a-heading" className="font-display text-2xl font-extrabold text-[#0F2942]">
                 Pemerintahan Kelurahan
               </h2>
@@ -165,6 +174,7 @@ export const OrgPublicPortal: React.FC = () => {
                       profile={item}
                       onSelectDetail={setSelectedProfile}
                       highlightGold
+                      compact={inParallelColumns}
                     />
                   ))}
                 </div>
@@ -183,12 +193,13 @@ export const OrgPublicPortal: React.FC = () => {
                       Kepala Seksi (Kasi)
                     </span>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className={gridClass}>
                     {kasi.map((item) => (
                       <OrgProfileCard
                         key={item.id}
                         profile={item}
                         onSelectDetail={setSelectedProfile}
+                        compact={inParallelColumns}
                       />
                     ))}
                   </div>
@@ -208,16 +219,156 @@ export const OrgPublicPortal: React.FC = () => {
                       Staf Pelaksana
                     </span>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className={gridClass}>
                     {staf.map((item) => (
                       <OrgProfileCard
                         key={item.id}
                         profile={item}
                         onSelectDetail={setSelectedProfile}
+                        compact={inParallelColumns}
                       />
                     ))}
                   </div>
                 </div>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+    );
+  };
+
+  const renderBagianTpPkk = (inParallelColumns = false) => {
+    if (!data) return null;
+    const pkkList = data.tpPkk || [];
+    const gridClass = inParallelColumns
+      ? 'grid grid-cols-1 sm:grid-cols-2 gap-4'
+      : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+
+    const isPembina = (p: OrgPublicProfile) =>
+      p.pokja?.toLowerCase() === 'pembina' || p.jabatan.toLowerCase().includes('pembina');
+    const getPokjaKey = (p: OrgPublicProfile): string | null => {
+      const hay = `${p.pokja || ''} ${p.jabatan}`.toUpperCase();
+      if (/\bPOKJA\s*(IV|4)\b/.test(hay)) return 'POKJA IV';
+      if (/\bPOKJA\s*(III|3)\b/.test(hay)) return 'POKJA III';
+      if (/\bPOKJA\s*(II|2)\b/.test(hay)) return 'POKJA II';
+      if (/\bPOKJA\s*(I|1)\b/.test(hay)) return 'POKJA I';
+      return null;
+    };
+
+    const pembina = pkkList.filter(isPembina);
+    const pokjaGroups = ['POKJA I', 'POKJA II', 'POKJA III', 'POKJA IV'].map((pokjaName) => ({
+      name: pokjaName,
+      members: pkkList.filter((p) => !isPembina(p) && getPokjaKey(p) === pokjaName),
+    })).filter((g) => g.members.length > 0);
+    const pengurusInti = pkkList.filter((p) => !isPembina(p) && !getPokjaKey(p));
+
+    return (
+      <section aria-labelledby="bagian-pkk-heading" className="bg-white rounded-2xl border-2 border-[#D4AF37] p-6 sm:p-8 shadow-xs h-full">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-900 border border-[#D4AF37] flex items-center justify-center shrink-0">
+              <Award className="w-6 h-6" aria-hidden="true" />
+            </div>
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-rose-800">
+                Sejajar Pemerintah Kelurahan · Independen (Tidak Mengikat)
+              </span>
+              <h2 id="bagian-pkk-heading" className="font-display text-2xl font-extrabold text-[#0F2942]">
+                TP PKK Kelurahan Ampel
+              </h2>
+            </div>
+          </div>
+          <span className="text-sm font-semibold text-slate-600">{pkkList.length} Pengurus Aktif</span>
+        </div>
+
+        <div className="mb-5 rounded-xl bg-rose-50/70 border border-rose-200 px-4 py-2.5 text-xs sm:text-sm font-medium text-rose-950">
+          Berkedudukan sejajar dengan Pemerintah Kelurahan secara independen (tidak mengikat pada pihak mana pun).
+        </div>
+
+        {pkkList.length === 0 ? (
+          <p className="text-base text-slate-600 py-6 text-center">Belum ada data TP PKK Kelurahan Ampel yang ditampilkan.</p>
+        ) : (
+          <div className="space-y-4">
+            {/* Pembina */}
+            {pembina.length > 0 && (
+              <div className="flex flex-col items-center">
+                <div className="mb-2 text-center">
+                  <span className="inline-block px-3 py-1 rounded-lg bg-[#0F2942] text-amber-300 text-xs font-bold uppercase tracking-wider">
+                    Pembina TP PKK
+                  </span>
+                </div>
+                <div className="w-full max-w-md space-y-3">
+                  {pembina.map((item) => (
+                    <OrgProfileCard
+                      key={item.id}
+                      profile={item}
+                      onSelectDetail={setSelectedProfile}
+                      highlightGold
+                      compact={inParallelColumns}
+                    />
+                  ))}
+                </div>
+                {(pengurusInti.length > 0 || pokjaGroups.length > 0) && (
+                  <div className="w-0.5 h-6 bg-[#D4AF37] mt-2" aria-hidden="true" />
+                )}
+              </div>
+            )}
+
+            {/* Pengurus Inti: Ketua, Wakil, Sekretaris, Bendahara */}
+            {pengurusInti.length > 0 && (
+              <div className="border-t-2 border-[#D4AF37] pt-4">
+                <div className="mb-3 text-center">
+                  <span className="inline-block px-3 py-1 rounded-lg bg-rose-50 text-rose-900 border border-rose-200 text-xs font-bold uppercase tracking-wider">
+                    Pengurus Inti (Ketua, Wakil, Sekretaris &amp; Bendahara PKK)
+                  </span>
+                </div>
+                <div className={gridClass}>
+                  {pengurusInti.map((item) => (
+                    <OrgProfileCard
+                      key={item.id}
+                      profile={item}
+                      onSelectDetail={setSelectedProfile}
+                      compact={inParallelColumns}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Kelompok Kerja (POKJA I - IV) */}
+            {pokjaGroups.length > 0 && (
+              <div className="border-t-2 border-slate-200 pt-4 space-y-4">
+                <div className="text-center">
+                  <span className="inline-block px-3 py-1 rounded-lg bg-slate-100 text-[#0F2942] border border-slate-300 text-xs font-bold uppercase tracking-wider">
+                    Kelompok Kerja (POKJA I – POKJA IV)
+                  </span>
+                </div>
+                {pokjaGroups.map((group) => (
+                  <div
+                    key={group.name}
+                    className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="px-2.5 py-1 rounded-lg bg-[#0F2942] text-amber-300 text-xs font-bold uppercase tracking-wider">
+                        {group.name}
+                      </span>
+                      <span className="text-xs font-semibold text-slate-600">
+                        {group.members.length} Pengurus &amp; Anggota
+                      </span>
+                    </div>
+                    <div className={gridClass}>
+                      {group.members.map((item) => (
+                        <OrgProfileCard
+                          key={item.id}
+                          profile={item}
+                          onSelectDetail={setSelectedProfile}
+                          compact
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -586,9 +737,9 @@ export const OrgPublicPortal: React.FC = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
               <div className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-center">
                 <p className="font-display text-2xl font-extrabold text-amber-300 tabular-nums">
-                  {data.kelurahan.length + data.lpmk.length}
+                  {data.kelurahan.length + (data.tpPkk || []).length}
                 </p>
-                <p className="text-xs text-slate-200 mt-0.5">Kelurahan &amp; LPMK</p>
+                <p className="text-xs text-slate-200 mt-0.5">Kelurahan &amp; TP PKK</p>
               </div>
               <div className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-center">
                 <p className="font-display text-2xl font-extrabold text-amber-300 tabular-nums">
@@ -598,9 +749,9 @@ export const OrgPublicPortal: React.FC = () => {
               </div>
               <div className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-center">
                 <p className="font-display text-2xl font-extrabold text-amber-300 tabular-nums">
-                  {data.kader.length}
+                  {data.lpmk.length + data.kader.length}
                 </p>
-                <p className="text-xs text-slate-200 mt-0.5">Kader Aktif</p>
+                <p className="text-xs text-slate-200 mt-0.5">LPMK &amp; Kader</p>
               </div>
               <div className="bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-center">
                 <p className="font-display text-2xl font-extrabold text-amber-300 tabular-nums">
@@ -620,7 +771,7 @@ export const OrgPublicPortal: React.FC = () => {
         )}
       </section>
 
-      {/* Dedicated Organization Menu (Tahap 2 + Sekolah/Guru & Balai RW) */}
+      {/* Dedicated Organization Menu (Tahap 2 + TP PKK + Sekolah/Guru & Balai RW) */}
       <nav
         aria-label="Navigasi Struktur Organisasi"
         className="bg-white rounded-2xl border border-slate-200 p-2.5 flex flex-wrap items-center justify-between gap-2"
@@ -630,6 +781,7 @@ export const OrgPublicPortal: React.FC = () => {
             [
               { id: 'beranda', label: 'Beranda' },
               { id: 'kelurahan', label: 'Pemerintahan Kelurahan' },
+              { id: 'tp_pkk', label: 'TP PKK Ampel' },
               { id: 'lpmk', label: 'LPMK' },
               { id: 'rw', label: 'Daftar RW' },
               { id: 'rt', label: 'Daftar RT' },
@@ -719,6 +871,7 @@ export const OrgPublicPortal: React.FC = () => {
                   e.target.value as
                     | 'ALL'
                     | 'KELURAHAN'
+                    | 'TP_PKK'
                     | 'LPMK'
                     | 'RW'
                     | 'RT'
@@ -732,6 +885,7 @@ export const OrgPublicPortal: React.FC = () => {
             >
               <option value="ALL">Semua Kategori</option>
               <option value="KELURAHAN">Pemerintahan Kelurahan</option>
+              <option value="TP_PKK">TP PKK Kelurahan Ampel</option>
               <option value="LPMK">LPMK</option>
               <option value="RW">Pengurus RW</option>
               <option value="RT">Pengurus RT</option>
@@ -834,7 +988,9 @@ export const OrgPublicPortal: React.FC = () => {
           )}
         </section>
       ) : activeMenu === 'kelurahan' ? (
-        renderBagianKelurahan()
+        renderBagianKelurahan(false)
+      ) : activeMenu === 'tp_pkk' ? (
+        renderBagianTpPkk(false)
       ) : activeMenu === 'lpmk' ? (
         <section className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8">
           {renderBagianLpmk()}
@@ -865,47 +1021,85 @@ export const OrgPublicPortal: React.FC = () => {
         renderBagianBalaiRw()
       ) : (
         <div className="space-y-8">
-          {data?.displaySettings.urutanBagian.map((sectionKey) => {
-            if (sectionKey === 'KELURAHAN' && data.displaySettings.tampilkanBagian.kelurahan) {
-              return <React.Fragment key="KELURAHAN">{renderBagianKelurahan()}</React.Fragment>;
-            }
-            if (
-              sectionKey === 'LPMK_RW_RT' &&
-              (data.displaySettings.tampilkanBagian.lpmk || data.displaySettings.tampilkanBagian.rwRt)
-            ) {
-              return (
-                <section
-                  key="LPMK_RW_RT"
-                  aria-labelledby="bagian-b-heading"
-                  className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-8"
-                >
-                  <div className="border-b border-slate-200 pb-4 flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-[#0F2942] text-amber-300 border border-[#D4AF37] flex items-center justify-center shrink-0">
-                      <Home className="w-6 h-6" aria-hidden="true" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold uppercase tracking-wider text-amber-800">Bagian B</span>
-                      <h2 id="bagian-b-heading" className="font-display text-2xl font-extrabold text-[#0F2942]">
-                        Lembaga Kemasyarakatan (LPMK, RW &amp; RT)
-                      </h2>
-                    </div>
+          {(() => {
+            const order = data?.displaySettings.urutanBagian || [];
+            const vis = data?.displaySettings.tampilkanBagian;
+            const showKel = Boolean(vis?.kelurahan);
+            const showPkk = vis?.tpPkk !== false;
+            const renderedTopPair =
+              showKel &&
+              showPkk &&
+              Math.abs(order.indexOf('KELURAHAN') - order.indexOf('TP_PKK')) === 1;
+            let topPairEmitted = false;
+
+            return order.map((sectionKey) => {
+              if (renderedTopPair && (sectionKey === 'KELURAHAN' || sectionKey === 'TP_PKK')) {
+                if (topPairEmitted) return null;
+                topPairEmitted = true;
+                const isKelFirst = order.indexOf('KELURAHAN') < order.indexOf('TP_PKK');
+                return (
+                  <div
+                    key="TOP_PARALLEL_KELURAHAN_TP_PKK"
+                    className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start"
+                  >
+                    {isKelFirst ? (
+                      <>
+                        {renderBagianKelurahan(true)}
+                        {renderBagianTpPkk(true)}
+                      </>
+                    ) : (
+                      <>
+                        {renderBagianTpPkk(true)}
+                        {renderBagianKelurahan(true)}
+                      </>
+                    )}
                   </div>
-                  {data.displaySettings.tampilkanBagian.lpmk && renderBagianLpmk()}
-                  {data.displaySettings.tampilkanBagian.rwRt && renderBagianRwRt()}
-                </section>
-              );
-            }
-            if (sectionKey === 'KADER' && data.displaySettings.tampilkanBagian.kader) {
-              return <React.Fragment key="KADER">{renderBagianKader()}</React.Fragment>;
-            }
-            if (sectionKey === 'SEKOLAH_GURU' && data.displaySettings.tampilkanBagian.sekolahGuru !== false) {
-              return <React.Fragment key="SEKOLAH_GURU">{renderBagianSekolahGuru()}</React.Fragment>;
-            }
-            if (sectionKey === 'BALAI_RW' && data.displaySettings.tampilkanBagian.balaiRw !== false) {
-              return <React.Fragment key="BALAI_RW">{renderBagianBalaiRw()}</React.Fragment>;
-            }
-            return null;
-          })}
+                );
+              }
+              if (sectionKey === 'KELURAHAN' && showKel) {
+                return <React.Fragment key="KELURAHAN">{renderBagianKelurahan(false)}</React.Fragment>;
+              }
+              if (sectionKey === 'TP_PKK' && showPkk) {
+                return <React.Fragment key="TP_PKK">{renderBagianTpPkk(false)}</React.Fragment>;
+              }
+              if (
+                sectionKey === 'LPMK_RW_RT' &&
+                (data?.displaySettings.tampilkanBagian.lpmk || data?.displaySettings.tampilkanBagian.rwRt)
+              ) {
+                return (
+                  <section
+                    key="LPMK_RW_RT"
+                    aria-labelledby="bagian-b-heading"
+                    className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-8"
+                  >
+                    <div className="border-b border-slate-200 pb-4 flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-xl bg-[#0F2942] text-amber-300 border border-[#D4AF37] flex items-center justify-center shrink-0">
+                        <Home className="w-6 h-6" aria-hidden="true" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-amber-800">Bagian B</span>
+                        <h2 id="bagian-b-heading" className="font-display text-2xl font-extrabold text-[#0F2942]">
+                          Lembaga Kemasyarakatan (LPMK, RW &amp; RT)
+                        </h2>
+                      </div>
+                    </div>
+                    {data.displaySettings.tampilkanBagian.lpmk && renderBagianLpmk()}
+                    {data.displaySettings.tampilkanBagian.rwRt && renderBagianRwRt()}
+                  </section>
+                );
+              }
+              if (sectionKey === 'KADER' && data?.displaySettings.tampilkanBagian.kader) {
+                return <React.Fragment key="KADER">{renderBagianKader()}</React.Fragment>;
+              }
+              if (sectionKey === 'SEKOLAH_GURU' && data?.displaySettings.tampilkanBagian.sekolahGuru !== false) {
+                return <React.Fragment key="SEKOLAH_GURU">{renderBagianSekolahGuru()}</React.Fragment>;
+              }
+              if (sectionKey === 'BALAI_RW' && data?.displaySettings.tampilkanBagian.balaiRw !== false) {
+                return <React.Fragment key="BALAI_RW">{renderBagianBalaiRw()}</React.Fragment>;
+              }
+              return null;
+            });
+          })()}
         </div>
       )}
 

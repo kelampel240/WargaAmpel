@@ -41,7 +41,7 @@ test('createWorkbookBuffer creates valid parseable multi-sheet xlsx bytes even w
   assert.equal(parsedEmpty[0].Keterangan, 'Belum ada data tersedia.');
 });
 
-test('buildOrgStructureSheets resolves RW/RT/Sekolah names and exports all 8 organization sheets', () => {
+test('buildOrgStructureSheets resolves RW/RT/Sekolah names and exports all 9 organization sheets including TP PKK', () => {
   const sample: AdminOrgStructureResponse = {
     kelurahan: [
       {
@@ -51,6 +51,21 @@ test('buildOrgStructureSheets resolves RW/RT/Sekolah names and exports all 8 org
         TINGKAT: 'LURAH',
         WILAYAH_TUGAS: 'Kelurahan Ampel',
         NO_HP: '08123456789',
+        TAMPILKAN_HP: false,
+        TAMPILKAN_PUBLIK: true,
+        AKTIF: true,
+        URUTAN: 1,
+        CREATED_AT: '2026-01-01T00:00:00Z',
+        UPDATED_AT: '2026-01-01T00:00:00Z',
+      },
+    ],
+    tpPkk: [
+      {
+        ID_PKK: 'PKK-1',
+        NAMA: 'Ibu Pembina PKK',
+        JABATAN: 'Pembina PKK',
+        POKJA: 'Pembina',
+        BIDANG: 'Pembinaan PKK',
         TAMPILKAN_HP: false,
         TAMPILKAN_PUBLIK: true,
         AKTIF: true,
@@ -151,9 +166,10 @@ test('buildOrgStructureSheets resolves RW/RT/Sekolah names and exports all 8 org
     ],
     displaySettings: {
       pengumumanBeranda: 'Info',
-      urutanBagian: ['KELURAHAN', 'LPMK_RW_RT', 'KADER', 'SEKOLAH_GURU', 'BALAI_RW'],
+      urutanBagian: ['KELURAHAN', 'TP_PKK', 'LPMK_RW_RT', 'KADER', 'SEKOLAH_GURU', 'BALAI_RW'],
       tampilkanBagian: {
         kelurahan: true,
+        tpPkk: true,
         lpmk: true,
         rwRt: true,
         kader: true,
@@ -165,6 +181,7 @@ test('buildOrgStructureSheets resolves RW/RT/Sekolah names and exports all 8 org
       totalLurah: 1,
       totalKasi: 0,
       totalStaf: 0,
+      totalTpPkk: 1,
       totalLpmk: 0,
       totalRw: 1,
       totalRt: 1,
@@ -181,6 +198,7 @@ test('buildOrgStructureSheets resolves RW/RT/Sekolah names and exports all 8 org
 
   assert.deepEqual(wb.SheetNames, [
     'Kelurahan',
+    'TP PKK',
     'LPMK',
     'Daftar RW',
     'Daftar RT',

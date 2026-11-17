@@ -230,6 +230,46 @@ export interface SheetOrgKelurahan {
   UPDATED_AT: string;
 }
 
+export const TP_PKK_JABATAN_OPTIONS = [
+  'Pembina PKK',
+  'Ketua PKK',
+  'Wakil PKK',
+  'Sekretaris PKK',
+  'Bendahara PKK',
+  'Ketua POKJA I',
+  'Ketua POKJA II',
+  'Ketua POKJA III',
+  'Ketua POKJA IV',
+  'Wakil POKJA I',
+  'Wakil POKJA II',
+  'Wakil POKJA III',
+  'Wakil POKJA IV',
+  'Sekretaris POKJA I',
+  'Sekretaris POKJA II',
+  'Sekretaris POKJA III',
+  'Sekretaris POKJA IV',
+  'Anggota POKJA I',
+  'Anggota POKJA II',
+  'Anggota POKJA III',
+  'Anggota POKJA IV',
+] as const;
+
+export interface SheetOrgTpPkk {
+  ID_PKK: string;
+  NAMA: string;
+  JABATAN: string;
+  POKJA?: string;
+  BIDANG?: string;
+  FOTO_URL?: string;
+  NO_HP?: string;
+  TAMPILKAN_HP: boolean;
+  TAMPILKAN_PUBLIK: boolean;
+  AKTIF: boolean;
+  URUTAN: number;
+  CREATED_AT: string;
+  UPDATED_AT: string;
+}
+
 export interface SheetOrgLpmk {
   ID_LPMK: string;
   NAMA: string;
@@ -351,6 +391,7 @@ export interface SheetOrgBalaiRw {
 
 export type OrgSectionKey =
   | 'KELURAHAN'
+  | 'TP_PKK'
   | 'LPMK_RW_RT'
   | 'KADER'
   | 'SEKOLAH_GURU'
@@ -360,6 +401,7 @@ export interface OrgPublicProfile {
   id: string;
   kategori:
     | 'KELURAHAN'
+    | 'TP_PKK'
     | 'LPMK'
     | 'RW'
     | 'RT'
@@ -370,6 +412,7 @@ export interface OrgPublicProfile {
   nama: string;
   jabatan: string;
   tingkat?: OrgKelurahanLevel;
+  pokja?: string;
   bidang?: string;
   wilayahTugas?: string;
   nomorRw?: string;
@@ -392,6 +435,7 @@ export interface OrgPublicProfile {
 
 export interface PublicOrgStructureResponse {
   kelurahan: OrgPublicProfile[];
+  tpPkk: OrgPublicProfile[];
   lpmk: OrgPublicProfile[];
   rw: OrgPublicProfile[];
   rt: OrgPublicProfile[];
@@ -404,6 +448,7 @@ export interface PublicOrgStructureResponse {
     urutanBagian: OrgSectionKey[];
     tampilkanBagian: {
       kelurahan: boolean;
+      tpPkk: boolean;
       lpmk: boolean;
       rwRt: boolean;
       kader: boolean;
@@ -415,6 +460,7 @@ export interface PublicOrgStructureResponse {
 
 export interface AdminOrgStructureResponse {
   kelurahan: SheetOrgKelurahan[];
+  tpPkk: SheetOrgTpPkk[];
   lpmk: SheetOrgLpmk[];
   rw: SheetOrgRw[];
   rt: SheetOrgRt[];
@@ -427,6 +473,7 @@ export interface AdminOrgStructureResponse {
     totalLurah: number;
     totalKasi: number;
     totalStaf: number;
+    totalTpPkk: number;
     totalLpmk: number;
     totalRw: number;
     totalRt: number;
@@ -451,6 +498,7 @@ export interface SiwargaDatabase {
   PENGATURAN: SheetPengaturan[];
   LOG_AKTIVITAS: SheetLogAktivitas[];
   ORG_KELURAHAN: SheetOrgKelurahan[];
+  ORG_TP_PKK: SheetOrgTpPkk[];
   ORG_LPMK: SheetOrgLpmk[];
   ORG_RW: SheetOrgRw[];
   ORG_RT: SheetOrgRt[];

@@ -920,6 +920,7 @@ function createInitialDatabase(): SiwargaDatabase {
 function createInitialOrgSeed(): Pick<
   SiwargaDatabase,
   | 'ORG_KELURAHAN'
+  | 'ORG_TP_PKK'
   | 'ORG_LPMK'
   | 'ORG_RW'
   | 'ORG_RT'
@@ -998,6 +999,134 @@ function createInitialOrgSeed(): Pick<
         TAMPILKAN_PUBLIK: true,
         AKTIF: true,
         URUTAN: 5,
+        CREATED_AT: now,
+        UPDATED_AT: now,
+      },
+    ],
+    ORG_TP_PKK: [
+      {
+        ID_PKK: 'PKK-001',
+        NAMA: 'Pembina TP PKK Kelurahan Ampel',
+        JABATAN: 'Pembina PKK',
+        POKJA: 'Pembina',
+        BIDANG: 'Pembinaan & Pendampingan Program TP PKK Kelurahan Ampel',
+        NO_HP: '081234500801',
+        TAMPILKAN_HP: false,
+        TAMPILKAN_PUBLIK: true,
+        AKTIF: true,
+        URUTAN: 1,
+        CREATED_AT: now,
+        UPDATED_AT: now,
+      },
+      {
+        ID_PKK: 'PKK-002',
+        NAMA: 'Ketua TP PKK Kelurahan Ampel',
+        JABATAN: 'Ketua PKK',
+        POKJA: 'Pengurus Inti',
+        BIDANG: 'Koordinator Utama Gerakan Pemberdayaan & Kesejahteraan Keluarga',
+        NO_HP: '081234500802',
+        TAMPILKAN_HP: false,
+        TAMPILKAN_PUBLIK: true,
+        AKTIF: true,
+        URUTAN: 2,
+        CREATED_AT: now,
+        UPDATED_AT: now,
+      },
+      {
+        ID_PKK: 'PKK-003',
+        NAMA: 'Wakil Ketua TP PKK',
+        JABATAN: 'Wakil PKK',
+        POKJA: 'Pengurus Inti',
+        BIDANG: 'Pendampingan Program & Koordinasi Lintas Pokja',
+        NO_HP: '081234500803',
+        TAMPILKAN_HP: false,
+        TAMPILKAN_PUBLIK: true,
+        AKTIF: true,
+        URUTAN: 3,
+        CREATED_AT: now,
+        UPDATED_AT: now,
+      },
+      {
+        ID_PKK: 'PKK-004',
+        NAMA: 'Sekretaris TP PKK',
+        JABATAN: 'Sekretaris PKK',
+        POKJA: 'Pengurus Inti',
+        BIDANG: 'Administrasi Surat, Notulensi & Dokumentasi Kegiatan PKK',
+        NO_HP: '081234500804',
+        TAMPILKAN_HP: false,
+        TAMPILKAN_PUBLIK: true,
+        AKTIF: true,
+        URUTAN: 4,
+        CREATED_AT: now,
+        UPDATED_AT: now,
+      },
+      {
+        ID_PKK: 'PKK-005',
+        NAMA: 'Bendahara TP PKK',
+        JABATAN: 'Bendahara PKK',
+        POKJA: 'Pengurus Inti',
+        BIDANG: 'Pengelolaan Administrasi Keuangan & Inventaris PKK',
+        NO_HP: '081234500805',
+        TAMPILKAN_HP: false,
+        TAMPILKAN_PUBLIK: true,
+        AKTIF: true,
+        URUTAN: 5,
+        CREATED_AT: now,
+        UPDATED_AT: now,
+      },
+      {
+        ID_PKK: 'PKK-006',
+        NAMA: 'Koordinator POKJA I PKK',
+        JABATAN: 'Ketua POKJA I',
+        POKJA: 'POKJA I',
+        BIDANG: 'Penghayatan & Pengamalan Pancasila serta Gotong Royong',
+        NO_HP: '081234500806',
+        TAMPILKAN_HP: false,
+        TAMPILKAN_PUBLIK: true,
+        AKTIF: true,
+        URUTAN: 6,
+        CREATED_AT: now,
+        UPDATED_AT: now,
+      },
+      {
+        ID_PKK: 'PKK-007',
+        NAMA: 'Koordinator POKJA II PKK',
+        JABATAN: 'Ketua POKJA II',
+        POKJA: 'POKJA II',
+        BIDANG: 'Pendidikan, Keterampilan & Pengembangan Kehidupan Berkoperasi',
+        NO_HP: '081234500807',
+        TAMPILKAN_HP: false,
+        TAMPILKAN_PUBLIK: true,
+        AKTIF: true,
+        URUTAN: 7,
+        CREATED_AT: now,
+        UPDATED_AT: now,
+      },
+      {
+        ID_PKK: 'PKK-008',
+        NAMA: 'Koordinator POKJA III PKK',
+        JABATAN: 'Ketua POKJA III',
+        POKJA: 'POKJA III',
+        BIDANG: 'Pangan, Sandang, Perumahan & Tata Laksana Rumah Tangga',
+        NO_HP: '081234500808',
+        TAMPILKAN_HP: false,
+        TAMPILKAN_PUBLIK: true,
+        AKTIF: true,
+        URUTAN: 8,
+        CREATED_AT: now,
+        UPDATED_AT: now,
+      },
+      {
+        ID_PKK: 'PKK-009',
+        NAMA: 'Koordinator POKJA IV PKK',
+        JABATAN: 'Ketua POKJA IV',
+        POKJA: 'POKJA IV',
+        BIDANG: 'Kesehatan, Kelestarian Lingkungan Hidup & Perencanaan Sehat',
+        NO_HP: '081234500809',
+        TAMPILKAN_HP: false,
+        TAMPILKAN_PUBLIK: true,
+        AKTIF: true,
+        URUTAN: 9,
         CREATED_AT: now,
         UPDATED_AT: now,
       },
@@ -1445,6 +1574,7 @@ export function loadDatabase(): SiwargaDatabase {
   // Auto-hydrate organization tabs if migrating an existing JSON DB
   if (
     !parsed.ORG_KELURAHAN ||
+    !parsed.ORG_TP_PKK ||
     !parsed.ORG_LPMK ||
     !parsed.ORG_RW ||
     !parsed.ORG_RT ||
@@ -1455,6 +1585,7 @@ export function loadDatabase(): SiwargaDatabase {
   ) {
     const orgSeed = createInitialOrgSeed();
     parsed.ORG_KELURAHAN = parsed.ORG_KELURAHAN || orgSeed.ORG_KELURAHAN;
+    parsed.ORG_TP_PKK = parsed.ORG_TP_PKK || orgSeed.ORG_TP_PKK;
     parsed.ORG_LPMK = parsed.ORG_LPMK || orgSeed.ORG_LPMK;
     parsed.ORG_RW = parsed.ORG_RW || orgSeed.ORG_RW;
     parsed.ORG_RT = parsed.ORG_RT || orgSeed.ORG_RT;

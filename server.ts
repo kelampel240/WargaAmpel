@@ -16,6 +16,7 @@ import {
 import {
   computeAdminOrgSummary,
   extractOrgDisplaySettings,
+  inferTpPkkPokja,
   normalizeIndonesianPhone,
   OrgEntityType,
   sanitizePublicOrgData,
@@ -1434,6 +1435,7 @@ async function startServer() {
     const db = loadDatabase();
     return res.json({
       kelurahan: [...db.ORG_KELURAHAN].sort((a, b) => a.URUTAN - b.URUTAN),
+      tpPkk: [...(db.ORG_TP_PKK || [])].sort((a, b) => a.URUTAN - b.URUTAN),
       lpmk: [...db.ORG_LPMK].sort((a, b) => a.URUTAN - b.URUTAN),
       rw: [...db.ORG_RW].sort((a, b) => a.URUTAN - b.URUTAN),
       rt: [...db.ORG_RT].sort((a, b) => a.URUTAN - b.URUTAN),
@@ -1448,6 +1450,7 @@ async function startServer() {
 
   const VALID_ORG_ENTITIES: OrgEntityType[] = [
     'kelurahan',
+    'tp_pkk',
     'lpmk',
     'rw',
     'rt',
@@ -1490,6 +1493,26 @@ async function startServer() {
         JABATAN: String(body.jabatan).trim(),
         TINGKAT: tingkat,
         WILAYAH_TUGAS: String(body.wilayahTugas || '').trim(),
+        FOTO_URL: fotoUrl,
+        NO_HP: noHp,
+        TAMPILKAN_HP: tampilkanHp,
+        TAMPILKAN_PUBLIK: tampilkanPublik,
+        AKTIF: aktif,
+        URUTAN: urutan,
+        CREATED_AT: now,
+        UPDATED_AT: now,
+      });
+    } else if (entity === 'tp_pkk') {
+      createdId = `PKK-${Date.now()}`;
+      labelNama = String(body.nama).trim();
+      const jabatan = String(body.jabatan).trim();
+      db.ORG_TP_PKK = db.ORG_TP_PKK || [];
+      db.ORG_TP_PKK.push({
+        ID_PKK: createdId,
+        NAMA: labelNama,
+        JABATAN: jabatan,
+        POKJA: inferTpPkkPokja(jabatan, String(body.pokja || '')),
+        BIDANG: String(body.bidang || '').trim(),
         FOTO_URL: fotoUrl,
         NO_HP: noHp,
         TAMPILKAN_HP: tampilkanHp,
@@ -1693,6 +1716,26 @@ async function startServer() {
           UPDATED_AT: now,
         });
         createdIds.push(id);
+      } else if (entity === 'tp_pkk') {
+        const id = `PKK-${baseTs}-${idx}`;
+        const jabatan = String(body.jabatan).trim();
+        db.ORG_TP_PKK = db.ORG_TP_PKK || [];
+        db.ORG_TP_PKK.push({
+          ID_PKK: id,
+          NAMA: String(body.nama).trim(),
+          JABATAN: jabatan,
+          POKJA: inferTpPkkPokja(jabatan, String(body.pokja || '')),
+          BIDANG: String(body.bidang || '').trim(),
+          FOTO_URL: fotoUrl,
+          NO_HP: noHp,
+          TAMPILKAN_HP: tampilkanHp,
+          TAMPILKAN_PUBLIK: tampilkanPublik,
+          AKTIF: aktif,
+          URUTAN: urutan,
+          CREATED_AT: now,
+          UPDATED_AT: now,
+        });
+        createdIds.push(id);
       } else if (entity === 'lpmk') {
         const id = `LPMK-${baseTs}-${idx}`;
         db.ORG_LPMK.push({
@@ -1868,6 +1911,22 @@ async function startServer() {
       target.URUTAN = Number(body.urutan) || target.URUTAN;
       target.UPDATED_AT = now;
       labelNama = target.NAMA;
+    } else if (entity === 'tp_pkk') {
+      const target = (db.ORG_TP_PKK || []).find((item) => item.ID_PKK === id);
+      if (!target) return res.status(404).json({ error: 'Data TP PKK tidak ditemukan.' });
+      const jabatan = String(body.jabatan).trim();
+      target.NAMA = String(body.nama).trim();
+      target.JABATAN = jabatan;
+      target.POKJA = inferTpPkkPokja(jabatan, String(body.pokja || ''));
+      target.BIDANG = String(body.bidang || '').trim();
+      target.FOTO_URL = String(body.fotoUrl || '').trim();
+      target.NO_HP = normalizeIndonesianPhone(body.noHp as string | number | undefined);
+      target.TAMPILKAN_HP = body.tampilkanHp === true;
+      target.TAMPILKAN_PUBLIK = body.tampilkanPublik !== false;
+      target.AKTIF = body.aktif !== false;
+      target.URUTAN = Number(body.urutan) || target.URUTAN;
+      target.UPDATED_AT = now;
+      labelNama = target.NAMA;
     } else if (entity === 'lpmk') {
       const target = db.ORG_LPMK.find((item) => item.ID_LPMK === id);
       if (!target) return res.status(404).json({ error: 'Data LPMK tidak ditemukan.' });
@@ -1997,6 +2056,12 @@ async function startServer() {
       if (idx === -1) return res.status(404).json({ error: 'Data kelurahan tidak ditemukan.' });
       deletedLabel = db.ORG_KELURAHAN[idx].NAMA;
       db.ORG_KELURAHAN.splice(idx, 1);
+    } else if (entity === 'tp_pkk') {
+      db.ORG_TP_PKK = db.ORG_TP_PKK || [];
+      const idx = db.ORG_TP_PKK.findIndex((item) => item.ID_PKK === id);
+      if (idx === -1) return res.status(404).json({ error: 'Data TP PKK tidak ditemukan.' });
+      deletedLabel = db.ORG_TP_PKK[idx].NAMA;
+      db.ORG_TP_PKK.splice(idx, 1);
     } else if (entity === 'lpmk') {
       const idx = db.ORG_LPMK.findIndex((item) => item.ID_LPMK === id);
       if (idx === -1) return res.status(404).json({ error: 'Data LPMK tidak ditemukan.' });
