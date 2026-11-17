@@ -18,6 +18,10 @@ export function getGasWebAppUrl(): string {
         return fromQuery.trim();
       }
       const fromStorage = localStorage.getItem(GAS_URL_STORAGE_KEY) || '';
+      if (fromStorage.includes('AKfycbz898DjJanfBIwZxbm6cMq6hbIr5Gkd9eREGpJ-uBVeU3jVRwBpNvHKoLT4JLwncwh-lw')) {
+        localStorage.setItem(GAS_URL_STORAGE_KEY, DEFAULT_GAS_WEB_APP_URL);
+        return DEFAULT_GAS_WEB_APP_URL;
+      }
       if (isValidGasWebAppUrl(fromStorage)) {
         return fromStorage.trim();
       }

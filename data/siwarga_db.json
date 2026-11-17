@@ -1025,6 +1025,56 @@
   ],
   "LOG_AKTIVITAS": [
     {
+      "ID_LOG": "LOG-1794902583246-507",
+      "WAKTU": "2026-11-17T08:03:03.246Z",
+      "ID_USER": "USR-WRG-01",
+      "NAMA_PENGGUNA": "Ibu Sri Wahyuni",
+      "ROLE": "WARGA",
+      "AKSI": "LOGIN",
+      "ID_TERKAIT": "USR-WRG-01",
+      "DETAIL": "Ibu Sri Wahyuni berhasil masuk ke WARGA AMPEL."
+    },
+    {
+      "ID_LOG": "LOG-1794902583238-924",
+      "WAKTU": "2026-11-17T08:03:03.238Z",
+      "ID_USER": "USR-PTG-01",
+      "NAMA_PENGGUNA": "Hendra Wijaya (Petugas Lapangan)",
+      "ROLE": "PETUGAS",
+      "AKSI": "LOGIN",
+      "ID_TERKAIT": "USR-PTG-01",
+      "DETAIL": "Hendra Wijaya (Petugas Lapangan) berhasil masuk ke WARGA AMPEL."
+    },
+    {
+      "ID_LOG": "LOG-1794902583228-51",
+      "WAKTU": "2026-11-17T08:03:03.228Z",
+      "ID_USER": "USR-OP-01",
+      "NAMA_PENGGUNA": "Rina Kusuma (Operator)",
+      "ROLE": "OPERATOR",
+      "AKSI": "LOGIN",
+      "ID_TERKAIT": "USR-OP-01",
+      "DETAIL": "Rina Kusuma (Operator) berhasil masuk ke WARGA AMPEL."
+    },
+    {
+      "ID_LOG": "LOG-1794902583208-367",
+      "WAKTU": "2026-11-17T08:03:03.208Z",
+      "ID_USER": "USR-ADMIN-01",
+      "NAMA_PENGGUNA": "Arif Rahman (Super Admin)",
+      "ROLE": "SUPER_ADMIN",
+      "AKSI": "LOGIN",
+      "ID_TERKAIT": "USR-ADMIN-01",
+      "DETAIL": "Arif Rahman (Super Admin) berhasil masuk ke WARGA AMPEL."
+    },
+    {
+      "ID_LOG": "LOG-1794902551019-781",
+      "WAKTU": "2026-11-17T08:02:31.019Z",
+      "ID_USER": "USR-ADMIN-01",
+      "NAMA_PENGGUNA": "Arif Rahman (Super Admin)",
+      "ROLE": "SUPER_ADMIN",
+      "AKSI": "LOGIN",
+      "ID_TERKAIT": "USR-ADMIN-01",
+      "DETAIL": "Arif Rahman (Super Admin) berhasil masuk ke WARGA AMPEL."
+    },
+    {
       "ID_LOG": "LOG-1794896525486-391",
       "WAKTU": "2026-11-17T06:22:05.486Z",
       "ID_USER": "USR-ADMIN-01",

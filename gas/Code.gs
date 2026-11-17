@@ -361,8 +361,50 @@ function saveNotification(targetUserId, targetRole, idLaporan, judul, pesan) {
 }
 
 // --- 1. AUTENTIKASI & OTORISASI SESI ---
+function ensureDefaultSeedAccounts_() {
+  var shUsers = getSheet_('USERS');
+  if (shUsers.getLastRow() > 2) return;
+  var existingRows = shUsers.getDataRange().getValues();
+  var existingUsernames = {};
+  for (var i = 1; i < existingRows.length; i++) {
+    existingUsernames[String(existingRows[i][1] || '').trim().toLowerCase()] = true;
+  }
+  var salt = 'siwarga2026';
+  var nowIso = new Date().toISOString();
+  var defaults = [
+    ['USR-ADMIN-01', 'admin', 'Arif Rahman (Super Admin)', 'admin@ampel.desa.id', "'081100000001", 'AdminAmpel2026!', 'SUPER_ADMIN', ''],
+    ['USR-KADES-01', 'kades', 'H. Sutrisno (Kepala Desa)', 'kades@ampel.desa.id', "'081100000002", 'KadesAmpel2026!', 'KEPALA_DESA', ''],
+    ['USR-OP-01', 'operator', 'Rina Kusuma (Operator)', 'operator@ampel.desa.id', "'081100000003", 'OperatorAmpel2026!', 'OPERATOR', ''],
+    ['USR-PTG-01', 'petugas', 'Hendra Wijaya (Petugas Lapangan)', 'hendra@ampel.desa.id', "'081100000004", 'PetugasAmpel2026!', 'PETUGAS', ''],
+    ['USR-WRG-01', 'sriwahyuni', 'Ibu Sri Wahyuni', 'sri.wahyuni@warga.ampel.id', "'081234567801", 'WargaAmpel2026!', 'WARGA', 'AMP-4821'],
+    ['USR-WRG-02', 'pakslamet', 'Bapak Slamet Riyadi', 'slamet@warga.ampel.id', "'081398765402", 'WargaAmpel2026!', 'WARGA', 'AMP-7712']
+  ];
+  defaults.forEach(function(u) {
+    if (!existingUsernames[u[1]]) {
+      var passHash = salt + ':' + hashSha256_(u[5], salt);
+      shUsers.appendRow([u[0], u[1], u[2], u[3], u[4], passHash, u[6], 'AKTIF', u[7], nowIso]);
+    }
+  });
+  var shWarga = getSheet_('WARGA');
+  if (shWarga.getLastRow() <= 1) {
+    shWarga.appendRow([
+      'WRG-001', 'USR-WRG-01', 'Ibu Sri Wahyuni', '330901******0003',
+      hashSha256_('3309015407750003', 'siwarga_nik'), '330901******0011',
+      '1975-07-14', 'Dusun Krajan Timur No. 12', 'RT 02 / RW 01', "'081234567801",
+      'TERVERIFIKASI', nowIso
+    ]);
+    shWarga.appendRow([
+      'WRG-002', 'USR-WRG-02', 'Bapak Slamet Riyadi', '330901******0008',
+      hashSha256_('3309011803640008', 'siwarga_nik'), '330901******0022',
+      '1964-03-18', 'Dusun Sumberjo No. 05', 'RT 04 / RW 02', "'081398765402",
+      'TERVERIFIKASI', nowIso
+    ]);
+  }
+}
+
 function authenticateUser(username, password) {
   if (!username || !password) throw new Error('Username dan kata sandi wajib diisi.');
+  ensureDefaultSeedAccounts_();
   var users = sheetToObjects_('USERS');
   var key = String(username).trim().toLowerCase();
   var found = null;

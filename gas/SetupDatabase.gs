@@ -127,14 +127,46 @@ function setupDatabase() {
     shPengaturan.appendRow(['DRIVE_ROOT_FOLDER_ID', CONFIG.ROOT_FOLDER_ID, 'ID Folder Google Drive SIWARGA_DESA']);
   }
 
-  // Seed Super Admin default (Password: AdminAmpel2026!)
+  // Seed Semua Akun Bawaan (Super Admin, Kades, Operator, Petugas, dan Contoh Warga)
   var shUsers = ss.getSheetByName('USERS');
-  if (shUsers.getLastRow() <= 1) {
-    var salt = 'siwarga2026';
-    var passHash = salt + ':' + hashSha256_('AdminAmpel2026!', salt);
-    shUsers.appendRow([
-      'USR-ADMIN-01', 'admin', 'Super Admin Desa Ampel', 'admin@ampel.desa.id',
-      '081100000001', passHash, 'SUPER_ADMIN', 'AKTIF', '', new Date().toISOString()
+  var existingUserRows = shUsers.getDataRange().getValues();
+  var existingUsernames = {};
+  for (var uIdx = 1; uIdx < existingUserRows.length; uIdx++) {
+    existingUsernames[String(existingUserRows[uIdx][1] || '').trim().toLowerCase()] = true;
+  }
+  var salt = 'siwarga2026';
+  var nowIso = new Date().toISOString();
+  var defaultUsers = [
+    ['USR-ADMIN-01', 'admin', 'Arif Rahman (Super Admin)', 'admin@ampel.desa.id', "'081100000001", 'AdminAmpel2026!', 'SUPER_ADMIN', ''],
+    ['USR-KADES-01', 'kades', 'H. Sutrisno (Kepala Desa)', 'kades@ampel.desa.id', "'081100000002", 'KadesAmpel2026!', 'KEPALA_DESA', ''],
+    ['USR-OP-01', 'operator', 'Rina Kusuma (Operator)', 'operator@ampel.desa.id', "'081100000003", 'OperatorAmpel2026!', 'OPERATOR', ''],
+    ['USR-PTG-01', 'petugas', 'Hendra Wijaya (Petugas Lapangan)', 'hendra@ampel.desa.id', "'081100000004", 'PetugasAmpel2026!', 'PETUGAS', ''],
+    ['USR-WRG-01', 'sriwahyuni', 'Ibu Sri Wahyuni', 'sri.wahyuni@warga.ampel.id', "'081234567801", 'WargaAmpel2026!', 'WARGA', 'AMP-4821'],
+    ['USR-WRG-02', 'pakslamet', 'Bapak Slamet Riyadi', 'slamet@warga.ampel.id', "'081398765402", 'WargaAmpel2026!', 'WARGA', 'AMP-7712']
+  ];
+  defaultUsers.forEach(function(u) {
+    if (!existingUsernames[u[1]]) {
+      var passHash = salt + ':' + hashSha256_(u[5], salt);
+      shUsers.appendRow([
+        u[0], u[1], u[2], u[3], u[4], passHash, u[6], 'AKTIF', u[7], nowIso
+      ]);
+    }
+  });
+
+  // Seed Contoh Warga (Ibu Sri Wahyuni & Bapak Slamet Riyadi)
+  var shWarga = ss.getSheetByName('WARGA');
+  if (shWarga && shWarga.getLastRow() <= 1) {
+    shWarga.appendRow([
+      'WRG-001', 'USR-WRG-01', 'Ibu Sri Wahyuni', '330901******0003',
+      hashSha256_('3309015407750003', 'siwarga_nik'), '330901******0011',
+      '1975-07-14', 'Dusun Krajan Timur No. 12', 'RT 02 / RW 01', "'081234567801",
+      'TERVERIFIKASI', nowIso
+    ]);
+    shWarga.appendRow([
+      'WRG-002', 'USR-WRG-02', 'Bapak Slamet Riyadi', '330901******0008',
+      hashSha256_('3309011803640008', 'siwarga_nik'), '330901******0022',
+      '1964-03-18', 'Dusun Sumberjo No. 05', 'RT 04 / RW 02', "'081398765402",
+      'TERVERIFIKASI', nowIso
     ]);
   }
 
@@ -142,8 +174,16 @@ function setupDatabase() {
   var shPetugas = ss.getSheetByName('PETUGAS');
   if (shPetugas.getLastRow() <= 1) {
     shPetugas.appendRow([
-      'PTG-001', 'USR-ADMIN-01', 'Petugas Layanan Desa Ampel', 'Petugas Lapangan & Pelayanan',
-      'Pengaduan, Bantuan & Administrasi', '081100000001', 'AKTIF', new Date().toISOString()
+      'PTG-001', 'USR-PTG-01', 'Hendra Wijaya', 'Petugas Lapangan',
+      'Infrastruktur, Jalan & Penerangan', "'081100000004", 'AKTIF', nowIso
+    ]);
+    shPetugas.appendRow([
+      'PTG-002', 'USR-OP-01', 'Rina Kusuma', 'Operator Pelayanan & Persuratan',
+      'Administrasi Surat & Bantuan Sosial', "'081100000003", 'AKTIF', nowIso
+    ]);
+    shPetugas.appendRow([
+      'PTG-003', 'USR-ADMIN-01', 'Arif Rahman', 'Koordinator Layanan Desa',
+      'Pengawasan Layanan & Eskalasi Dinas', "'081100000001", 'AKTIF', nowIso
     ]);
   }
 
