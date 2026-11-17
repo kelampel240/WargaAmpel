@@ -11,7 +11,11 @@ import {
 } from 'lucide-react';
 import { ServiceGroup, ServiceWithForm, SheetPengumuman } from '../shared/types';
 import { formatTanggalIndo } from '../lib/api';
-import balaiDesaImg from '../assets/images/desa_ampel_balai_1794843784317.jpg';
+const balaiAssetModules = import.meta.glob<string>(
+  '../assets/images/desa_ampel_balai_1794843784317.jpg',
+  { eager: true, import: 'default' }
+);
+const balaiDesaImg = Object.values(balaiAssetModules)[0] || '';
 
 export type WizardEntryMode = 'pengaduan' | 'bantuan' | 'administrasi' | 'tidak-tahu';
 
@@ -218,7 +222,7 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
           </div>
 
           <div className="lg:col-span-5">
-            {!imgError ? (
+            {balaiDesaImg && !imgError ? (
               <div className="h-full min-h-[220px] rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
                 <img
                   src={balaiDesaImg}
