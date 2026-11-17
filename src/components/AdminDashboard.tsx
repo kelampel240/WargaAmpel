@@ -45,6 +45,7 @@ import {
   StatistikExporter,
   WargaManager,
 } from './AdminModules';
+import { GoogleSheetsWorkspacePanel } from './GoogleSheetsWorkspacePanel';
 
 export type SidebarModule =
   | 'dashboard'
@@ -59,6 +60,7 @@ export type SidebarModule =
   | 'data-warga'
   | 'data-petugas'
   | 'bukti-penanganan'
+  | 'google-sheets'
   | 'laporan-statistik'
   | 'pengumuman'
   | 'pengaturan'
@@ -87,6 +89,7 @@ const SIDEBAR_ITEMS: Array<{
   { id: 'data-warga', label: 'Data Warga', icon: Users },
   { id: 'data-petugas', label: 'Data Petugas', icon: UserCheck },
   { id: 'bukti-penanganan', label: 'Bukti Penanganan', icon: FolderOpen },
+  { id: 'google-sheets', label: 'Google Sheets', icon: FileSpreadsheet },
   { id: 'laporan-statistik', label: 'Laporan Statistik', icon: BarChart3 },
   { id: 'pengumuman', label: 'Pengumuman', icon: Megaphone },
   { id: 'pengaturan', label: 'Pengaturan', icon: Settings },
@@ -285,6 +288,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveTab('google-sheets')}
+              className="px-3.5 py-2 text-sm font-semibold bg-[#0F2942] text-white rounded-lg hover:bg-[#173b5e] flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              <FileSpreadsheet className="w-4 h-4" aria-hidden="true" />
+              <span>Google Sheets</span>
+            </button>
             <button
               type="button"
               onClick={() => setActiveTab('bukti-penanganan')}
@@ -500,6 +511,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         {activeTab === 'data-warga' && <WargaManager />}
         {activeTab === 'data-petugas' && <PetugasManager userRole={user.role} onUpdated={loadAll} />}
         {activeTab === 'bukti-penanganan' && <BuktiDriveExplorer />}
+        {activeTab === 'google-sheets' && (
+          <GoogleSheetsWorkspacePanel
+            onDataSynced={() => {
+              loadAll();
+              onServicesChanged();
+            }}
+          />
+        )}
         {activeTab === 'laporan-statistik' && <StatistikExporter stats={stats} />}
         {activeTab === 'pengumuman' && <AnnouncementsManager />}
         {activeTab === 'pengaturan' && <SettingsAndGasGuide />}

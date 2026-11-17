@@ -18,6 +18,9 @@ export type WizardEntryMode = 'pengaduan' | 'bantuan' | 'administrasi' | 'tidak-
 interface CitizenHomeProps {
   services: ServiceWithForm[];
   announcements: SheetPengumuman[];
+  loading?: boolean;
+  loadError?: string;
+  onRetry?: () => void;
   onStartWizard: (mode: WizardEntryMode, preselectedService?: ServiceWithForm) => void;
   onGoTrack: () => void;
   onGoAllAnnouncements: () => void;
@@ -26,8 +29,11 @@ interface CitizenHomeProps {
 }
 
 export const CitizenHome: React.FC<CitizenHomeProps> = ({
-  services,
-  announcements,
+  services = [],
+  announcements = [],
+  loading = false,
+  loadError = '',
+  onRetry,
   onStartWizard,
   onGoTrack,
   onGoAllAnnouncements,
@@ -37,11 +43,13 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
   const [imgError, setImgError] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<ServiceGroup | 'ALL'>('ALL');
 
-  const groups = Array.from(new Set(services.map((s) => s.KATEGORI_GRUP)));
+  const safeServices = Array.isArray(services) ? services : [];
+  const safeAnnouncements = Array.isArray(announcements) ? announcements : [];
+  const groups = Array.from(new Set(safeServices.map((s) => s.KATEGORI_GRUP)));
   const filteredServices =
     selectedGroup === 'ALL'
-      ? services
-      : services.filter((s) => s.KATEGORI_GRUP === selectedGroup);
+      ? safeServices
+      : safeServices.filter((s) => s.KATEGORI_GRUP === selectedGroup);
 
   if (activeSection === 'services') {
     return (
@@ -165,6 +173,20 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
 
   return (
     <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-12">
+      {loadError && (
+        <div role="alert" className="p-4 bg-rose-50 border border-rose-300 rounded-xl flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm font-medium text-rose-900">{loadError}</p>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="px-3.5 py-1.5 bg-rose-700 text-white text-xs font-bold rounded-lg cursor-pointer"
+            >
+              Coba Muat Ulang
+            </button>
+          )}
+        </div>
+      )}
       {/* Hero & 4 Giant Accessible Buttons */}
       <section aria-labelledby="hero-heading" className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
@@ -304,12 +326,16 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
             </p>
           </div>
           <span className="text-sm font-medium text-slate-600 tabular-nums">
-            {services.length} layanan aktif
+            {loading ? 'Memuat layanan...' : `${safeServices.length} layanan aktif`}
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {services.slice(0, 6).map((svc) => (
+          {loading && safeServices.length === 0 ? (
+            Array.from({ length: 3 }).map((_, idx) => (
+              <div key={idx} className="bg-white border border-slate-200 rounded-xl p-5 h-36 animate-pulse" />
+            ))
+          ) : safeServices.slice(0, 6).map((svc) => (
             <button
               key={svc.ID_LAYANAN}
               type="button"
@@ -361,7 +387,9 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
         </div>
 
         <div className="divide-y divide-slate-200">
-          {announcements.slice(0, 3).map((item) => (
+          {safeAnnouncements.length === 0 && !loading ? (
+            <p className="text-sm text-slate-500 py-4">Belum ada pengumuman aktif saat ini.</p>
+          ) : safeAnnouncements.slice(0, 3).map((item) => (
             <div key={item.ID_PENGUMUMAN} className="py-4 first:pt-0 last:pb-0">
               <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
                 <span className="font-semibold text-[#0B6E4F]">{item.KATEGORI}</span>

@@ -21,6 +21,7 @@ import {
 import { ParsedImportRow, parsePetugasImportExcel } from '../lib/excelImport';
 import { ExcelImportModal } from './ExcelImportModal';
 import { GoogleDriveWorkspacePanel } from './GoogleDriveWorkspacePanel';
+import { GoogleSheetsWorkspacePanel } from './GoogleSheetsWorkspacePanel';
 
 /* ============================================================================
  * DATA WARGA (MASKED NIK & KK + OPERATOR VERIFICATION)
@@ -660,6 +661,7 @@ export const SettingsAndGasGuide: React.FC = () => {
       </div>
 
       <GoogleDriveWorkspacePanel compact />
+      <GoogleSheetsWorkspacePanel compact />
 
       <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-xl p-6 space-y-4">
         {savedMsg && (

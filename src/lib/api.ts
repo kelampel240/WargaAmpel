@@ -126,12 +126,18 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
     headers.Authorization = `Bearer ${token}`;
   }
   const res = await fetch(url, { ...options, headers });
+  const contentType = res.headers.get('content-type') || '';
   const rawText = await res.text().catch(() => '');
   let data: Record<string, unknown> = {};
-  try {
-    data = rawText ? (JSON.parse(rawText) as Record<string, unknown>) : {};
-  } catch {
-    data = {};
+  if (rawText.trim()) {
+    try {
+      data = JSON.parse(rawText) as Record<string, unknown>;
+    } catch {
+      if (res.ok && !contentType.includes('application/json')) {
+        throw new Error('Server mengembalikan respons non-JSON. Pastikan server API aktif pada port 3000.');
+      }
+      data = {};
+    }
   }
   if (!res.ok) {
     if (data && typeof data.error === 'string' && data.error) {

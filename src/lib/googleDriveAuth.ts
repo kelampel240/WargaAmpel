@@ -8,16 +8,21 @@ import {
 } from 'firebase/auth';
 import firebaseConfig from '../../firebase-applet-config.json';
 
-export const DRIVE_SCOPES = [
+export const WORKSPACE_SCOPES = [
+  'https://www.googleapis.com/auth/drive',
   'https://www.googleapis.com/auth/drive.file',
   'https://www.googleapis.com/auth/drive.readonly',
+  'https://www.googleapis.com/auth/spreadsheets',
+  'https://www.googleapis.com/auth/spreadsheets.readonly',
 ];
+
+export const DRIVE_SCOPES = WORKSPACE_SCOPES;
 
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 const provider = new GoogleAuthProvider();
-for (const scope of DRIVE_SCOPES) {
+for (const scope of WORKSPACE_SCOPES) {
   provider.addScope(scope);
 }
 provider.setCustomParameters({
