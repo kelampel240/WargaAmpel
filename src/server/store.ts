@@ -382,7 +382,7 @@ function createInitialDatabase(): SiwargaDatabase {
     {
       ID_USER: 'USR-ADMIN-01',
       USERNAME: 'admin',
-      NAMA_LENGKAP: 'Arif Rahman (Super Admin)',
+      NAMA_LENGKAP: 'Super Admin Desa Ampel',
       EMAIL: 'admin@ampel.desa.id',
       NO_HP: '081100000001',
       PASSWORD_HASH: hashPassword('AdminAmpel2026!'),
@@ -1497,6 +1497,11 @@ export function loadDatabase(): SiwargaDatabase {
     mutated = true;
   } else if (gasDeploySetting && gasDeploySetting.NILAI === 'AKfycbz898DjJanfBIwZxbm6cMq6hbIr5Gkd9eREGpJ-uBVeU3jVRwBpNvHKoLT4JLwncwh-lw') {
     gasDeploySetting.NILAI = targetDeployId;
+    mutated = true;
+  }
+  const seedAdmin = parsed.USERS?.find((u) => u.ID_USER === 'USR-ADMIN-01');
+  if (seedAdmin && seedAdmin.NAMA_LENGKAP === 'Arif Rahman (Super Admin)') {
+    seedAdmin.NAMA_LENGKAP = 'Super Admin Desa Ampel';
     mutated = true;
   }
   if (mutated) {

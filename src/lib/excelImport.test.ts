@@ -208,3 +208,44 @@ test('parseOrgImportExcel resolves Sekolah, Guru, and Balai RW references', () =
   assert.equal(parsedBalai[0].error, null);
   assert.equal(parsedBalai[0].payload.idRw, 'RW-01');
 });
+
+test('parseOrgImportExcel normalizes Excel numeric phone numbers without leading zero and RW defaults', () => {
+  const buf = createWorkbookBuffer([
+    {
+      name: 'RW',
+      rows: [
+        {
+          Urutan: 1,
+          'Nomor RW': 'RW 01',
+          'Nama Ketua': 'ABDULLAH ASEGAF',
+          'Wilayah Tugas': 'RW 01',
+          'No. HP': 81234567890,
+        },
+        {
+          Urutan: 2,
+          'Nomor RW': 'RW 02',
+          'Nama Ketua': 'DRS. MUHAMMAD HARRIS A. MUKARROM, M.M.',
+          'Wilayah Tugas': 'RW 02',
+          'No. WA': '62081345678901',
+        },
+        {
+          Urutan: 3,
+          'Nomor RW': 'RW 03',
+          'Nama Ketua': 'U M A R',
+          'Wilayah Tugas': 'RW 03',
+          Telp: 'Tidak ada',
+        },
+      ],
+    },
+  ]);
+
+  const parsed = parseOrgImportExcel(buf, 'rw', sampleOrgRef);
+  assert.equal(parsed.length, 3);
+  assert.equal(parsed[0].error, null);
+  assert.equal(parsed[0].payload.noHp, '081234567890');
+  assert.equal(parsed[0].payload.jabatan, 'Ketua RW 01');
+  assert.equal(parsed[1].error, null);
+  assert.equal(parsed[1].payload.noHp, '081345678901');
+  assert.equal(parsed[2].error, null);
+  assert.equal(parsed[2].payload.noHp, '');
+});

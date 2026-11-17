@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -9,6 +9,7 @@ import {
   Send,
 } from 'lucide-react';
 import { PublicUserSession, ServiceWithForm } from '../shared/types';
+import { normalizeIndonesianPhone } from '../shared/orgLogic';
 import { apiFetch, readFileAsBase64 } from '../lib/api';
 import { WizardEntryMode } from './CitizenHome';
 
@@ -97,6 +98,32 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
     [services, selectedServiceId, groupServices]
   );
 
+  // Sinkronkan layanan bawaan jika daftar layanan selesai dimuat setelah wizard dibuka
+  useEffect(() => {
+    if (isGeneral) return;
+    if (preselectedService) {
+      setSelectedServiceId(preselectedService.ID_LAYANAN);
+      setMasalahUtama(preselectedService.NAMA_LAYANAN);
+      return;
+    }
+    if (!selectedServiceId && groupServices.length > 0) {
+      setSelectedServiceId(groupServices[0].ID_LAYANAN);
+      if (mode !== 'pengaduan') {
+        setMasalahUtama(groupServices[0].NAMA_LAYANAN);
+      }
+    }
+  }, [isGeneral, preselectedService, groupServices, selectedServiceId, mode]);
+
+  // Sinkronkan profil pelapor saat /api/auth/me memperbarui data dari database
+  useEffect(() => {
+    if (!user) return;
+    setNamaPelapor((prev) => prev || user.namaLengkap || '');
+    setNoHpPelapor((prev) => prev || normalizeIndonesianPhone(user.noHp) || user.noHp || '');
+    setTanggalLahir((prev) => prev || user.tanggalLahir || '');
+    setLokasiAlamat((prev) => prev || user.alamat || '');
+    setRtRw((prev) => prev || user.rtRw || '');
+  }, [user]);
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setError('');
     const file = e.target.files?.[0];
@@ -120,7 +147,7 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
   const validateCurrentStep = (): boolean => {
     setError('');
     if (step === 1) {
-      if (!isGeneral && !selectedServiceId) {
+      if (!isGeneral && groupServices.length > 0 && !selectedServiceId && !selectedService) {
         setError('Silakan pilih salah satu jenis layanan atau masalah.');
         return false;
       }
@@ -174,15 +201,17 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
     setError('');
     setSubmitting(true);
     try {
+      const useGeneral = isGeneral || !selectedService?.ID_LAYANAN;
+      const normalizedHp = normalizeIndonesianPhone(noHpPelapor) || noHpPelapor.trim();
       const payload = {
-        isGeneralInquiry: isGeneral,
-        idLayanan: isGeneral ? 'GENERAL_INQUIRY' : selectedService?.ID_LAYANAN,
-        kodeGrup: isGeneral ? 'GENERAL_INQUIRY' : selectedService?.KATEGORI_GRUP,
-        namaLayanan: isGeneral ? 'Saya Tidak Tahu (Perlu Klasifikasi)' : selectedService?.NAMA_LAYANAN,
-        masalahUtama: isGeneral ? 'Belum diklasifikasi' : masalahUtama,
+        isGeneralInquiry: useGeneral,
+        idLayanan: useGeneral ? 'GENERAL_INQUIRY' : selectedService?.ID_LAYANAN,
+        kodeGrup: useGeneral ? 'GENERAL_INQUIRY' : selectedService?.KATEGORI_GRUP,
+        namaLayanan: useGeneral ? 'Saya Tidak Tahu (Perlu Klasifikasi)' : selectedService?.NAMA_LAYANAN,
+        masalahUtama: useGeneral ? masalahUtama || 'Belum diklasifikasi' : masalahUtama,
         uraianMasalah: uraianMasalah.trim(),
         namaPelapor: namaPelapor.trim(),
-        noHpPelapor: noHpPelapor.trim(),
+        noHpPelapor: normalizedHp,
         tanggalLahir,
         lokasiAlamat: lokasiAlamat.trim(),
         rtRw: rtRw.trim() || 'Desa Ampel',
@@ -190,27 +219,38 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
         attachment,
       };
       const res = await apiFetch<{
-        ticketId: string;
-        report: {
-          idLaporan: string;
-          judulLaporan: string;
-          namaLayanan: string;
-          statusTerbaru: string;
-          driveFolder: string;
+        ticketId?: string;
+        driveFolderUrl?: string;
+        status?: string;
+        report?: {
+          idLaporan?: string;
+          judulLaporan?: string;
+          namaLayanan?: string;
+          statusTerbaru?: string;
+          driveFolder?: string;
         };
       }>('/api/reports', {
         method: 'POST',
         body: JSON.stringify(payload),
       });
+      const resolvedTicketId = res.ticketId || res.report?.idLaporan || '';
+      if (!resolvedTicketId) {
+        throw new Error('Server tidak mengembalikan nomor tiket laporan. Silakan coba kembali.');
+      }
       setReceipt({
-        ticketId: res.ticketId,
-        judulLaporan: res.report.judulLaporan,
-        namaLayanan: res.report.namaLayanan,
-        statusTerbaru: res.report.statusTerbaru,
-        driveFolder: res.report.driveFolder,
+        ticketId: resolvedTicketId,
+        judulLaporan:
+          res.report?.judulLaporan ||
+          `${payload.masalahUtama || 'Laporan Warga'} — ${payload.rtRw}`,
+        namaLayanan:
+          res.report?.namaLayanan ||
+          payload.namaLayanan ||
+          'Pelayanan Warga Desa Ampel',
+        statusTerbaru: res.report?.statusTerbaru || res.status || 'Laporan diterima',
+        driveFolder: res.report?.driveFolder || res.driveFolderUrl || '01_LAPORAN_WARGA',
       });
     } catch (err) {
-      setError((err as Error).message);
+      setError((err as Error).message || 'Gagal mengirim laporan. Periksa isian Anda dan coba lagi.');
     } finally {
       setSubmitting(false);
     }
@@ -721,8 +761,17 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
           </div>
         )}
 
+        {error && (
+          <div
+            role="alert"
+            className="mt-6 p-4 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 text-sm sm:text-base font-medium"
+          >
+            {error}
+          </div>
+        )}
+
         {/* Footer navigation buttons */}
-        <div className="mt-8 pt-6 border-t border-slate-200 flex items-center justify-between gap-4">
+        <div className="mt-6 pt-6 border-t border-slate-200 flex items-center justify-between gap-4">
           {step > (isGeneral || preselectedService ? 2 : 1) ? (
             <button
               type="button"

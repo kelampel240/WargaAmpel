@@ -27,6 +27,9 @@ export function mapRestToGasCall(
   if (pathname === '/api/public/announcements' && upperMethod === 'GET') {
     return { action: 'getPublicAnnouncements', payload: {} };
   }
+  if (pathname === '/api/public/role-accounts' && upperMethod === 'GET') {
+    return { action: 'getPublicRoleAccounts', payload: {} };
+  }
 
   // Auth routes
   if (pathname === '/api/auth/me' && upperMethod === 'GET') {

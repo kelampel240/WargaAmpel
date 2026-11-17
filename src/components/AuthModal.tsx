@@ -1,12 +1,43 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { KeyRound, ShieldCheck, UserPlus, X } from 'lucide-react';
-import { PublicUserSession } from '../shared/types';
+import { PublicUserSession, UserRole } from '../shared/types';
 import { apiFetch, persistAuth } from '../lib/api';
 
 interface AuthModalProps {
   onClose: () => void;
   onSuccess: (user: PublicUserSession) => void;
 }
+
+interface RoleAccountItem {
+  idUser: string;
+  username: string;
+  namaLengkap: string;
+  role: UserRole;
+}
+
+const ROLE_DISPLAY_LABEL: Record<UserRole, string> = {
+  SUPER_ADMIN: 'Super Admin',
+  KEPALA_DESA: 'Kepala Desa',
+  OPERATOR: 'Operator',
+  PETUGAS: 'Petugas',
+  WARGA: 'Warga',
+};
+
+const ROLE_DEFAULT_PASSWORDS: Record<UserRole, string> = {
+  SUPER_ADMIN: 'AdminAmpel2026!',
+  KEPALA_DESA: 'KadesAmpel2026!',
+  OPERATOR: 'OperatorAmpel2026!',
+  PETUGAS: 'PetugasAmpel2026!',
+  WARGA: 'WargaAmpel2026!',
+};
+
+const FALLBACK_ROLE_ACCOUNTS: RoleAccountItem[] = [
+  { idUser: 'USR-ADMIN-01', username: 'admin', namaLengkap: 'Super Admin Desa Ampel', role: 'SUPER_ADMIN' },
+  { idUser: 'USR-KADES-01', username: 'kades', namaLengkap: 'H. Sutrisno (Kepala Desa)', role: 'KEPALA_DESA' },
+  { idUser: 'USR-OP-01', username: 'operator', namaLengkap: 'Rina Kusuma (Operator)', role: 'OPERATOR' },
+  { idUser: 'USR-PTG-01', username: 'petugas', namaLengkap: 'Hendra Wijaya (Petugas Lapangan)', role: 'PETUGAS' },
+  { idUser: 'USR-WRG-01', username: 'sriwahyuni', namaLengkap: 'Ibu Sri Wahyuni', role: 'WARGA' },
+];
 
 export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess }) => {
   const [tab, setTab] = useState<'login' | 'register' | 'verify' | 'reset'>('login');
@@ -30,6 +61,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  const [roleAccounts, setRoleAccounts] = useState<RoleAccountItem[]>(FALLBACK_ROLE_ACCOUNTS);
+
+  useEffect(() => {
+    let active = true;
+    apiFetch<{ accounts?: RoleAccountItem[] }>('/api/public/role-accounts')
+      .then((res) => {
+        if (active && Array.isArray(res?.accounts) && res.accounts.length > 0) {
+          setRoleAccounts(res.accounts);
+        }
+      })
+      .catch(() => {
+        // Pertahankan fallback jika endpoint lama belum diperbarui
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -235,44 +283,36 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess }) => {
               {loading ? 'Memeriksa...' : 'Masuk Sekarang'}
             </button>
 
-            {/* Quick credential fill buttons for role testing */}
+            {/* Quick credential fill buttons sourced from Database USERS */}
             <div className="pt-4 border-t border-slate-200">
               <p className="text-xs font-semibold text-slate-600 mb-2">
-                Akses Cepat Uji Peran (Desa Ampel):
+                Akses Cepat Akun Database (Desa Ampel):
               </p>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => fillDemoAccount('admin', 'AdminAmpel2026!')}
-                  className="p-2 border border-slate-300 rounded-lg text-left hover:bg-slate-50 cursor-pointer"
-                >
-                  <span className="font-bold block text-[#0F2942]">Super Admin</span>
-                  <span className="font-mono text-slate-600">admin</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillDemoAccount('petugas', 'PetugasAmpel2026!')}
-                  className="p-2 border border-slate-300 rounded-lg text-left hover:bg-slate-50 cursor-pointer"
-                >
-                  <span className="font-bold block text-[#0F2942]">Petugas</span>
-                  <span className="font-mono text-slate-600">petugas</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillDemoAccount('operator', 'OperatorAmpel2026!')}
-                  className="p-2 border border-slate-300 rounded-lg text-left hover:bg-slate-50 cursor-pointer"
-                >
-                  <span className="font-bold block text-[#0F2942]">Operator</span>
-                  <span className="font-mono text-slate-600">operator</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillDemoAccount('sriwahyuni', 'WargaAmpel2026!')}
-                  className="p-2 border border-slate-300 rounded-lg text-left hover:bg-slate-50 cursor-pointer"
-                >
-                  <span className="font-bold block text-[#0B6E4F]">Warga (Ibu Sri)</span>
-                  <span className="font-mono text-slate-600">sriwahyuni</span>
-                </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {roleAccounts.map((acc) => {
+                  const isWarga = acc.role === 'WARGA';
+                  return (
+                    <button
+                      key={acc.idUser || acc.username}
+                      type="button"
+                      onClick={() =>
+                        fillDemoAccount(acc.username, ROLE_DEFAULT_PASSWORDS[acc.role] || '')
+                      }
+                      className="p-2.5 border border-slate-300 rounded-lg text-left hover:bg-slate-50 cursor-pointer"
+                    >
+                      <span
+                        className={`font-bold block truncate ${
+                          isWarga ? 'text-[#0B6E4F]' : 'text-[#0F2942]'
+                        }`}
+                      >
+                        {acc.namaLengkap || ROLE_DISPLAY_LABEL[acc.role]}
+                      </span>
+                      <span className="font-mono text-slate-600 block truncate">
+                        {ROLE_DISPLAY_LABEL[acc.role]} · {acc.username}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </form>

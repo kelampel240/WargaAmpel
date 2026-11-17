@@ -16,6 +16,7 @@ import {
 import {
   computeAdminOrgSummary,
   extractOrgDisplaySettings,
+  normalizeIndonesianPhone,
   OrgEntityType,
   sanitizePublicOrgData,
   validateOrgInput,
@@ -32,6 +33,8 @@ import {
   SheetKategoriLayanan,
   SheetKonfigurasiForm,
   SheetLaporan,
+  SheetUser,
+  SiwargaDatabase,
   UserRole,
 } from './src/shared/types';
 import {
@@ -71,10 +74,37 @@ function extractBearerToken(req: Request): string | null {
   return qToken;
 }
 
+function buildPublicSessionUser(db: SiwargaDatabase, user: SheetUser): PublicUserSession {
+  const wargaProfile = db.WARGA.find((w) => w.ID_USER === user.ID_USER);
+  return {
+    idUser: user.ID_USER,
+    username: user.USERNAME,
+    namaLengkap: user.NAMA_LENGKAP,
+    role: user.ROLE,
+    noHp: normalizeIndonesianPhone(user.NO_HP) || user.NO_HP,
+    statusAkun: user.STATUS_AKUN,
+    idWarga: wargaProfile?.ID_WARGA,
+    nikMasked: wargaProfile?.NIK_MASKED,
+    tanggalLahir: wargaProfile?.TANGGAL_LAHIR,
+    rtRw: wargaProfile?.RT_RW,
+    alamat: wargaProfile?.ALAMAT,
+  };
+}
+
+function resolveLiveUserFromToken(token: string): PublicUserSession | null {
+  const tokenUser = verifySessionToken(token);
+  if (!tokenUser) return null;
+  const db = loadDatabase();
+  const dbUser = db.USERS.find((u) => u.ID_USER === tokenUser.idUser);
+  if (!dbUser) return tokenUser;
+  if (dbUser.STATUS_AKUN === 'NONAKTIF') return null;
+  return buildPublicSessionUser(db, dbUser);
+}
+
 function optionalAuth(req: AuthedRequest, _res: Response, next: NextFunction): void {
   const token = extractBearerToken(req);
   if (token) {
-    const user = verifySessionToken(token);
+    const user = resolveLiveUserFromToken(token);
     if (user) req.sessionUser = user;
   }
   next();
@@ -86,9 +116,9 @@ function requireAuth(allowedRoles?: UserRole[]) {
     if (!token) {
       return res.status(401).json({ error: 'Sesi login diperlukan. Silakan masuk terlebih dahulu.' });
     }
-    const user = verifySessionToken(token);
+    const user = resolveLiveUserFromToken(token);
     if (!user) {
-      return res.status(401).json({ error: 'Sesi login tidak valid atau telah kedaluwarsa.' });
+      return res.status(401).json({ error: 'Sesi login tidak valid, dinonaktifkan, atau telah kedaluwarsa.' });
     }
     if (allowedRoles && !allowedRoles.includes(user.role)) {
       return res.status(403).json({ error: 'Anda tidak memiliki hak akses untuk fitur ini.' });
@@ -139,8 +169,13 @@ async function startServer() {
     }
     const db = loadDatabase();
     const key = username.trim().toLowerCase();
+    const normInputHp = normalizeIndonesianPhone(username);
     const user = db.USERS.find(
-      (u) => u.USERNAME.toLowerCase() === key || u.NO_HP === username.trim() || u.EMAIL.toLowerCase() === key
+      (u) =>
+        u.USERNAME.toLowerCase() === key ||
+        u.EMAIL.toLowerCase() === key ||
+        u.NO_HP === username.trim() ||
+        (normInputHp && normalizeIndonesianPhone(u.NO_HP) === normInputHp)
     );
     if (!user || !verifyPassword(password, user.PASSWORD_HASH)) {
       return res.status(401).json({ error: 'Username/No. HP atau kata sandi salah.' });
@@ -148,20 +183,7 @@ async function startServer() {
     if (user.STATUS_AKUN === 'NONAKTIF') {
       return res.status(403).json({ error: 'Akun ini dinonaktifkan. Hubungi Operator Desa.' });
     }
-    const wargaProfile = db.WARGA.find((w) => w.ID_USER === user.ID_USER);
-    const sessionUser: PublicUserSession = {
-      idUser: user.ID_USER,
-      username: user.USERNAME,
-      namaLengkap: user.NAMA_LENGKAP,
-      role: user.ROLE,
-      noHp: user.NO_HP,
-      statusAkun: user.STATUS_AKUN,
-      idWarga: wargaProfile?.ID_WARGA,
-      nikMasked: wargaProfile?.NIK_MASKED,
-      tanggalLahir: wargaProfile?.TANGGAL_LAHIR,
-      rtRw: wargaProfile?.RT_RW,
-      alamat: wargaProfile?.ALAMAT,
-    };
+    const sessionUser = buildPublicSessionUser(db, user);
     const token = signSessionToken(sessionUser);
     appendActivityLog(
       db,
@@ -260,8 +282,12 @@ async function startServer() {
       return res.status(400).json({ error: 'Username dan kode verifikasi wajib diisi.' });
     }
     const db = loadDatabase();
+    const normInputHp = normalizeIndonesianPhone(username);
     const user = db.USERS.find(
-      (u) => u.USERNAME.toLowerCase() === username.trim().toLowerCase() || u.NO_HP === username.trim()
+      (u) =>
+        u.USERNAME.toLowerCase() === username.trim().toLowerCase() ||
+        u.NO_HP === username.trim() ||
+        (normInputHp && normalizeIndonesianPhone(u.NO_HP) === normInputHp)
     );
     if (!user || user.KODE_VERIFIKASI !== kodeVerifikasi.trim().toUpperCase()) {
       return res.status(400).json({ error: 'Kode verifikasi tidak cocok.' });
@@ -280,19 +306,7 @@ async function startServer() {
     );
     saveDatabase(db);
 
-    const sessionUser: PublicUserSession = {
-      idUser: user.ID_USER,
-      username: user.USERNAME,
-      namaLengkap: user.NAMA_LENGKAP,
-      role: user.ROLE,
-      noHp: user.NO_HP,
-      statusAkun: user.STATUS_AKUN,
-      idWarga: warga?.ID_WARGA,
-      nikMasked: warga?.NIK_MASKED,
-      tanggalLahir: warga?.TANGGAL_LAHIR,
-      rtRw: warga?.RT_RW,
-      alamat: warga?.ALAMAT,
-    };
+    const sessionUser = buildPublicSessionUser(db, user);
     const token = signSessionToken(sessionUser);
     return res.json({ message: 'Akun berhasil diverifikasi.', token, user: sessionUser });
   });
@@ -303,8 +317,12 @@ async function startServer() {
       return res.status(400).json({ error: 'Username/No. HP, tanggal lahir terdaftar, dan kata sandi baru (min. 6 karakter) wajib diisi.' });
     }
     const db = loadDatabase();
+    const normResetHp = normalizeIndonesianPhone(username);
     const user = db.USERS.find(
-      (u) => u.USERNAME.toLowerCase() === username.trim().toLowerCase() || u.NO_HP === username.trim()
+      (u) =>
+        u.USERNAME.toLowerCase() === username.trim().toLowerCase() ||
+        u.NO_HP === username.trim() ||
+        (normResetHp && normalizeIndonesianPhone(u.NO_HP) === normResetHp)
     );
     if (!user) {
       return res.status(404).json({ error: 'Akun tidak ditemukan.' });
@@ -332,16 +350,40 @@ async function startServer() {
   // ===========================================================================
   // 2. PUBLIC CITIZEN PORTAL ENDPOINTS (SERVICES, ANNOUNCEMENTS, SUBMIT, TRACK)
   // ===========================================================================
+  app.get('/api/public/role-accounts', (_req, res) => {
+    const db = loadDatabase();
+    const roleOrder: UserRole[] = ['SUPER_ADMIN', 'KEPALA_DESA', 'OPERATOR', 'PETUGAS', 'WARGA'];
+    const accounts = roleOrder
+      .map((role) => {
+        const match =
+          db.USERS.find((u) => u.ROLE === role && u.STATUS_AKUN === 'AKTIF') ||
+          db.USERS.find((u) => u.ROLE === role);
+        if (!match) return null;
+        return {
+          idUser: match.ID_USER,
+          username: match.USERNAME,
+          namaLengkap: match.NAMA_LENGKAP,
+          role: match.ROLE,
+        };
+      })
+      .filter(Boolean);
+    return res.json({ accounts });
+  });
+
   app.get('/api/public/services', (_req, res) => {
     const db = loadDatabase();
     const active = db.KATEGORI_LAYANAN.filter((s) => s.STATUS_AKTIF)
       .sort((a, b) => a.URUTAN - b.URUTAN)
-      .map((s) => ({
-        ...s,
-        fields: db.KONFIGURASI_FORM.filter((f) => f.ID_LAYANAN === s.ID_LAYANAN).sort(
-          (a, b) => a.URUTAN - b.URUTAN
-        ),
-      }));
+      .map((s) => {
+        const officer = db.PETUGAS.find((p) => p.ID_PETUGAS === s.ID_PETUGAS_PJ);
+        return {
+          ...s,
+          NAMA_PETUGAS_PJ: officer?.NAMA_PETUGAS || s.NAMA_PETUGAS_PJ,
+          fields: db.KONFIGURASI_FORM.filter((f) => f.ID_LAYANAN === s.ID_LAYANAN).sort(
+            (a, b) => a.URUTAN - b.URUTAN
+          ),
+        };
+      });
     return res.json({ services: active, groups: SERVICE_GROUPS });
   });
 
@@ -366,9 +408,10 @@ async function startServer() {
       return res.status(400).json({ error: 'Jenis layanan yang dipilih tidak ditemukan atau tidak aktif.' });
     }
 
-    const namaPelapor = (req.sessionUser?.namaLengkap || String(body.namaPelapor || '')).trim();
-    const noHpPelapor = (req.sessionUser?.noHp || String(body.noHpPelapor || '')).trim();
-    const tanggalLahir = (req.sessionUser?.tanggalLahir || String(body.tanggalLahir || '')).trim();
+    const namaPelapor = (String(body.namaPelapor || '') || req.sessionUser?.namaLengkap || '').trim();
+    const noHpRaw = String(body.noHpPelapor || '') || req.sessionUser?.noHp || '';
+    const noHpPelapor = normalizeIndonesianPhone(noHpRaw) || noHpRaw.trim();
+    const tanggalLahir = (String(body.tanggalLahir || '') || req.sessionUser?.tanggalLahir || '').trim();
     const uraianMasalah = String(body.uraianMasalah || '').trim();
     const lokasiAlamat = String(body.lokasiAlamat || '').trim();
     const rtRw = String(body.rtRw || req.sessionUser?.rtRw || '').trim();
@@ -459,7 +502,11 @@ async function startServer() {
       DATA_FORM_DINAMIS: dynamicValues,
       STATUS_TERBARU: 'Laporan diterima',
       ID_PETUGAS_TUGAS: service?.ID_PETUGAS_PJ,
-      NAMA_PETUGAS_TUGAS: service?.NAMA_PETUGAS_PJ || 'Operator Desa Ampel',
+      NAMA_PETUGAS_TUGAS:
+        db.PETUGAS.find((p) => p.ID_PETUGAS === service?.ID_PETUGAS_PJ)?.NAMA_PETUGAS ||
+        service?.NAMA_PETUGAS_PJ ||
+        db.USERS.find((u) => u.ROLE === 'OPERATOR')?.NAMA_LENGKAP ||
+        'Operator Desa',
       DRIVE_FOLDER_NAME: folderName,
       DRIVE_FOLDER_URL: `SIWARGA_DESA/${subPath}`,
       CREATED_AT: now,
@@ -1127,12 +1174,13 @@ async function startServer() {
     const idUser = `USR-PTG-${Date.now()}`;
     const idPetugas = `PTG-${Date.now()}`;
     const uname = (typeof username === 'string' && username.trim()) || `petugas${db.PETUGAS.length + 1}`;
+    const cleanHp = normalizeIndonesianPhone(noHp as string | number | undefined) || String(noHp || '').trim();
     db.USERS.push({
       ID_USER: idUser,
       USERNAME: uname,
       NAMA_LENGKAP: namaPetugas.trim(),
       EMAIL: `${uname}@ampel.desa.id`,
-      NO_HP: String(noHp || ''),
+      NO_HP: cleanHp,
       PASSWORD_HASH: hashPassword(typeof password === 'string' && password.length >= 6 ? password : 'PetugasAmpel2026!'),
       ROLE: 'PETUGAS',
       STATUS_AKUN: 'AKTIF',
@@ -1144,7 +1192,7 @@ async function startServer() {
       NAMA_PETUGAS: namaPetugas.trim(),
       JABATAN: jabatan.trim(),
       BIDANG_TUGAS: String(bidangTugas || 'Pelayanan Warga'),
-      NO_HP: String(noHp || ''),
+      NO_HP: cleanHp,
       STATUS: 'AKTIF' as const,
       CREATED_AT: now,
     };
@@ -1175,7 +1223,7 @@ async function startServer() {
       const jabatan = String(raw?.jabatan || '').trim();
       if (namaPetugas.length < 2 || jabatan.length < 2) return;
       const bidangTugas = String(raw?.bidangTugas || 'Pelayanan Warga').trim();
-      const noHp = String(raw?.noHp || '').trim();
+      const noHp = normalizeIndonesianPhone(raw?.noHp as string | number | undefined) || String(raw?.noHp || '').trim();
       const idUser = `USR-PTG-${baseTs}-${idx}`;
       const idPetugas = `PTG-${baseTs}-${idx}`;
       const uname = `petugas${db.PETUGAS.length + 1}_${idx}`;
@@ -1427,7 +1475,7 @@ async function startServer() {
     const aktif = body.aktif !== false;
     const urutan = Number(body.urutan) || 99;
     const fotoUrl = String(body.fotoUrl || '').trim();
-    const noHp = String(body.noHp || '').trim();
+    const noHp = normalizeIndonesianPhone(body.noHp as string | number | undefined);
     let createdId = '';
     let labelNama = '';
 
@@ -1623,7 +1671,7 @@ async function startServer() {
       const aktif = body.aktif !== false;
       const urutan = Number(body.urutan) || idx + 1;
       const fotoUrl = String(body.fotoUrl || '').trim();
-      const noHp = String(body.noHp || '').trim();
+      const noHp = normalizeIndonesianPhone(body.noHp as string | number | undefined);
 
       if (entity === 'kelurahan') {
         const id = `KEL-${baseTs}-${idx}`;
@@ -1813,7 +1861,7 @@ async function startServer() {
       target.TINGKAT = tingkatRaw === 'LURAH' || tingkatRaw === 'KASI' ? tingkatRaw : 'STAF';
       target.WILAYAH_TUGAS = String(body.wilayahTugas || '').trim();
       target.FOTO_URL = String(body.fotoUrl || '').trim();
-      target.NO_HP = String(body.noHp || '').trim();
+      target.NO_HP = normalizeIndonesianPhone(body.noHp as string | number | undefined);
       target.TAMPILKAN_HP = body.tampilkanHp === true;
       target.TAMPILKAN_PUBLIK = body.tampilkanPublik !== false;
       target.AKTIF = body.aktif !== false;
@@ -1827,7 +1875,7 @@ async function startServer() {
       target.JABATAN = String(body.jabatan).trim();
       target.BIDANG = String(body.bidang || '').trim();
       target.FOTO_URL = String(body.fotoUrl || '').trim();
-      target.NO_HP = String(body.noHp || '').trim();
+      target.NO_HP = normalizeIndonesianPhone(body.noHp as string | number | undefined);
       target.TAMPILKAN_HP = body.tampilkanHp === true;
       target.TAMPILKAN_PUBLIK = body.tampilkanPublik !== false;
       target.AKTIF = body.aktif !== false;
@@ -1842,7 +1890,7 @@ async function startServer() {
       target.JABATAN = String(body.jabatan).trim();
       target.WILAYAH_TUGAS = String(body.wilayahTugas).trim();
       target.FOTO_URL = String(body.fotoUrl || '').trim();
-      target.NO_HP = String(body.noHp || '').trim();
+      target.NO_HP = normalizeIndonesianPhone(body.noHp as string | number | undefined);
       target.TAMPILKAN_HP = body.tampilkanHp === true;
       target.TAMPILKAN_PUBLIK = body.tampilkanPublik !== false;
       target.AKTIF = body.aktif !== false;
@@ -1858,7 +1906,7 @@ async function startServer() {
       target.JABATAN = String(body.jabatan).trim();
       target.WILAYAH_TUGAS = String(body.wilayahTugas || '').trim();
       target.FOTO_URL = String(body.fotoUrl || '').trim();
-      target.NO_HP = String(body.noHp || '').trim();
+      target.NO_HP = normalizeIndonesianPhone(body.noHp as string | number | undefined);
       target.TAMPILKAN_HP = body.tampilkanHp === true;
       target.TAMPILKAN_PUBLIK = body.tampilkanPublik !== false;
       target.AKTIF = body.aktif !== false;
@@ -1872,7 +1920,7 @@ async function startServer() {
       target.NAMA = String(body.nama).trim();
       target.JABATAN = String(body.jabatan).trim();
       target.FOTO_URL = String(body.fotoUrl || '').trim();
-      target.NO_HP = String(body.noHp || '').trim();
+      target.NO_HP = normalizeIndonesianPhone(body.noHp as string | number | undefined);
       target.TAMPILKAN_HP = body.tampilkanHp === true;
       target.TAMPILKAN_PUBLIK = body.tampilkanPublik !== false;
       target.AKTIF = body.aktif !== false;
@@ -1888,7 +1936,7 @@ async function startServer() {
       target.ALAMAT = String(body.alamat).trim();
       target.MAPS_URL = String(body.mapsUrl || '').trim();
       target.FOTO_URL = String(body.fotoUrl || '').trim();
-      target.NO_HP = String(body.noHp || '').trim();
+      target.NO_HP = normalizeIndonesianPhone(body.noHp as string | number | undefined);
       target.TAMPILKAN_HP = body.tampilkanHp === true;
       target.TAMPILKAN_PUBLIK = body.tampilkanPublik !== false;
       target.AKTIF = body.aktif !== false;
@@ -1902,7 +1950,7 @@ async function startServer() {
       target.NAMA = String(body.nama).trim();
       target.JABATAN = String(body.jabatan).trim();
       target.FOTO_URL = String(body.fotoUrl || '').trim();
-      target.NO_HP = String(body.noHp || '').trim();
+      target.NO_HP = normalizeIndonesianPhone(body.noHp as string | number | undefined);
       target.TAMPILKAN_HP = body.tampilkanHp === true;
       target.TAMPILKAN_PUBLIK = body.tampilkanPublik !== false;
       target.AKTIF = body.aktif !== false;
@@ -1918,7 +1966,7 @@ async function startServer() {
       target.JAM_LAYANAN = String(body.jamLayanan || '').trim();
       target.MAPS_URL = String(body.mapsUrl || '').trim();
       target.FOTO_URL = String(body.fotoUrl || '').trim();
-      target.NO_HP = String(body.noHp || '').trim();
+      target.NO_HP = normalizeIndonesianPhone(body.noHp as string | number | undefined);
       target.TAMPILKAN_HP = body.tampilkanHp === true;
       target.TAMPILKAN_PUBLIK = body.tampilkanPublik !== false;
       target.AKTIF = body.aktif !== false;

@@ -7,18 +7,91 @@ import {
   SiwargaDatabase,
 } from './types';
 
-export function cleanPhoneRaw(phone?: string): string {
-  return String(phone || '').replace(/[\s\-().]/g, '').trim();
+const EMPTY_PHONE_PLACEHOLDERS = new Set([
+  '',
+  '-',
+  '--',
+  '---',
+  '0',
+  'tidak ada',
+  'belum ada',
+  'kosong',
+  'n/a',
+  'na',
+  'null',
+  'none',
+  'nihil',
+  't/a',
+]);
+
+export function normalizeIndonesianPhone(phone?: string | number | null): string {
+  if (phone === null || phone === undefined) return '';
+  let raw =
+    typeof phone === 'number'
+      ? Number.isFinite(phone)
+        ? String(Math.trunc(phone))
+        : ''
+      : String(phone);
+
+  raw = raw.trim().replace(/^'+/, '').trim();
+  if (!raw || EMPTY_PHONE_PLACEHOLDERS.has(raw.toLowerCase())) {
+    return '';
+  }
+
+  // Jika ada lebih dari satu nomor dipisahkan '/', ',', atau ';', ambil kandidat utama terlebih dahulu
+  if (/[\/,;]/.test(raw)) {
+    const parts = raw
+      .split(/[\/,;]+/)
+      .map((p) => p.trim())
+      .filter((p) => p && !EMPTY_PHONE_PLACEHOLDERS.has(p.toLowerCase()));
+    raw = parts[0] || '';
+  }
+
+  const cleaned = raw.replace(/[\s\-().\u00A0\u200B]+/g, '');
+  if (!cleaned || EMPTY_PHONE_PLACEHOLDERS.has(cleaned.toLowerCase())) {
+    return '';
+  }
+
+  // Format salah ketik 6208... / +6208... -> 08...
+  if (/^\+?620[1-9][0-9]{6,13}$/.test(cleaned)) {
+    return `0${cleaned.replace(/^\+?620/, '')}`;
+  }
+  // Format internasional +628... / 628... -> +628... / 628... tetap valid,
+  // atau ubah +62 / 62 agar seragam dengan nomor lokal bila diawali 62
+  if (/^\+62[2-9][0-9]{6,13}$/.test(cleaned)) {
+    return `0${cleaned.slice(3)}`;
+  }
+  if (/^62[2-9][0-9]{6,13}$/.test(cleaned)) {
+    return `0${cleaned.slice(2)}`;
+  }
+  // Excel / Google Sheets sering menghapus angka 0 di depan (81234567890 -> 081234567890)
+  if (/^8[1-9][0-9]{6,12}$/.test(cleaned)) {
+    return `0${cleaned}`;
+  }
+  // Nomor telepon rumah/kantor tanpa angka 0 di depan (mis. 318889999 -> 0318889999)
+  if (/^[2-79][0-9]{7,12}$/.test(cleaned)) {
+    return `0${cleaned}`;
+  }
+
+  return cleaned;
 }
 
-export function isValidIndonesianPhone(phone?: string): boolean {
-  const cleaned = cleanPhoneRaw(phone);
+export function cleanPhoneRaw(phone?: string | number | null): string {
+  return normalizeIndonesianPhone(phone);
+}
+
+export function isValidIndonesianPhone(phone?: string | number | null): boolean {
+  const cleaned = normalizeIndonesianPhone(phone);
   if (!cleaned) return true; // Nomor HP opsional
-  return /^(\+62|62|0)8[1-9][0-9]{6,11}$/.test(cleaned) || /^(\+62|62|0)[2-9][0-9]{7,11}$/.test(cleaned);
+  return (
+    /^(\+62|62|0)8[1-9][0-9]{6,12}$/.test(cleaned) ||
+    /^(\+62|62|0)[2-9][0-9]{7,12}$/.test(cleaned)
+  );
 }
 
-export function toWhatsAppDigits(phone?: string): string {
-  const digits = String(phone || '').replace(/\D/g, '');
+export function toWhatsAppDigits(phone?: string | number | null): string {
+  const normalized = normalizeIndonesianPhone(phone);
+  const digits = normalized.replace(/\D/g, '');
   if (!digits) return '';
   if (digits.startsWith('62')) return digits;
   if (digits.startsWith('0')) return `62${digits.slice(1)}`;
@@ -27,7 +100,7 @@ export function toWhatsAppDigits(phone?: string): string {
 
 export function buildWhatsAppUrl(phone: string | undefined, tampilkanHp: boolean): string | null {
   if (!tampilkanHp) return null;
-  const cleaned = cleanPhoneRaw(phone);
+  const cleaned = normalizeIndonesianPhone(phone);
   if (!cleaned || !isValidIndonesianPhone(cleaned)) return null;
   const waDigits = toWhatsAppDigits(cleaned);
   if (waDigits.length < 10) return null;
@@ -59,7 +132,7 @@ export function validateOrgInput(
   payload: Record<string, unknown>,
   db: Pick<SiwargaDatabase, 'ORG_RW' | 'ORG_RT' | 'ORG_SEKOLAH'>
 ): string | null {
-  const noHp = String(payload.noHp ?? '').trim();
+  const noHp = normalizeIndonesianPhone(payload.noHp as string | number | undefined);
   if (noHp && !isValidIndonesianPhone(noHp)) {
     return 'Format nomor HP Indonesia tidak valid (contoh: 081234567890 atau +6281234567890).';
   }

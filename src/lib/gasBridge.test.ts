@@ -25,6 +25,9 @@ test('mapRestToGasCall maps public, auth, reporting, and admin routes accurately
   const pub = mapRestToGasCall('/api/public/services', 'GET');
   assert.equal(pub.action, 'getPublicServices');
 
+  const roleAccs = mapRestToGasCall('/api/public/role-accounts', 'GET');
+  assert.equal(roleAccs.action, 'getPublicRoleAccounts');
+
   const login = mapRestToGasCall('/api/auth/login', 'POST', { username: 'admin', password: 'secret' });
   assert.equal(login.action, 'authenticateUser');
   assert.equal(login.payload.username, 'admin');

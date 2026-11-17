@@ -137,7 +137,7 @@ function setupDatabase() {
   var salt = 'siwarga2026';
   var nowIso = new Date().toISOString();
   var defaultUsers = [
-    ['USR-ADMIN-01', 'admin', 'Arif Rahman (Super Admin)', 'admin@ampel.desa.id', "'081100000001", 'AdminAmpel2026!', 'SUPER_ADMIN', ''],
+    ['USR-ADMIN-01', 'admin', 'Super Admin Desa Ampel', 'admin@ampel.desa.id', "'081100000001", 'AdminAmpel2026!', 'SUPER_ADMIN', ''],
     ['USR-KADES-01', 'kades', 'H. Sutrisno (Kepala Desa)', 'kades@ampel.desa.id', "'081100000002", 'KadesAmpel2026!', 'KEPALA_DESA', ''],
     ['USR-OP-01', 'operator', 'Rina Kusuma (Operator)', 'operator@ampel.desa.id', "'081100000003", 'OperatorAmpel2026!', 'OPERATOR', ''],
     ['USR-PTG-01', 'petugas', 'Hendra Wijaya (Petugas Lapangan)', 'hendra@ampel.desa.id', "'081100000004", 'PetugasAmpel2026!', 'PETUGAS', ''],
@@ -182,7 +182,7 @@ function setupDatabase() {
       'Administrasi Surat & Bantuan Sosial', "'081100000003", 'AKTIF', nowIso
     ]);
     shPetugas.appendRow([
-      'PTG-003', 'USR-ADMIN-01', 'Arif Rahman', 'Koordinator Layanan Desa',
+      'PTG-003', 'USR-ADMIN-01', 'Super Admin Desa Ampel', 'Koordinator Layanan Desa',
       'Pengawasan Layanan & Eskalasi Dinas', "'081100000001", 'AKTIF', nowIso
     ]);
   }

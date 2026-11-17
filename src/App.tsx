@@ -1,6 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode, useEffect, useState } from 'react';
 import { PublicUserSession, ServiceWithForm, SheetPengumuman } from './shared/types';
-import { apiFetch, clearAuth, getStoredToken, getStoredUser } from './lib/api';
+import { apiFetch, clearAuth, getStoredToken, getStoredUser, persistAuth } from './lib/api';
 import { Navbar, PublicRoute } from './components/Navbar';
 import { CitizenHome, WizardEntryMode } from './components/CitizenHome';
 import { ReportWizard } from './components/ReportWizard';
@@ -90,9 +90,15 @@ export default function App() {
 
   useEffect(() => {
     loadPublicData();
-    if (getStoredToken()) {
+    const token = getStoredToken();
+    if (token) {
       apiFetch<{ user: PublicUserSession }>('/api/auth/me')
-        .then((res) => setUser(res.user))
+        .then((res) => {
+          if (res?.user) {
+            setUser(res.user);
+            persistAuth(token, res.user);
+          }
+        })
         .catch(() => {
           clearAuth();
           setUser(null);

@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import {
   isValidIndonesianPhone,
+  normalizeIndonesianPhone,
   OrgEntityType,
   validateOrgInput,
 } from '../shared/orgLogic';
@@ -158,7 +159,29 @@ export function parseOrgImportExcel(
       'Peran',
       'JABATAN',
     ]);
-    const noHp = pickStr(n, ['No. HP', 'Nomor HP', 'HP', 'Telepon', 'WhatsApp', 'NO_HP']);
+    const noHpRaw = pickStr(n, [
+      'No. HP',
+      'Nomor HP',
+      'No HP',
+      'No.HP',
+      'HP',
+      'Telepon',
+      'No. Telepon',
+      'No Telepon',
+      'Telp',
+      'No. Telp',
+      'No Telp',
+      'WhatsApp',
+      'No. WhatsApp',
+      'No. WA',
+      'No WA',
+      'WA',
+      'Kontak',
+      'No. Kontak',
+      'Handphone',
+      'NO_HP',
+    ]);
+    const noHp = normalizeIndonesianPhone(noHpRaw);
     const urutan = pickNum(n, ['Urutan', 'Urut', 'URUTAN'], idx + 1);
     const tampilkanHp = pickBool(n, ['Tampilkan HP Publik', 'Tampilkan HP', 'TAMPILKAN_HP'], false);
     const tampilkanPublik = pickBool(n, ['Tampil Publik', 'Tampilkan Publik', 'TAMPILKAN_PUBLIK'], true);
@@ -191,14 +214,17 @@ export function parseOrgImportExcel(
       payload = { ...payload, bidang };
       detail = bidang ? `${jabatan} (${bidang})` : jabatan;
     } else if (entity === 'rw') {
-      const nomorRw = pickStr(n, ['Nomor RW', 'RW', 'NOMOR_RW']);
-      const wilayahTugas = pickStr(n, ['Wilayah Tugas', 'Wilayah', 'WILAYAH_TUGAS']);
-      payload = { ...payload, nomorRw, wilayahTugas };
+      const nomorRw = pickStr(n, ['Nomor RW', 'RW', 'No RW', 'No. RW', 'NOMOR_RW']);
+      const wilayahTugas =
+        pickStr(n, ['Wilayah Tugas', 'Wilayah', 'Dusun', 'Alamat', 'WILAYAH_TUGAS']) ||
+        (nomorRw ? `Wilayah ${nomorRw}` : '');
+      const rwJabatan = jabatan || (nomorRw ? `Ketua ${nomorRw}` : 'Ketua RW');
+      payload = { ...payload, nomorRw, wilayahTugas, jabatan: rwJabatan };
       detail = `${nomorRw || '?'} · ${wilayahTugas || '-'}`;
     } else if (entity === 'rt') {
-      const nomorRt = pickStr(n, ['Nomor RT', 'RT', 'NOMOR_RT']);
-      const rwInput = pickStr(n, ['Nomor RW', 'RW', 'ID_RW', 'Induk RW']);
-      const wilayahTugas = pickStr(n, ['Wilayah Tugas', 'Wilayah', 'WILAYAH_TUGAS']);
+      const nomorRt = pickStr(n, ['Nomor RT', 'RT', 'No RT', 'No. RT', 'NOMOR_RT']);
+      const rwInput = pickStr(n, ['Nomor RW', 'RW', 'No RW', 'No. RW', 'ID_RW', 'Induk RW']);
+      const wilayahTugas = pickStr(n, ['Wilayah Tugas', 'Wilayah', 'Alamat', 'WILAYAH_TUGAS']);
 
       const rwMatch = orgData.rw.find(
         (r) =>
@@ -213,11 +239,13 @@ export function parseOrgImportExcel(
           : 'Kolom Nomor RW wajib diisi.';
       }
 
+      const rtJabatan = jabatan || (nomorRt ? `Ketua ${nomorRt}` : 'Ketua RT');
       payload = {
         ...payload,
         idRw: rwMatch?.ID_RW || '',
         nomorRt,
         wilayahTugas,
+        jabatan: rtJabatan,
       };
       detail = `${rwMatch?.NOMOR_RW || rwInput || '?'} / ${nomorRt || '?'}`;
     } else if (entity === 'kader') {
@@ -342,7 +370,18 @@ export function parsePetugasImportExcel(buffer: ArrayBuffer | Uint8Array): Parse
     const namaPetugas = pickStr(n, ['Nama Petugas', 'Nama', 'Nama Lengkap', 'NAMA_PETUGAS']);
     const jabatan = pickStr(n, ['Jabatan', 'JABATAN']);
     const bidangTugas = pickStr(n, ['Bidang Tugas', 'Bidang', 'BIDANG_TUGAS']);
-    const noHp = pickStr(n, ['No. HP', 'Nomor HP', 'HP', 'NO_HP']);
+    const noHpRaw = pickStr(n, [
+      'No. HP',
+      'Nomor HP',
+      'No HP',
+      'HP',
+      'Telepon',
+      'Telp',
+      'No. WA',
+      'WhatsApp',
+      'NO_HP',
+    ]);
+    const noHp = normalizeIndonesianPhone(noHpRaw);
 
     let error: string | null = null;
     if (namaPetugas.length < 2) error = 'Nama Petugas wajib diisi minimal 2 karakter.';

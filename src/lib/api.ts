@@ -151,6 +151,7 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
       'getPublicServices',
       'getPublicAnnouncements',
       'getPublicOrgStructure',
+      'getPublicRoleAccounts',
     ]);
 
     let res: Response;

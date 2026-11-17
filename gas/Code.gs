@@ -45,6 +45,9 @@ function doGet(e) {
   if (action === 'getPublicAnnouncements') {
     return jsonResponse(getPublicAnnouncements());
   }
+  if (action === 'getPublicRoleAccounts') {
+    return jsonResponse(getPublicRoleAccounts());
+  }
   if (action === 'getPublicOrgStructure') {
     return jsonResponse(getPublicOrgStructure());
   }
@@ -91,6 +94,8 @@ function doPost(e) {
         return jsonResponse({ services: getActiveServices() });
       case 'getPublicAnnouncements':
         return jsonResponse(getPublicAnnouncements());
+      case 'getPublicRoleAccounts':
+        return jsonResponse(getPublicRoleAccounts());
       case 'submitReport':
         return jsonResponse(submitReport(payload, token));
       case 'getReportStatus':
@@ -204,9 +209,65 @@ function getRootDriveFolder_() {
   return existing.hasNext() ? existing.next() : DriveApp.createFolder('SIWARGA_DESA');
 }
 
+function trySetSharing_(item, access, perm) {
+  try {
+    if (item && typeof item.setSharing === 'function') {
+      item.setSharing(access, perm);
+    }
+  } catch (ignore) {}
+}
+
+function normalizePhoneRead_(val) {
+  if (val === null || val === undefined) return '';
+  var raw = String(val).trim().replace(/^'+/, '').trim();
+  if (!raw) return '';
+  var lower = raw.toLowerCase();
+  if (
+    lower === '-' || lower === '--' || lower === '0' ||
+    lower === 'tidak ada' || lower === 'belum ada' || lower === 'kosong' ||
+    lower === 'n/a' || lower === 'na' || lower === 'null' || lower === 'none'
+  ) {
+    return '';
+  }
+  if (/[\/,;]/.test(raw)) {
+    var parts = raw.split(/[\/,;]+/);
+    for (var i = 0; i < parts.length; i++) {
+      var cand = String(parts[i] || '').trim();
+      if (cand && cand !== '-') {
+        raw = cand;
+        break;
+      }
+    }
+  }
+  var cleaned = raw.replace(/[\s\-().\u00A0\u200B]+/g, '');
+  if (!cleaned || cleaned === '0' || cleaned === '-') return '';
+  if (/^\+?620[1-9][0-9]{6,13}$/.test(cleaned)) {
+    return '0' + cleaned.replace(/^\+?620/, '');
+  }
+  if (/^\+62[2-9][0-9]{6,13}$/.test(cleaned)) {
+    return '0' + cleaned.slice(3);
+  }
+  if (/^62[2-9][0-9]{6,13}$/.test(cleaned)) {
+    return '0' + cleaned.slice(2);
+  }
+  if (/^8[1-9][0-9]{6,12}$/.test(cleaned)) {
+    return '0' + cleaned;
+  }
+  if (/^[2-79][0-9]{7,12}$/.test(cleaned)) {
+    return '0' + cleaned;
+  }
+  return cleaned;
+}
+
+function formatPhoneForSheet_(val) {
+  var norm = normalizePhoneRead_(val);
+  if (!norm) return '';
+  return norm.indexOf('0') === 0 ? ("'" + norm) : norm;
+}
+
 function inisialisasiDriveSiwarga() {
   var rootFolder = getRootDriveFolder_();
-  rootFolder.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.VIEW);
+  trySetSharing_(rootFolder, DriveApp.Access.PRIVATE, DriveApp.Permission.VIEW);
   var subfolders = [
     '01_LAPORAN_WARGA',
     '02_SURAT_ADMINISTRASI',
@@ -218,7 +279,7 @@ function inisialisasiDriveSiwarga() {
   subfolders.forEach(function(name) {
     var it = rootFolder.getFoldersByName(name);
     var sub = it.hasNext() ? it.next() : rootFolder.createFolder(name);
-    sub.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.VIEW);
+    trySetSharing_(sub, DriveApp.Access.PRIVATE, DriveApp.Permission.VIEW);
   });
   var ss = getSpreadsheet_();
   Logger.log('Folder Drive siap: ' + rootFolder.getUrl());
@@ -374,7 +435,7 @@ function ensureDefaultSeedAccounts_() {
   var salt = 'siwarga2026';
   var nowIso = new Date().toISOString();
   var defaults = [
-    ['USR-ADMIN-01', 'admin', 'Arif Rahman (Super Admin)', 'admin@ampel.desa.id', "'081100000001", 'AdminAmpel2026!', 'SUPER_ADMIN', ''],
+    ['USR-ADMIN-01', 'admin', 'Super Admin Desa Ampel', 'admin@ampel.desa.id', "'081100000001", 'AdminAmpel2026!', 'SUPER_ADMIN', ''],
     ['USR-KADES-01', 'kades', 'H. Sutrisno (Kepala Desa)', 'kades@ampel.desa.id', "'081100000002", 'KadesAmpel2026!', 'KEPALA_DESA', ''],
     ['USR-OP-01', 'operator', 'Rina Kusuma (Operator)', 'operator@ampel.desa.id', "'081100000003", 'OperatorAmpel2026!', 'OPERATOR', ''],
     ['USR-PTG-01', 'petugas', 'Hendra Wijaya (Petugas Lapangan)', 'hendra@ampel.desa.id', "'081100000004", 'PetugasAmpel2026!', 'PETUGAS', ''],
@@ -404,15 +465,84 @@ function ensureDefaultSeedAccounts_() {
   }
 }
 
+function formatDateIsoGas_(val) {
+  if (!val) return '';
+  if (val instanceof Date) return val.toISOString().slice(0, 10);
+  return String(val).trim().slice(0, 10);
+}
+
+function buildSessionUserFromRowGas_(userRow) {
+  var wargaProfile = null;
+  try {
+    var wargaRows = sheetToObjects_('WARGA');
+    for (var i = 0; i < wargaRows.length; i++) {
+      if (wargaRows[i].ID_USER === userRow.ID_USER) {
+        wargaProfile = wargaRows[i];
+        break;
+      }
+    }
+  } catch (ignore) {}
+  return {
+    idUser: userRow.ID_USER,
+    username: userRow.USERNAME,
+    namaLengkap: userRow.NAMA_LENGKAP,
+    role: userRow.ROLE,
+    noHp: normalizePhoneRead_(userRow.NO_HP),
+    statusAkun: userRow.STATUS_AKUN || 'AKTIF',
+    idWarga: wargaProfile ? wargaProfile.ID_WARGA : undefined,
+    nikMasked: wargaProfile ? wargaProfile.NIK_MASKED : undefined,
+    tanggalLahir: wargaProfile ? formatDateIsoGas_(wargaProfile.TANGGAL_LAHIR) : undefined,
+    rtRw: wargaProfile ? String(wargaProfile.RT_RW || '') : undefined,
+    alamat: wargaProfile ? String(wargaProfile.ALAMAT || '') : undefined
+  };
+}
+
+function getPublicRoleAccounts() {
+  ensureDefaultSeedAccounts_();
+  var users = sheetToObjects_('USERS');
+  var roles = ['SUPER_ADMIN', 'KEPALA_DESA', 'OPERATOR', 'PETUGAS', 'WARGA'];
+  var accounts = [];
+  for (var r = 0; r < roles.length; r++) {
+    var targetRole = roles[r];
+    var best = null;
+    for (var i = 0; i < users.length; i++) {
+      if (users[i].ROLE === targetRole) {
+        if (!best) best = users[i];
+        if (users[i].STATUS_AKUN === 'AKTIF') {
+          best = users[i];
+          break;
+        }
+      }
+    }
+    if (best) {
+      accounts.push({
+        idUser: best.ID_USER,
+        username: best.USERNAME,
+        namaLengkap: best.NAMA_LENGKAP,
+        role: best.ROLE
+      });
+    }
+  }
+  return { accounts: accounts };
+}
+
 function authenticateUser(username, password) {
   if (!username || !password) throw new Error('Username dan kata sandi wajib diisi.');
   ensureDefaultSeedAccounts_();
   var users = sheetToObjects_('USERS');
   var key = String(username).trim().toLowerCase();
+  var normInputHp = normalizePhoneRead_(username);
   var found = null;
   for (var i = 0; i < users.length; i++) {
-    if (String(users[i].USERNAME).toLowerCase() === key || String(users[i].NO_HP) === String(username).trim()) {
-      found = users[i];
+    var u = users[i];
+    var uHp = normalizePhoneRead_(u.NO_HP);
+    if (
+      String(u.USERNAME || '').trim().toLowerCase() === key ||
+      String(u.EMAIL || '').trim().toLowerCase() === key ||
+      String(u.NO_HP || '').trim() === String(username).trim() ||
+      (normInputHp && uHp && uHp === normInputHp)
+    ) {
+      found = u;
       break;
     }
   }
@@ -432,15 +562,12 @@ function authenticateUser(username, password) {
   var sig = hashSha256_(token, getSpreadsheet_().getId());
   var fullToken = token + '.' + sig;
 
-  logActivity_(found, 'LOGIN', found.ID_USER, 'Berhasil masuk ke portal WARGA AMPEL.');
+  try {
+    logActivity_(found, 'LOGIN', found.ID_USER, 'Berhasil masuk ke portal WARGA AMPEL.');
+  } catch (ignore) {}
   return {
     token: fullToken,
-    user: {
-      idUser: found.ID_USER,
-      username: found.USERNAME,
-      namaLengkap: found.NAMA_LENGKAP,
-      role: found.ROLE
-    }
+    user: buildSessionUserFromRowGas_(found)
   };
 }
 
@@ -455,26 +582,52 @@ function verifyTokenAndRole_(token, allowedRoles) {
   if (!payload.exp || Date.now() > payload.exp) {
     throw new Error('Sesi login telah kedaluwarsa.');
   }
-  if (allowedRoles && allowedRoles.indexOf(payload.role) === -1) {
+
+  // Utamakan data terbaru langsung dari tabel USERS di Google Sheets
+  var liveUser = null;
+  try {
+    var users = sheetToObjects_('USERS');
+    for (var i = 0; i < users.length; i++) {
+      if (users[i].ID_USER === payload.idUser) {
+        liveUser = users[i];
+        break;
+      }
+    }
+  } catch (ignore) {}
+
+  if (liveUser && liveUser.STATUS_AKUN === 'NONAKTIF') {
+    throw new Error('Akun Anda dinonaktifkan. Hubungi pengelola desa.');
+  }
+
+  var effectiveRole = liveUser ? liveUser.ROLE : payload.role;
+  if (allowedRoles && allowedRoles.indexOf(effectiveRole) === -1) {
     throw new Error('Anda tidak memiliki hak akses untuk tindakan ini.');
+  }
+
+  if (liveUser) {
+    return {
+      ID_USER: liveUser.ID_USER,
+      USERNAME: liveUser.USERNAME,
+      NAMA_LENGKAP: liveUser.NAMA_LENGKAP,
+      ROLE: liveUser.ROLE,
+      NO_HP: normalizePhoneRead_(liveUser.NO_HP),
+      STATUS_AKUN: liveUser.STATUS_AKUN
+    };
   }
   return {
     ID_USER: payload.idUser,
     USERNAME: payload.username || '',
     NAMA_LENGKAP: payload.nama,
-    ROLE: payload.role
+    ROLE: payload.role,
+    NO_HP: '',
+    STATUS_AKUN: 'AKTIF'
   };
 }
 
 function getAuthMe(token) {
   var actor = verifyTokenAndRole_(token, null);
   return {
-    user: {
-      idUser: actor.ID_USER,
-      username: actor.USERNAME,
-      namaLengkap: actor.NAMA_LENGKAP,
-      role: actor.ROLE
-    }
+    user: buildSessionUserFromRowGas_(actor)
   };
 }
 
@@ -641,33 +794,93 @@ function submitReport(payload, token) {
     }
   }
 
-  var nama = String(payload.namaPelapor || '').trim();
-  var noHp = String(payload.noHpPelapor || '').trim();
-  var dob = String(payload.tanggalLahir || '').trim();
-  var uraian = String(payload.uraianMasalah || '').trim();
-  var alamat = String(payload.lokasiAlamat || '').trim();
-  if (nama.length < 2 || noHp.length < 8 || !/^\d{4}-\d{2}-\d{2}$/.test(dob) || uraian.length < 10 || alamat.length < 3) {
-    throw new Error('Data laporan belum lengkap. Periksa nama, no. HP, tanggal lahir, uraian, dan lokasi.');
+  var wargaRow = null;
+  if (sessionUser) {
+    try {
+      var wargaList = sheetToObjects_('WARGA');
+      for (var w = 0; w < wargaList.length; w++) {
+        if (wargaList[w].ID_USER === sessionUser.ID_USER) {
+          wargaRow = wargaList[w];
+          break;
+        }
+      }
+    } catch (ignore) {}
   }
 
-  var idWarga = payload.idWarga || '';
+  var nama = String(payload.namaPelapor || (sessionUser ? sessionUser.NAMA_LENGKAP : '') || '').trim();
+  var noHp = normalizePhoneRead_(payload.noHpPelapor || (sessionUser ? sessionUser.NO_HP : '') || '');
+  var noHpDigits = noHp.replace(/\D/g, '');
+  var dob = String(payload.tanggalLahir || (wargaRow ? formatDateIsoGas_(wargaRow.TANGGAL_LAHIR) : '') || '').trim();
+  var uraian = String(payload.uraianMasalah || '').trim();
+  var alamat = String(payload.lokasiAlamat || (wargaRow ? wargaRow.ALAMAT : '') || '').trim();
+
+  if (nama.length < 2 || noHpDigits.length < 8 || !/^\d{4}-\d{2}-\d{2}$/.test(dob) || uraian.length < 10 || alamat.length < 3) {
+    throw new Error('Data laporan belum lengkap. Periksa nama, no. HP (min. 8 digit), tanggal lahir, uraian (min. 10 karakter), dan lokasi.');
+  }
+
+  var idWarga = payload.idWarga || (wargaRow ? wargaRow.ID_WARGA : '');
   var idUserPelapor = payload.idUserPelapor || (sessionUser ? sessionUser.ID_USER : '');
-  if (!idWarga && sessionUser) {
-    var wargaRows = sheetToObjects_('WARGA');
-    for (var w = 0; w < wargaRows.length; w++) {
-      if (wargaRows[w].ID_USER === sessionUser.ID_USER) {
-        idWarga = wargaRows[w].ID_WARGA;
-        break;
+  var nikMasked = payload.nikMasked || (wargaRow ? wargaRow.NIK_MASKED : '');
+
+  var isGeneral = payload.isGeneralInquiry === true || payload.idLayanan === 'GENERAL_INQUIRY';
+  var matchedSvc = null;
+  if (!isGeneral && payload.idLayanan) {
+    try {
+      var svcRows = sheetToObjects_('KATEGORI_LAYANAN');
+      for (var sIdx = 0; sIdx < svcRows.length; sIdx++) {
+        if (svcRows[sIdx].ID_LAYANAN === payload.idLayanan) {
+          matchedSvc = svcRows[sIdx];
+          break;
+        }
       }
+    } catch (ignore) {}
+  }
+
+  var petugasId = matchedSvc ? (matchedSvc.ID_PETUGAS_PJ || '') : '';
+  var petugasNama = matchedSvc ? (matchedSvc.NAMA_PETUGAS_PJ || '') : '';
+  try {
+    var ptgRows = sheetToObjects_('PETUGAS');
+    if (petugasId) {
+      for (var pIdx = 0; pIdx < ptgRows.length; pIdx++) {
+        if (ptgRows[pIdx].ID_PETUGAS === petugasId) {
+          petugasNama = ptgRows[pIdx].NAMA_PETUGAS || petugasNama;
+          break;
+        }
+      }
+    }
+    if (!petugasNama) {
+      var userRows = sheetToObjects_('USERS');
+      for (var uIdx = 0; uIdx < userRows.length; uIdx++) {
+        if (userRows[uIdx].ROLE === 'OPERATOR') {
+          petugasNama = userRows[uIdx].NAMA_LENGKAP;
+          break;
+        }
+      }
+    }
+  } catch (ignore) {}
+  if (!petugasNama) petugasNama = 'Operator Desa Ampel';
+
+  var ticketId = generateTicketNumber();
+  var now = new Date().toISOString();
+  var hasAttachment = Boolean(payload.attachment && payload.attachment.base64);
+  var folder = null;
+  var driveFolderUrl = '01_LAPORAN_WARGA/' + ticketId;
+
+  try {
+    folder = getOrCreateTicketFolder_(ticketId);
+    if (folder) driveFolderUrl = folder.getUrl();
+  } catch (driveErr) {
+    if (hasAttachment) {
+      throw new Error('Gagal menyiapkan folder Google Drive untuk lampiran: ' + (driveErr.message || String(driveErr)));
     }
   }
 
-  var ticketId = generateTicketNumber();
-  var folder = getOrCreateTicketFolder_(ticketId);
-  var now = new Date().toISOString();
-  var isGeneral = payload.isGeneralInquiry === true || payload.idLayanan === 'GENERAL_INQUIRY';
+  var resolvedKodeGrup = isGeneral ? 'GENERAL_INQUIRY' : (matchedSvc ? matchedSvc.KATEGORI_GRUP : (payload.kodeGrup || 'A. Pengaduan'));
+  var resolvedIdLayanan = isGeneral ? 'GENERAL_INQUIRY' : (matchedSvc ? matchedSvc.ID_LAYANAN : (payload.idLayanan || 'GENERAL_INQUIRY'));
+  var resolvedNamaLayanan = isGeneral ? 'Saya Tidak Tahu (Perlu Klasifikasi)' : (matchedSvc ? matchedSvc.NAMA_LAYANAN : (payload.namaLayanan || 'Pengaduan Warga'));
+  var resolvedRtRw = String(payload.rtRw || (wargaRow ? wargaRow.RT_RW : '') || CONFIG.NAMA_DESA).trim();
   var judul = String(payload.judulLaporan || '').trim() ||
-    (isGeneral ? 'Laporan Umum Warga' : (payload.masalahUtama || 'Laporan Warga') + ' — ' + (payload.rtRw || CONFIG.NAMA_DESA));
+    (isGeneral ? 'Laporan Umum Warga (' + resolvedRtRw + ')' : (payload.masalahUtama || resolvedNamaLayanan) + ' — ' + resolvedRtRw);
 
   var shLap = getSheet_('LAPORAN');
   shLap.appendRow([
@@ -675,23 +888,23 @@ function submitReport(payload, token) {
     idWarga,
     idUserPelapor,
     nama,
-    noHp,
+    formatPhoneForSheet_(noHp),
     dob,
-    payload.nikMasked || '',
-    isGeneral ? 'GENERAL_INQUIRY' : (payload.kodeGrup || 'A. Pengaduan'),
-    isGeneral ? 'GENERAL_INQUIRY' : (payload.idLayanan || ''),
-    isGeneral ? 'Saya Tidak Tahu (Perlu Klasifikasi)' : (payload.namaLayanan || ''),
+    nikMasked,
+    resolvedKodeGrup,
+    resolvedIdLayanan,
+    resolvedNamaLayanan,
     judul,
-    isGeneral ? 'Belum diklasifikasi' : (payload.masalahUtama || ''),
+    isGeneral ? 'Belum diklasifikasi' : (payload.masalahUtama || resolvedNamaLayanan),
     uraian,
     alamat,
-    payload.rtRw || CONFIG.NAMA_DESA,
+    resolvedRtRw,
     JSON.stringify(payload.dataFormDinamis || {}),
     'Laporan diterima',
-    '',
-    'Operator Desa',
+    petugasId,
+    petugasNama,
     ticketId,
-    folder.getUrl(),
+    driveFolderUrl,
     now,
     now
   ]);
@@ -703,7 +916,7 @@ function submitReport(payload, token) {
     '', '', 'Sistem WARGA AMPEL', now
   ]);
 
-  if (payload.attachment && payload.attachment.base64) {
+  if (hasAttachment && folder) {
     saveBlobToDriveAndSheet_(
       folder, ticketId, updId,
       payload.attachment.fileName, payload.attachment.mimeType, payload.attachment.base64,
@@ -711,13 +924,27 @@ function submitReport(payload, token) {
     );
   }
 
-  saveNotification('ALL_STAFF', 'OPERATOR', ticketId, 'Laporan Baru ' + ticketId, judul);
-  logActivity_(sessionUser, 'SUBMIT_REPORT', ticketId, 'Laporan warga baru dibuat dan folder Drive disiapkan.');
+  try {
+    saveNotification('ALL_STAFF', 'OPERATOR', ticketId, 'Laporan Baru ' + ticketId, judul);
+  } catch (ignore) {}
+  try {
+    logActivity_(sessionUser, 'SUBMIT_REPORT', ticketId, 'Laporan warga baru dibuat.');
+  } catch (ignore) {}
+
   return {
     ticketId: ticketId,
-    driveFolderUrl: folder.getUrl(),
+    driveFolderUrl: driveFolderUrl,
     status: 'Laporan diterima',
-    createdAt: now
+    createdAt: now,
+    report: {
+      idLaporan: ticketId,
+      judulLaporan: judul,
+      namaLayanan: resolvedNamaLayanan,
+      statusTerbaru: 'Laporan diterima',
+      driveFolder: driveFolderUrl,
+      createdAt: now,
+      hasAttachment: hasAttachment
+    }
   };
 }
 
@@ -1103,14 +1330,22 @@ function classifyReport(payload, token) {
   }
   if (!target) throw new Error('Laporan tidak ditemukan.');
 
+  var petugasRows = sheetToObjects_('PETUGAS');
+  var petugasMap = {};
+  petugasRows.forEach(function(p) {
+    if (p.ID_PETUGAS) petugasMap[String(p.ID_PETUGAS)] = String(p.NAMA_PETUGAS || '');
+  });
+  var assignedPetugasId = svc.ID_PETUGAS_PJ || 'PTG-001';
+  var assignedPetugasName = petugasMap[String(assignedPetugasId)] || svc.NAMA_PETUGAS_PJ || 'Petugas Desa';
+
   var headers = shLap.getRange(1, 1, 1, shLap.getLastColumn()).getValues()[0];
   var now = new Date().toISOString();
   shLap.getRange(target._rowIndex, headers.indexOf('KODE_GRUP') + 1).setValue(svc.KATEGORI_GRUP);
   shLap.getRange(target._rowIndex, headers.indexOf('ID_LAYANAN') + 1).setValue(svc.ID_LAYANAN);
   shLap.getRange(target._rowIndex, headers.indexOf('NAMA_LAYANAN') + 1).setValue(svc.NAMA_LAYANAN);
   shLap.getRange(target._rowIndex, headers.indexOf('STATUS_TERBARU') + 1).setValue('Sedang ditindaklanjuti');
-  shLap.getRange(target._rowIndex, headers.indexOf('ID_PETUGAS_TUGAS') + 1).setValue(svc.ID_PETUGAS_PJ || 'PTG-001');
-  shLap.getRange(target._rowIndex, headers.indexOf('NAMA_PETUGAS_TUGAS') + 1).setValue(svc.NAMA_PETUGAS_PJ || 'Petugas Desa');
+  shLap.getRange(target._rowIndex, headers.indexOf('ID_PETUGAS_TUGAS') + 1).setValue(assignedPetugasId);
+  shLap.getRange(target._rowIndex, headers.indexOf('NAMA_PETUGAS_TUGAS') + 1).setValue(assignedPetugasName);
   shLap.getRange(target._rowIndex, headers.indexOf('UPDATED_AT') + 1).setValue(now);
 
   getSheet_('TINDAK_LANJUT').appendRow([
@@ -1145,10 +1380,10 @@ function getOrCreateTicketFolder_(ticketId) {
   var root = getRootDriveFolder_();
   var lapFolderIt = root.getFoldersByName('01_LAPORAN_WARGA');
   var lapFolder = lapFolderIt.hasNext() ? lapFolderIt.next() : root.createFolder('01_LAPORAN_WARGA');
-  lapFolder.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.VIEW);
+  trySetSharing_(lapFolder, DriveApp.Access.PRIVATE, DriveApp.Permission.VIEW);
   var ticketIt = lapFolder.getFoldersByName(ticketId);
   var ticketFolder = ticketIt.hasNext() ? ticketIt.next() : lapFolder.createFolder(ticketId);
-  ticketFolder.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.VIEW);
+  trySetSharing_(ticketFolder, DriveApp.Access.PRIVATE, DriveApp.Permission.VIEW);
   return ticketFolder;
 }
 
@@ -1163,7 +1398,7 @@ function saveBlobToDriveAndSheet_(folder, idLaporan, idUpdate, fileName, mimeTyp
   }
   var blob = Utilities.newBlob(bytes, mimeType, fileName);
   var file = folder.createFile(blob);
-  file.setSharing(DriveApp.Access.PRIVATE, DriveApp.Permission.VIEW);
+  trySetSharing_(file, DriveApp.Access.PRIVATE, DriveApp.Permission.VIEW);
 
   var idBukti = 'BKT-' + Date.now();
   var now = new Date().toISOString();
@@ -1213,6 +1448,15 @@ function getDriveEvidence(idBukti, ticketId, token) {
 
 // --- 6. SERVICE BUILDER (DYNAMIC SERVICES) ---
 function mapServicesWithFields_(services, forms) {
+  var officerMap = {};
+  try {
+    var ptg = sheetToObjects_('PETUGAS');
+    ptg.forEach(function(p) {
+      if (p.ID_PETUGAS && p.NAMA_PETUGAS) {
+        officerMap[p.ID_PETUGAS] = p.NAMA_PETUGAS;
+      }
+    });
+  } catch (ignore) {}
   return services.map(function(s) {
     var svcFields = forms
       .filter(function(f) { return f.ID_LAYANAN === s.ID_LAYANAN; })
@@ -1228,6 +1472,7 @@ function mapServicesWithFields_(services, forms) {
           URUTAN: Number(f.URUTAN) || 1
         };
       });
+    var pjId = s.ID_PETUGAS_PJ || 'PTG-001';
     return {
       ID_LAYANAN: s.ID_LAYANAN,
       KODE_LAYANAN: s.KODE_LAYANAN,
@@ -1236,8 +1481,8 @@ function mapServicesWithFields_(services, forms) {
       DESKRIPSI: s.DESKRIPSI,
       IKON: s.IKON || 'file-text',
       PERSYARATAN_DOKUMEN: s.PERSYARATAN_DOKUMEN || '',
-      ID_PETUGAS_PJ: s.ID_PETUGAS_PJ || 'PTG-001',
-      NAMA_PETUGAS_PJ: s.NAMA_PETUGAS_PJ || 'Petugas Desa',
+      ID_PETUGAS_PJ: pjId,
+      NAMA_PETUGAS_PJ: officerMap[pjId] || s.NAMA_PETUGAS_PJ || 'Petugas Desa',
       ALUR_STATUS: parseJsonSafe_(s.ALUR_STATUS, []),
       STATUS_AKTIF: s.STATUS_AKTIF === true || String(s.STATUS_AKTIF).toUpperCase() === 'TRUE',
       URUTAN: Number(s.URUTAN) || 1,
@@ -1349,7 +1594,7 @@ function createPetugas(payload, token) {
   var now = new Date().toISOString();
   getSheet_('PETUGAS').appendRow([
     idPetugas, '', payload.namaPetugas, payload.jabatan || 'Petugas Desa',
-    payload.bidangTugas || 'Pelayanan Umum', payload.noHp || '', 'AKTIF', now
+    payload.bidangTugas || 'Pelayanan Umum', formatPhoneForSheet_(payload.noHp), 'AKTIF', now
   ]);
   logActivity_(actor, 'CREATE_PETUGAS', idPetugas, 'Menambah petugas ' + payload.namaPetugas);
   return { ok: true, idPetugas: idPetugas };
@@ -1487,7 +1732,8 @@ function isTrueFlag_(val) {
 
 function buildWaUrlGas_(phone, allowHp) {
   if (!allowHp || !phone) return null;
-  var digits = String(phone).replace(/\D/g, '');
+  var normalized = normalizePhoneRead_(phone);
+  var digits = normalized.replace(/\D/g, '');
   if (digits.length < 9) return null;
   if (digits.indexOf('62') === 0) return 'https://wa.me/' + digits;
   if (digits.indexOf('0') === 0) return 'https://wa.me/62' + digits.slice(1);
@@ -1569,55 +1815,61 @@ function getPublicOrgStructure() {
   return {
     kelurahan: kelRaw.sort(sortUrutan).map(function(k) {
       var allowHp = isTrueFlag_(k.TAMPILKAN_HP);
+      var cleanHp = normalizePhoneRead_(k.NO_HP);
       return {
         id: k.ID_KELURAHAN, kategori: 'KELURAHAN', nama: k.NAMA, jabatan: k.JABATAN,
         tingkat: k.TINGKAT, wilayahTugas: k.WILAYAH_TUGAS || '', fotoUrl: k.FOTO_URL || undefined,
-        noHp: allowHp && k.NO_HP ? String(k.NO_HP) : undefined,
-        waUrl: buildWaUrlGas_(k.NO_HP, allowHp), tampilkanHp: allowHp, urutan: Number(k.URUTAN) || 1
+        noHp: allowHp && cleanHp ? cleanHp : undefined,
+        waUrl: buildWaUrlGas_(cleanHp, allowHp), tampilkanHp: allowHp, urutan: Number(k.URUTAN) || 1
       };
     }),
     lpmk: lpmkRaw.sort(sortUrutan).map(function(l) {
       var allowHp = isTrueFlag_(l.TAMPILKAN_HP);
+      var cleanHp = normalizePhoneRead_(l.NO_HP);
       return {
         id: l.ID_LPMK, kategori: 'LPMK', nama: l.NAMA, jabatan: l.JABATAN,
         bidang: l.BIDANG || '', fotoUrl: l.FOTO_URL || undefined,
-        noHp: allowHp && l.NO_HP ? String(l.NO_HP) : undefined,
-        waUrl: buildWaUrlGas_(l.NO_HP, allowHp), tampilkanHp: allowHp, urutan: Number(l.URUTAN) || 1
+        noHp: allowHp && cleanHp ? cleanHp : undefined,
+        waUrl: buildWaUrlGas_(cleanHp, allowHp), tampilkanHp: allowHp, urutan: Number(l.URUTAN) || 1
       };
     }),
     rw: rwRaw.sort(sortUrutan).map(function(r) {
       var allowHp = isTrueFlag_(r.TAMPILKAN_HP);
+      var cleanHp = normalizePhoneRead_(r.NO_HP);
       return {
         id: r.ID_RW, kategori: 'RW', nama: r.NAMA_KETUA, jabatan: r.JABATAN,
         idRw: r.ID_RW, nomorRw: r.NOMOR_RW, wilayahTugas: r.WILAYAH_TUGAS || '', fotoUrl: r.FOTO_URL || undefined,
-        noHp: allowHp && r.NO_HP ? String(r.NO_HP) : undefined,
-        waUrl: buildWaUrlGas_(r.NO_HP, allowHp), tampilkanHp: allowHp, urutan: Number(r.URUTAN) || 1
+        noHp: allowHp && cleanHp ? cleanHp : undefined,
+        waUrl: buildWaUrlGas_(cleanHp, allowHp), tampilkanHp: allowHp, urutan: Number(r.URUTAN) || 1
       };
     }),
     rt: rtRaw.filter(function(t) { return Boolean(rwMap[t.ID_RW]); }).sort(sortUrutan).map(function(t) {
       var allowHp = isTrueFlag_(t.TAMPILKAN_HP);
+      var cleanHp = normalizePhoneRead_(t.NO_HP);
       return {
         id: t.ID_RT, kategori: 'RT', nama: t.NAMA_KETUA, jabatan: t.JABATAN,
         idRw: t.ID_RW, idRt: t.ID_RT, nomorRw: rwMap[t.ID_RW].NOMOR_RW, nomorRt: t.NOMOR_RT,
         wilayahTugas: t.WILAYAH_TUGAS || '', fotoUrl: t.FOTO_URL || undefined,
-        noHp: allowHp && t.NO_HP ? String(t.NO_HP) : undefined,
-        waUrl: buildWaUrlGas_(t.NO_HP, allowHp), tampilkanHp: allowHp, urutan: Number(t.URUTAN) || 1
+        noHp: allowHp && cleanHp ? cleanHp : undefined,
+        waUrl: buildWaUrlGas_(cleanHp, allowHp), tampilkanHp: allowHp, urutan: Number(t.URUTAN) || 1
       };
     }),
     kader: kaderRaw.filter(function(k) { return Boolean(rtMap[k.ID_RT] && rwMap[rtMap[k.ID_RT].ID_RW]); }).sort(sortUrutan).map(function(k) {
       var pRt = rtMap[k.ID_RT];
       var pRw = rwMap[pRt.ID_RW];
       var allowHp = isTrueFlag_(k.TAMPILKAN_HP);
+      var cleanHp = normalizePhoneRead_(k.NO_HP);
       return {
         id: k.ID_KADER, kategori: 'KADER', nama: k.NAMA, jabatan: k.JABATAN,
         idRt: k.ID_RT, idRw: pRt.ID_RW, nomorRt: pRt.NOMOR_RT, nomorRw: pRw.NOMOR_RW,
         wilayahTugas: pRw.NOMOR_RW + ' · ' + pRt.NOMOR_RT, fotoUrl: k.FOTO_URL || undefined,
-        noHp: allowHp && k.NO_HP ? String(k.NO_HP) : undefined,
-        waUrl: buildWaUrlGas_(k.NO_HP, allowHp), tampilkanHp: allowHp, urutan: Number(k.URUTAN) || 1
+        noHp: allowHp && cleanHp ? cleanHp : undefined,
+        waUrl: buildWaUrlGas_(cleanHp, allowHp), tampilkanHp: allowHp, urutan: Number(k.URUTAN) || 1
       };
     }),
     sekolah: sekolahRaw.sort(sortUrutan).map(function(s) {
       var allowHp = isTrueFlag_(s.TAMPILKAN_HP);
+      var cleanHp = normalizePhoneRead_(s.NO_HP);
       return {
         id: s.ID_SEKOLAH, kategori: 'SEKOLAH', nama: s.NAMA_SEKOLAH,
         jabatan: s.KEPALA_SEKOLAH ? (s.JENJANG + ' · Kepala Sekolah: ' + s.KEPALA_SEKOLAH) : s.JENJANG,
@@ -1626,25 +1878,27 @@ function getPublicOrgStructure() {
         alamat: s.ALAMAT, wilayahTugas: s.ALAMAT,
         mapsUrl: buildMapsUrlGas_(s.MAPS_URL, s.NAMA_SEKOLAH + ', ' + s.ALAMAT),
         fotoUrl: s.FOTO_URL || undefined,
-        noHp: allowHp && s.NO_HP ? String(s.NO_HP) : undefined,
-        waUrl: buildWaUrlGas_(s.NO_HP, allowHp), tampilkanHp: allowHp, urutan: Number(s.URUTAN) || 1
+        noHp: allowHp && cleanHp ? cleanHp : undefined,
+        waUrl: buildWaUrlGas_(cleanHp, allowHp), tampilkanHp: allowHp, urutan: Number(s.URUTAN) || 1
       };
     }),
     guru: guruRaw.filter(function(g) { return Boolean(sekolahMap[g.ID_SEKOLAH]); }).sort(sortUrutan).map(function(g) {
       var pSchool = sekolahMap[g.ID_SEKOLAH];
       var allowHp = isTrueFlag_(g.TAMPILKAN_HP);
+      var cleanHp = normalizePhoneRead_(g.NO_HP);
       return {
         id: g.ID_GURU, kategori: 'GURU', nama: g.NAMA, jabatan: g.JABATAN,
         idSekolah: g.ID_SEKOLAH, namaSekolah: pSchool.NAMA_SEKOLAH, jenjang: pSchool.JENJANG,
         alamat: pSchool.ALAMAT, wilayahTugas: pSchool.NAMA_SEKOLAH,
         fotoUrl: g.FOTO_URL || undefined,
-        noHp: allowHp && g.NO_HP ? String(g.NO_HP) : undefined,
-        waUrl: buildWaUrlGas_(g.NO_HP, allowHp), tampilkanHp: allowHp, urutan: Number(g.URUTAN) || 1
+        noHp: allowHp && cleanHp ? cleanHp : undefined,
+        waUrl: buildWaUrlGas_(cleanHp, allowHp), tampilkanHp: allowHp, urutan: Number(g.URUTAN) || 1
       };
     }),
     balaiRw: balaiRaw.filter(function(b) { return Boolean(rwMap[b.ID_RW]); }).sort(sortUrutan).map(function(b) {
       var pRw = rwMap[b.ID_RW];
       var allowHp = isTrueFlag_(b.TAMPILKAN_HP);
+      var cleanHp = normalizePhoneRead_(b.NO_HP);
       return {
         id: b.ID_BALAI, kategori: 'BALAI_RW', nama: b.NAMA_BALAI,
         jabatan: 'Balai Pertemuan ' + pRw.NOMOR_RW,
@@ -1653,8 +1907,8 @@ function getPublicOrgStructure() {
         jamLayanan: b.JAM_LAYANAN || undefined,
         mapsUrl: buildMapsUrlGas_(b.MAPS_URL, b.NAMA_BALAI + ', ' + b.ALAMAT),
         fotoUrl: b.FOTO_URL || undefined,
-        noHp: allowHp && b.NO_HP ? String(b.NO_HP) : undefined,
-        waUrl: buildWaUrlGas_(b.NO_HP, allowHp), tampilkanHp: allowHp, urutan: Number(b.URUTAN) || 1
+        noHp: allowHp && cleanHp ? cleanHp : undefined,
+        waUrl: buildWaUrlGas_(cleanHp, allowHp), tampilkanHp: allowHp, urutan: Number(b.URUTAN) || 1
       };
     }),
     displaySettings: getOrgDisplaySettingsGas_()
@@ -1700,7 +1954,7 @@ function saveOrgPhotoToDrive_(fotoInput, prefixName) {
   var fotoIt = root.getFoldersByName('06_FOTO_ORGANISASI');
   var folder = fotoIt.hasNext() ? fotoIt.next() : root.createFolder('06_FOTO_ORGANISASI');
   var file = folder.createFile(blob);
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  trySetSharing_(file, DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   return 'https://drive.google.com/thumbnail?id=' + file.getId() + '&sz=w400';
 }
 
@@ -1714,23 +1968,24 @@ function createOrgItem(payload, token) {
   var active = payload.aktif !== false;
   var order = Number(payload.urutan) || 99;
   var resolvedFotoUrl = saveOrgPhotoToDrive_(payload.fotoUrl, id);
+  var sheetHp = formatPhoneForSheet_(payload.noHp);
 
   if (entity === 'kelurahan') {
-    getSheet_('ORG_KELURAHAN').appendRow([id, payload.nama, payload.jabatan, payload.tingkat || 'STAF', payload.wilayahTugas || '', resolvedFotoUrl || '', payload.noHp || '', allowHp, showPub, active, order, now, now]);
+    getSheet_('ORG_KELURAHAN').appendRow([id, payload.nama, payload.jabatan, payload.tingkat || 'STAF', payload.wilayahTugas || '', resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, now, now]);
   } else if (entity === 'lpmk') {
-    getSheet_('ORG_LPMK').appendRow([id, payload.nama, payload.jabatan, payload.bidang || '', resolvedFotoUrl || '', payload.noHp || '', allowHp, showPub, active, order, now, now]);
+    getSheet_('ORG_LPMK').appendRow([id, payload.nama, payload.jabatan, payload.bidang || '', resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, now, now]);
   } else if (entity === 'rw') {
-    getSheet_('ORG_RW').appendRow([id, payload.nomorRw, payload.namaKetua || payload.nama, payload.jabatan, payload.wilayahTugas || '', resolvedFotoUrl || '', payload.noHp || '', allowHp, showPub, active, order, now, now]);
+    getSheet_('ORG_RW').appendRow([id, payload.nomorRw, payload.namaKetua || payload.nama, payload.jabatan, payload.wilayahTugas || '', resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, now, now]);
   } else if (entity === 'rt') {
-    getSheet_('ORG_RT').appendRow([id, payload.idRw, payload.nomorRt, payload.namaKetua || payload.nama, payload.jabatan, payload.wilayahTugas || '', resolvedFotoUrl || '', payload.noHp || '', allowHp, showPub, active, order, now, now]);
+    getSheet_('ORG_RT').appendRow([id, payload.idRw, payload.nomorRt, payload.namaKetua || payload.nama, payload.jabatan, payload.wilayahTugas || '', resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, now, now]);
   } else if (entity === 'kader') {
-    getSheet_('ORG_KADER').appendRow([id, payload.idRt, payload.nama, payload.jabatan, resolvedFotoUrl || '', payload.noHp || '', allowHp, showPub, active, order, now, now]);
+    getSheet_('ORG_KADER').appendRow([id, payload.idRt, payload.nama, payload.jabatan, resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, now, now]);
   } else if (entity === 'sekolah') {
-    getSheet_('ORG_SEKOLAH').appendRow([id, payload.namaSekolah || payload.nama, payload.jenjang || 'SD / MI', payload.kepalaSekolah || '', payload.alamat || '', payload.mapsUrl || '', resolvedFotoUrl || '', payload.noHp || '', allowHp, showPub, active, order, now, now]);
+    getSheet_('ORG_SEKOLAH').appendRow([id, payload.namaSekolah || payload.nama, payload.jenjang || 'SD / MI', payload.kepalaSekolah || '', payload.alamat || '', payload.mapsUrl || '', resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, now, now]);
   } else if (entity === 'guru') {
-    getSheet_('ORG_GURU').appendRow([id, payload.idSekolah, payload.nama, payload.jabatan, resolvedFotoUrl || '', payload.noHp || '', allowHp, showPub, active, order, now, now]);
+    getSheet_('ORG_GURU').appendRow([id, payload.idSekolah, payload.nama, payload.jabatan, resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, now, now]);
   } else if (entity === 'balai_rw') {
-    getSheet_('ORG_BALAI_RW').appendRow([id, payload.idRw, payload.namaBalai || payload.nama, payload.alamat || '', payload.jamLayanan || '', payload.mapsUrl || '', resolvedFotoUrl || '', payload.noHp || '', allowHp, showPub, active, order, now, now]);
+    getSheet_('ORG_BALAI_RW').appendRow([id, payload.idRw, payload.namaBalai || payload.nama, payload.alamat || '', payload.jamLayanan || '', payload.mapsUrl || '', resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, now, now]);
   } else {
     throw new Error('Entitas organisasi tidak valid.');
   }
@@ -1757,23 +2012,24 @@ function updateOrgItem(payload, token) {
   var active = payload.aktif !== false;
   var order = Number(payload.urutan) || 1;
   var resolvedFotoUrl = saveOrgPhotoToDrive_(payload.fotoUrl, id);
+  var sheetHp = formatPhoneForSheet_(payload.noHp);
   var rowVals = [];
   if (entity === 'kelurahan') {
-    rowVals = [id, payload.nama, payload.jabatan, payload.tingkat || 'STAF', payload.wilayahTugas || '', resolvedFotoUrl || '', payload.noHp || '', allowHp, showPub, active, order, target.CREATED_AT, now];
+    rowVals = [id, payload.nama, payload.jabatan, payload.tingkat || 'STAF', payload.wilayahTugas || '', resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, target.CREATED_AT, now];
   } else if (entity === 'lpmk') {
-    rowVals = [id, payload.nama, payload.jabatan, payload.bidang || '', resolvedFotoUrl || '', payload.noHp || '', allowHp, showPub, active, order, target.CREATED_AT, now];
+    rowVals = [id, payload.nama, payload.jabatan, payload.bidang || '', resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, target.CREATED_AT, now];
   } else if (entity === 'rw') {
-    rowVals = [id, payload.nomorRw, payload.namaKetua || payload.nama, payload.jabatan, payload.wilayahTugas || '', resolvedFotoUrl || '', payload.noHp || '', allowHp, showPub, active, order, target.CREATED_AT, now];
+    rowVals = [id, payload.nomorRw, payload.namaKetua || payload.nama, payload.jabatan, payload.wilayahTugas || '', resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, target.CREATED_AT, now];
   } else if (entity === 'rt') {
-    rowVals = [id, payload.idRw, payload.nomorRt, payload.namaKetua || payload.nama, payload.jabatan, payload.wilayahTugas || '', resolvedFotoUrl || '', payload.noHp || '', allowHp, showPub, active, order, target.CREATED_AT, now];
+    rowVals = [id, payload.idRw, payload.nomorRt, payload.namaKetua || payload.nama, payload.jabatan, payload.wilayahTugas || '', resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, target.CREATED_AT, now];
   } else if (entity === 'kader') {
-    rowVals = [id, payload.idRt, payload.nama, payload.jabatan, resolvedFotoUrl || '', payload.noHp || '', allowHp, showPub, active, order, target.CREATED_AT, now];
+    rowVals = [id, payload.idRt, payload.nama, payload.jabatan, resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, target.CREATED_AT, now];
   } else if (entity === 'sekolah') {
-    rowVals = [id, payload.namaSekolah || payload.nama, payload.jenjang || 'SD / MI', payload.kepalaSekolah || '', payload.alamat || '', payload.mapsUrl || '', resolvedFotoUrl || '', payload.noHp || '', allowHp, showPub, active, order, target.CREATED_AT, now];
+    rowVals = [id, payload.namaSekolah || payload.nama, payload.jenjang || 'SD / MI', payload.kepalaSekolah || '', payload.alamat || '', payload.mapsUrl || '', resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, target.CREATED_AT, now];
   } else if (entity === 'guru') {
-    rowVals = [id, payload.idSekolah, payload.nama, payload.jabatan, resolvedFotoUrl || '', payload.noHp || '', allowHp, showPub, active, order, target.CREATED_AT, now];
+    rowVals = [id, payload.idSekolah, payload.nama, payload.jabatan, resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, target.CREATED_AT, now];
   } else if (entity === 'balai_rw') {
-    rowVals = [id, payload.idRw, payload.namaBalai || payload.nama, payload.alamat || '', payload.jamLayanan || '', payload.mapsUrl || '', resolvedFotoUrl || '', payload.noHp || '', allowHp, showPub, active, order, target.CREATED_AT, now];
+    rowVals = [id, payload.idRw, payload.namaBalai || payload.nama, payload.alamat || '', payload.jamLayanan || '', payload.mapsUrl || '', resolvedFotoUrl || '', sheetHp, allowHp, showPub, active, order, target.CREATED_AT, now];
   }
   sh.getRange(target._rowIndex, 1, 1, rowVals.length).setValues([rowVals]);
   logActivity_(actor, 'ORG_UPDATE_' + entity.toUpperCase(), id, 'Memperbarui data organisasi.');
@@ -1826,7 +2082,7 @@ function importOrgBatch(payload, token) {
     var active = item.aktif !== false;
     var order = Number(item.urutan) || (i + 1);
     var foto = String(item.fotoUrl || '');
-    var hp = String(item.noHp || '');
+    var hp = formatPhoneForSheet_(item.noHp);
     if (entity === 'kelurahan') {
       rowsToAppend.push([id, item.nama, item.jabatan, item.tingkat || 'STAF', item.wilayahTugas || '', foto, hp, allowHp, showPub, active, order, now, now]);
     } else if (entity === 'lpmk') {

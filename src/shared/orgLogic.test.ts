@@ -4,6 +4,7 @@ import {
   buildWhatsAppUrl,
   filterOrgProfiles,
   isValidIndonesianPhone,
+  normalizeIndonesianPhone,
   sanitizePublicOrgData,
   validateOrgInput,
 } from './orgLogic';
@@ -166,7 +167,15 @@ function makeMinimalDb(): SiwargaDatabase {
 test('Indonesian phone validation and wa.me/62 formatting respect privacy toggle', () => {
   assert.equal(isValidIndonesianPhone('081234567890'), true);
   assert.equal(isValidIndonesianPhone('+6281234567890'), true);
+  assert.equal(isValidIndonesianPhone(81234567890), true);
+  assert.equal(isValidIndonesianPhone('62081234567890'), true);
+  assert.equal(isValidIndonesianPhone('Tidak ada'), true);
   assert.equal(isValidIndonesianPhone('12345'), false);
+
+  assert.equal(normalizeIndonesianPhone(81100000001), '081100000001');
+  assert.equal(normalizeIndonesianPhone("'081234567890"), '081234567890');
+  assert.equal(normalizeIndonesianPhone('0812-3456-7890 / 081300001111'), '081234567890');
+  assert.equal(normalizeIndonesianPhone('-'), '');
 
   assert.equal(buildWhatsAppUrl('081234567890', true), 'https://wa.me/6281234567890');
   assert.equal(buildWhatsAppUrl('081234567890', false), null);
