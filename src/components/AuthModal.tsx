@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { KeyRound, ShieldCheck, UserPlus, X } from 'lucide-react';
-import { PublicUserSession, UserRole } from '../shared/types';
+import React, { useState } from 'react';
+import { Eye, EyeOff, KeyRound, ShieldCheck, UserPlus, X } from 'lucide-react';
+import { PublicUserSession } from '../shared/types';
 import { apiFetch, persistAuth } from '../lib/api';
 
 interface AuthModalProps {
@@ -8,41 +8,11 @@ interface AuthModalProps {
   onSuccess: (user: PublicUserSession) => void;
 }
 
-interface RoleAccountItem {
-  idUser: string;
-  username: string;
-  namaLengkap: string;
-  role: UserRole;
-}
-
-const ROLE_DISPLAY_LABEL: Record<UserRole, string> = {
-  SUPER_ADMIN: 'Super Admin',
-  KEPALA_DESA: 'Kepala Desa',
-  OPERATOR: 'Operator',
-  PETUGAS: 'Petugas',
-  WARGA: 'Warga',
-};
-
-const ROLE_DEFAULT_PASSWORDS: Record<UserRole, string> = {
-  SUPER_ADMIN: 'AdminAmpel2026!',
-  KEPALA_DESA: 'KadesAmpel2026!',
-  OPERATOR: 'OperatorAmpel2026!',
-  PETUGAS: 'PetugasAmpel2026!',
-  WARGA: 'WargaAmpel2026!',
-};
-
-const FALLBACK_ROLE_ACCOUNTS: RoleAccountItem[] = [
-  { idUser: 'USR-ADMIN-01', username: 'admin', namaLengkap: 'Super Admin Desa Ampel', role: 'SUPER_ADMIN' },
-  { idUser: 'USR-KADES-01', username: 'kades', namaLengkap: 'H. Sutrisno (Kepala Desa)', role: 'KEPALA_DESA' },
-  { idUser: 'USR-OP-01', username: 'operator', namaLengkap: 'Rina Kusuma (Operator)', role: 'OPERATOR' },
-  { idUser: 'USR-PTG-01', username: 'petugas', namaLengkap: 'Hendra Wijaya (Petugas Lapangan)', role: 'PETUGAS' },
-  { idUser: 'USR-WRG-01', username: 'sriwahyuni', namaLengkap: 'Ibu Sri Wahyuni', role: 'WARGA' },
-];
-
 export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess }) => {
   const [tab, setTab] = useState<'login' | 'register' | 'verify' | 'reset'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Registration fields
   const [namaLengkap, setNamaLengkap] = useState('');
@@ -57,27 +27,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess }) => {
   const [kodeVerifikasi, setKodeVerifikasi] = useState('');
   const [issuedCode, setIssuedCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
-  const [roleAccounts, setRoleAccounts] = useState<RoleAccountItem[]>(FALLBACK_ROLE_ACCOUNTS);
-
-  useEffect(() => {
-    let active = true;
-    apiFetch<{ accounts?: RoleAccountItem[] }>('/api/public/role-accounts')
-      .then((res) => {
-        if (active && Array.isArray(res?.accounts) && res.accounts.length > 0) {
-          setRoleAccounts(res.accounts);
-        }
-      })
-      .catch(() => {
-        // Pertahankan fallback jika endpoint lama belum diperbarui
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,12 +123,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess }) => {
     }
   };
 
-  const fillDemoAccount = (uname: string, pass: string) => {
-    setUsername(uname);
-    setPassword(pass);
-    setError('');
-  };
-
   return (
     <div
       role="dialog"
@@ -256,9 +204,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess }) => {
               <input
                 id="login-username"
                 type="text"
+                autoComplete="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Contoh: admin atau sriwahyuni"
+                placeholder="Masukkan username atau nomor HP"
                 className="w-full px-4 py-3 text-base border border-slate-300 rounded-xl"
               />
             </div>
@@ -266,14 +215,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess }) => {
               <label htmlFor="login-password" className="block text-sm font-semibold text-slate-900 mb-1">
                 Kata Sandi
               </label>
-              <input
-                id="login-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Masukkan kata sandi"
-                className="w-full px-4 py-3 text-base border border-slate-300 rounded-xl"
-              />
+              <div className="relative">
+                <input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Masukkan kata sandi"
+                  className="w-full px-4 py-3 pr-12 text-base border border-slate-300 rounded-xl"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Lihat kata sandi'}
+                  title={showPassword ? 'Sembunyikan kata sandi' : 'Lihat kata sandi'}
+                  className="absolute inset-y-0 right-0 px-3.5 flex items-center text-slate-500 hover:text-[#0F2942] cursor-pointer"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" aria-hidden="true" />
+                  ) : (
+                    <Eye className="w-5 h-5" aria-hidden="true" />
+                  )}
+                </button>
+              </div>
             </div>
             <button
               type="submit"
@@ -282,39 +247,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess }) => {
             >
               {loading ? 'Memeriksa...' : 'Masuk Sekarang'}
             </button>
-
-            {/* Quick credential fill buttons sourced from Database USERS */}
-            <div className="pt-4 border-t border-slate-200">
-              <p className="text-xs font-semibold text-slate-600 mb-2">
-                Akses Cepat Akun Database (Desa Ampel):
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                {roleAccounts.map((acc) => {
-                  const isWarga = acc.role === 'WARGA';
-                  return (
-                    <button
-                      key={acc.idUser || acc.username}
-                      type="button"
-                      onClick={() =>
-                        fillDemoAccount(acc.username, ROLE_DEFAULT_PASSWORDS[acc.role] || '')
-                      }
-                      className="p-2.5 border border-slate-300 rounded-lg text-left hover:bg-slate-50 cursor-pointer"
-                    >
-                      <span
-                        className={`font-bold block truncate ${
-                          isWarga ? 'text-[#0B6E4F]' : 'text-[#0F2942]'
-                        }`}
-                      >
-                        {acc.namaLengkap || ROLE_DISPLAY_LABEL[acc.role]}
-                      </span>
-                      <span className="font-mono text-slate-600 block truncate">
-                        {ROLE_DISPLAY_LABEL[acc.role]} · {acc.username}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           </form>
         )}
 
@@ -434,13 +366,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess }) => {
                 <label htmlFor="reg-pass" className="block text-sm font-semibold text-slate-900 mb-1">
                   Kata Sandi (min. 6)
                 </label>
-                <input
-                  id="reg-pass"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-base border border-slate-300 rounded-xl"
-                />
+                <div className="relative">
+                  <input
+                    id="reg-pass"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-3.5 py-2.5 pr-11 text-base border border-slate-300 rounded-xl"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Lihat kata sandi'}
+                    title={showPassword ? 'Sembunyikan kata sandi' : 'Lihat kata sandi'}
+                    className="absolute inset-y-0 right-0 px-3 flex items-center text-slate-500 hover:text-[#0F2942] cursor-pointer"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" aria-hidden="true" />
+                    ) : (
+                      <Eye className="w-4 h-4" aria-hidden="true" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
             <button
@@ -527,13 +475,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess }) => {
               <label htmlFor="rst-pass" className="block text-sm font-semibold text-slate-900 mb-1">
                 Kata Sandi Baru (min. 6 karakter)
               </label>
-              <input
-                id="rst-pass"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-4 py-3 text-base border border-slate-300 rounded-xl"
-              />
+              <div className="relative">
+                <input
+                  id="rst-pass"
+                  type={showNewPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-4 py-3 pr-12 text-base border border-slate-300 rounded-xl"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword((prev) => !prev)}
+                  aria-label={showNewPassword ? 'Sembunyikan kata sandi baru' : 'Lihat kata sandi baru'}
+                  title={showNewPassword ? 'Sembunyikan kata sandi baru' : 'Lihat kata sandi baru'}
+                  className="absolute inset-y-0 right-0 px-3.5 flex items-center text-slate-500 hover:text-[#0F2942] cursor-pointer"
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="w-5 h-5" aria-hidden="true" />
+                  ) : (
+                    <Eye className="w-5 h-5" aria-hidden="true" />
+                  )}
+                </button>
+              </div>
             </div>
             <button
               type="submit"
