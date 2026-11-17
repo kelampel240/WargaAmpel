@@ -52,6 +52,9 @@ export function mapRestToGasCall(
   if (pathname === '/api/reports/track' && upperMethod === 'POST') {
     return { action: 'getReportStatus', payload: bodyObj };
   }
+  if (pathname === '/api/citizen/dashboard' && upperMethod === 'GET') {
+    return { action: 'getCitizenDashboard', payload: {}, token: token || undefined };
+  }
   if (pathname === '/api/citizen/reports' && upperMethod === 'GET') {
     return { action: 'getCitizenReports', payload: {}, token: token || undefined };
   }

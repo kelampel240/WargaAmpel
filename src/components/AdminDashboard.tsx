@@ -135,10 +135,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         apiFetch<{ services: ServiceWithForm[] }>('/api/admin/services'),
         apiFetch<{ petugas: SheetPetugas[] }>('/api/admin/petugas'),
       ]);
-      setStats(dashRes.stats);
-      setReports(repRes.reports);
-      setServices(svcRes.services);
-      setPetugasList(ptgRes.petugas);
+      setStats(dashRes?.stats || null);
+      setReports(Array.isArray(repRes?.reports) ? repRes.reports : []);
+      setServices(Array.isArray(svcRes?.services) ? svcRes.services : []);
+      setPetugasList(Array.isArray(ptgRes?.petugas) ? ptgRes.petugas : []);
     } catch (err) {
       console.error(err);
     } finally {

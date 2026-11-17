@@ -28,9 +28,9 @@ export const CitizenDashboard: React.FC<CitizenDashboardProps> = ({ user, onNewR
         notifications: SheetNotifikasi[];
         announcements: SheetPengumuman[];
       }>('/api/citizen/dashboard');
-      setMyReports(res.myReports);
-      setNotifications(res.notifications);
-      setAnnouncements(res.announcements);
+      setMyReports(Array.isArray(res?.myReports) ? res.myReports : []);
+      setNotifications(Array.isArray(res?.notifications) ? res.notifications : []);
+      setAnnouncements(Array.isArray(res?.announcements) ? res.announcements : []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -121,7 +121,7 @@ export const CitizenDashboard: React.FC<CitizenDashboardProps> = ({ user, onNewR
 
                     <div className="mt-4 flex items-center justify-between">
                       <span className="text-sm text-slate-600">
-                        {rep.riwayatTindakLanjut.length} catatan tindak lanjut · {rep.buktiPublik.length} bukti publik
+                        {(rep.riwayatTindakLanjut || []).length} catatan tindak lanjut · {(rep.buktiPublik || []).length} bukti publik
                       </span>
                       <button
                         type="button"
@@ -134,7 +134,7 @@ export const CitizenDashboard: React.FC<CitizenDashboardProps> = ({ user, onNewR
 
                     {isOpen && (
                       <div className="mt-4 pt-4 border-t border-slate-200 space-y-3">
-                        {rep.riwayatTindakLanjut.map((upd) => (
+                        {(rep.riwayatTindakLanjut || []).map((upd) => (
                           <div key={upd.idUpdate} className="p-3 bg-slate-50 rounded-lg border border-slate-200 text-sm">
                             <div className="flex justify-between font-semibold text-slate-900">
                               <span>{upd.status}</span>
@@ -143,9 +143,9 @@ export const CitizenDashboard: React.FC<CitizenDashboardProps> = ({ user, onNewR
                             <p className="mt-1 text-slate-700">{upd.keterangan}</p>
                           </div>
                         ))}
-                        {rep.buktiPublik.length > 0 && (
+                        {(rep.buktiPublik || []).length > 0 && (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                            {rep.buktiPublik.map((doc) => (
+                            {(rep.buktiPublik || []).map((doc) => (
                               <a
                                 key={doc.idBukti}
                                 href={doc.previewUrl}

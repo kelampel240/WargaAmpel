@@ -73,14 +73,47 @@ interface AdminChartsProps {
 }
 
 export const AdminCharts: React.FC<AdminChartsProps> = ({ stats }) => {
+  const legacyStats = stats as unknown as {
+    monthlyTrend?: Array<{ month?: string; label?: string; count?: number }>;
+    categoryDistribution?: Array<{ label?: string; count?: number }>;
+  };
+
+  const monthlyIncoming = Array.isArray(stats?.monthlyIncoming)
+    ? stats.monthlyIncoming
+    : Array.isArray(legacyStats?.monthlyTrend)
+    ? legacyStats.monthlyTrend.map((m) => ({
+        label: String(m.label || m.month || '-'),
+        count: Number(m.count || 0),
+      }))
+    : [];
+
+  const topCategories = Array.isArray(stats?.topCategories)
+    ? stats.topCategories
+    : Array.isArray(legacyStats?.categoryDistribution)
+    ? legacyStats.categoryDistribution.map((c) => ({
+        label: String(c.label || 'Lainnya'),
+        count: Number(c.count || 0),
+      }))
+    : [];
+
+  const statusDistribution = Array.isArray(stats?.statusDistribution)
+    ? stats.statusDistribution
+    : [];
+
+  const selesaiCount = Number(stats?.completedVsUnfinished?.selesai ?? stats?.selesai ?? 0);
+  const belumSelesaiCount = Number(
+    stats?.completedVsUnfinished?.belumSelesai ??
+      Math.max(0, Number(stats?.totalLaporan ?? 0) - selesaiCount - Number(stats?.tidakDapatDitindaklanjuti ?? 0))
+  );
+
   const monthlyConfig: ChartConfiguration = {
     type: 'bar',
     data: {
-      labels: stats.monthlyIncoming.map((m) => m.label),
+      labels: monthlyIncoming.map((m) => m.label),
       datasets: [
         {
           label: 'Jumlah Laporan',
-          data: stats.monthlyIncoming.map((m) => m.count),
+          data: monthlyIncoming.map((m) => m.count),
           backgroundColor: '#0B6E4F',
           borderRadius: 6,
         },
@@ -99,11 +132,11 @@ export const AdminCharts: React.FC<AdminChartsProps> = ({ stats }) => {
   const topCategoriesConfig: ChartConfiguration = {
     type: 'bar',
     data: {
-      labels: stats.topCategories.map((c) => c.label),
+      labels: topCategories.map((c) => c.label),
       datasets: [
         {
           label: 'Total',
-          data: stats.topCategories.map((c) => c.count),
+          data: topCategories.map((c) => c.count),
           backgroundColor: '#0F2942',
           borderRadius: 6,
         },
@@ -123,10 +156,10 @@ export const AdminCharts: React.FC<AdminChartsProps> = ({ stats }) => {
   const statusDistConfig: ChartConfiguration = {
     type: 'doughnut',
     data: {
-      labels: stats.statusDistribution.map((s) => s.label),
+      labels: statusDistribution.map((s) => s.label),
       datasets: [
         {
-          data: stats.statusDistribution.map((s) => s.count),
+          data: statusDistribution.map((s) => s.count),
           backgroundColor: [
             '#64748B',
             '#0284C7',
@@ -159,7 +192,7 @@ export const AdminCharts: React.FC<AdminChartsProps> = ({ stats }) => {
       datasets: [
         {
           label: 'Laporan',
-          data: [stats.completedVsUnfinished.selesai, stats.completedVsUnfinished.belumSelesai],
+          data: [selesaiCount, belumSelesaiCount],
           backgroundColor: ['#0B6E4F', '#D97706'],
           borderRadius: 8,
         },

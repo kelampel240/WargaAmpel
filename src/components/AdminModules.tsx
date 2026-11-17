@@ -33,7 +33,7 @@ export const WargaManager: React.FC = () => {
   const load = async () => {
     setLoading(true);
     const res = await apiFetch<{ warga: SheetWarga[] }>('/api/admin/warga');
-    setWarga(res.warga);
+    setWarga(Array.isArray(res?.warga) ? res.warga : []);
     setLoading(false);
   };
 
@@ -141,7 +141,7 @@ export const PetugasManager: React.FC<{ userRole?: UserRole; onUpdated: () => vo
 
   const load = async () => {
     const res = await apiFetch<{ petugas: SheetPetugas[] }>('/api/admin/petugas');
-    setPetugas(res.petugas);
+    setPetugas(Array.isArray(res?.petugas) ? res.petugas : []);
   };
 
   useEffect(() => {
@@ -358,19 +358,28 @@ export const BuktiDriveExplorer: React.FC = () => {
               <span>Struktur Folder Induk: {tree.rootFolder}/</span>
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-              {tree.subfolders.map((sub) => (
-                <div key={sub} className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs">
-                  <div className="flex items-center gap-1.5 font-mono font-bold text-slate-800">
-                    <Folder className="w-4 h-4 text-[#0F2942]" aria-hidden="true" />
-                    <span className="truncate">{sub}</span>
+              {(Array.isArray(tree.subfolders) ? tree.subfolders : []).map((rawSub) => {
+                const subName =
+                  typeof rawSub === 'string'
+                    ? rawSub
+                    : String((rawSub as { name?: string })?.name || '');
+                const ticketCount = Array.isArray(tree.ticketFolders)
+                  ? tree.ticketFolders.length
+                  : typeof rawSub === 'object' && rawSub !== null && 'fileCount' in rawSub
+                  ? Number((rawSub as { fileCount?: number }).fileCount || 0)
+                  : 0;
+                return (
+                  <div key={subName} className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+                    <div className="flex items-center gap-1.5 font-mono font-bold text-slate-800">
+                      <Folder className="w-4 h-4 text-[#0F2942]" aria-hidden="true" />
+                      <span className="truncate">{subName}</span>
+                    </div>
+                    {subName === '01_LAPORAN_WARGA' && (
+                      <p className="mt-1.5 text-slate-600">{ticketCount} folder tiket</p>
+                    )}
                   </div>
-                  {sub === '01_LAPORAN_WARGA' && (
-                    <p className="mt-1.5 text-slate-600">
-                      {tree.ticketFolders.length} folder tiket
-                    </p>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -387,11 +396,12 @@ export const BuktiDriveExplorer: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {tree.evidence.map((doc) => {
-                  const isExternalUrl = doc.DRIVE_URL.startsWith('http');
+                {(Array.isArray(tree.evidence) ? tree.evidence : []).map((doc) => {
+                  const rawUrl = String(doc.DRIVE_URL || '');
+                  const isExternalUrl = rawUrl.startsWith('http');
                   const viewHref = isExternalUrl
-                    ? doc.DRIVE_URL
-                    : `${doc.DRIVE_URL}?ticket=${encodeURIComponent(doc.ID_LAPORAN)}`;
+                    ? rawUrl
+                    : `${rawUrl}?ticket=${encodeURIComponent(doc.ID_LAPORAN)}`;
                   return (
                     <tr key={doc.ID_BUKTI} className="hover:bg-slate-50">
                       <td className="py-3 px-4 font-mono font-semibold text-[#0F2942]">{doc.ID_LAPORAN}</td>
@@ -489,7 +499,7 @@ export const StatistikExporter: React.FC<{ stats: AdminDashboardStats | null }> 
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {stats.statusDistribution.map((s) => (
+              {(Array.isArray(stats?.statusDistribution) ? stats.statusDistribution : []).map((s) => (
                 <tr key={s.label}>
                   <td className="py-3 px-4 font-medium text-slate-900">{s.label}</td>
                   <td className="py-3 px-4 text-right font-mono font-bold tabular-nums">{s.count}</td>
@@ -514,7 +524,7 @@ export const AnnouncementsManager: React.FC = () => {
 
   const load = async () => {
     const res = await apiFetch<{ announcements: SheetPengumuman[] }>('/api/admin/announcements');
-    setItems(res.announcements);
+    setItems(Array.isArray(res?.announcements) ? res.announcements : []);
   };
 
   useEffect(() => {
@@ -611,8 +621,12 @@ export const SettingsAndGasGuide: React.FC = () => {
   const [pingResult, setPingResult] = useState('');
 
   useEffect(() => {
-    apiFetch<{ settings: SheetPengaturan[] }>('/api/admin/settings').then((r) => setSettings(r.settings));
-    apiFetch<{ bundle: Record<string, string> }>('/api/gas-bundle').then((r) => setBundle(r.bundle));
+    apiFetch<{ settings: SheetPengaturan[] }>('/api/admin/settings').then((r) =>
+      setSettings(Array.isArray(r?.settings) ? r.settings : [])
+    );
+    apiFetch<{ bundle: Record<string, string> }>('/api/gas-bundle').then((r) =>
+      setBundle(r?.bundle && typeof r.bundle === 'object' ? r.bundle : {})
+    );
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -757,7 +771,9 @@ export const ActivityLogViewer: React.FC = () => {
   const [logs, setLogs] = useState<SheetLogAktivitas[]>([]);
 
   useEffect(() => {
-    apiFetch<{ logs: SheetLogAktivitas[] }>('/api/admin/logs').then((r) => setLogs(r.logs));
+    apiFetch<{ logs: SheetLogAktivitas[] }>('/api/admin/logs').then((r) =>
+      setLogs(Array.isArray(r?.logs) ? r.logs : [])
+    );
   }, []);
 
   return (

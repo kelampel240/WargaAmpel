@@ -109,6 +109,8 @@ function doPost(e) {
         return jsonResponse(verifyCitizenAccount(payload));
       case 'resetPassword':
         return jsonResponse(resetPassword(payload));
+      case 'getCitizenDashboard':
+        return jsonResponse(getCitizenDashboard(token));
       case 'getCitizenReports':
         return jsonResponse(getCitizenReports(token));
       case 'markNotificationRead':
@@ -798,15 +800,78 @@ function getReportStatus(ticketId, tanggalLahir, last4Hp) {
   };
 }
 
-function getCitizenReports(token) {
+function buildCitizenTrackingItem_(found, allFollowUps, allDocs) {
+  var followUps = allFollowUps
+    .filter(function(u) { return u.ID_LAPORAN === found.ID_LAPORAN; })
+    .map(function(u) {
+      return {
+        idUpdate: u.ID_UPDATE,
+        tanggalUpdate: String(u.TANGGAL_UPDATE),
+        status: u.STATUS,
+        keterangan: u.KETERANGAN,
+        dinasTujuan: u.DINAS_TUJUAN || '',
+        nomorSurat: u.NOMOR_SURAT || '',
+        petugas: u.PETUGAS || ''
+      };
+    });
+  var buktiPublik = allDocs
+    .filter(function(b) { return b.ID_LAPORAN === found.ID_LAPORAN && b.VISIBILITAS === 'PUBLIK_WARGA'; })
+    .map(function(b) {
+      return {
+        idBukti: b.ID_BUKTI,
+        idUpdate: b.ID_UPDATE,
+        namaFile: b.NAMA_FILE,
+        mimeType: b.MIME_TYPE || 'image/jpeg',
+        jenisBukti: b.JENIS_BUKTI,
+        tanggalUpload: String(b.TANGGAL_UPLOAD),
+        previewUrl: b.DRIVE_URL
+      };
+    });
+  var showDinas =
+    found.STATUS_TERBARU === 'Sudah diusulkan ke dinas terkait' ||
+    found.STATUS_TERBARU === 'Menunggu tindak lanjut dinas';
+  return {
+    idLaporan: found.ID_LAPORAN,
+    judulLaporan: found.JUDUL_LAPORAN,
+    namaLayanan: found.NAMA_LAYANAN,
+    kodeGrup: found.KODE_GRUP,
+    statusTerbaru: found.STATUS_TERBARU,
+    pesanKhususDinas: showDinas ? DINAS_PROPOSAL_MESSAGE : null,
+    alasanPenolakan: found.STATUS_TERBARU === 'Tidak dapat ditindaklanjuti' ? (found.ALASAN_TIDAK_DITINDAKLANJUTI || null) : null,
+    tanggalLaporan: String(found.CREATED_AT),
+    lokasiRingkas: (found.RT_RW || 'Desa') + ', ' + CONFIG.NAMA_DESA,
+    petugasPenanggungJawab: found.NAMA_PETUGAS_TUGAS || 'Petugas Desa Ampel',
+    riwayatTindakLanjut: followUps,
+    buktiPublik: buktiPublik
+  };
+}
+
+function getCitizenDashboard(token) {
   var actor = verifyTokenAndRole_(token, null);
-  var reports = sheetToObjects_('LAPORAN').filter(function(r) {
-    return r.ID_USER_PELAPOR === actor.ID_USER;
-  });
+  var allFollowUps = sheetToObjects_('TINDAK_LANJUT');
+  var allDocs = sheetToObjects_('BUKTI_DOKUMEN');
+  var myReports = sheetToObjects_('LAPORAN')
+    .filter(function(r) { return r.ID_USER_PELAPOR === actor.ID_USER; })
+    .map(function(r) { return buildCitizenTrackingItem_(r, allFollowUps, allDocs); });
   var notifications = sheetToObjects_('NOTIFIKASI').filter(function(n) {
-    return n.TARGET_USER_ID === actor.ID_USER;
+    return n.TARGET_USER_ID === actor.ID_USER || n.TARGET_ROLE === 'ALL';
   });
-  return { reports: reports, notifications: notifications };
+  var announcements = getPublicAnnouncements().announcements || [];
+  return {
+    myReports: myReports,
+    notifications: notifications,
+    announcements: announcements
+  };
+}
+
+function getCitizenReports(token) {
+  var dash = getCitizenDashboard(token);
+  return {
+    reports: dash.myReports,
+    myReports: dash.myReports,
+    notifications: dash.notifications,
+    announcements: dash.announcements
+  };
 }
 
 function markNotificationRead(idNotifikasi, token) {
@@ -856,11 +921,11 @@ function getAdminDashboard(token) {
 
   var monthCounts = {};
   reports.forEach(function(r) {
-    var m = String(r.CREATED_AT || '').slice(0, 7) || '2026-01';
+    var m = String(r.CREATED_AT || '').slice(0, 7) || new Date().toISOString().slice(0, 7);
     monthCounts[m] = (monthCounts[m] || 0) + 1;
   });
-  var monthlyTrend = Object.keys(monthCounts).sort().map(function(m) {
-    return { month: m, count: monthCounts[m] };
+  var monthlyIncoming = Object.keys(monthCounts).sort().map(function(m) {
+    return { label: m, month: m, count: monthCounts[m] };
   });
 
   var officerCounts = {};
@@ -876,6 +941,13 @@ function getAdminDashboard(token) {
     return { name: n, total: officerCounts[n].total, selesai: officerCounts[n].selesai };
   });
 
+  var selesaiTotal = reports.filter(function(r) {
+    return r.STATUS_TERBARU === 'Sudah diperbaiki atau ditangani';
+  }).length;
+  var ditolakTotal = reports.filter(function(r) {
+    return r.STATUS_TERBARU === 'Tidak dapat ditindaklanjuti';
+  }).length;
+
   return {
     stats: {
       totalLaporan: reports.length,
@@ -883,13 +955,19 @@ function getAdminDashboard(token) {
       menungguPenanganan: reports.filter(function(r) { return r.STATUS_TERBARU === 'Laporan diterima' || r.STATUS_TERBARU === 'Sedang ditindaklanjuti'; }).length,
       sedangDiproses: reports.filter(function(r) { return r.STATUS_TERBARU === 'Sedang dalam proses perbaikan'; }).length,
       diusulkanKeDinas: reports.filter(function(r) { return r.STATUS_TERBARU === 'Sudah diusulkan ke dinas terkait' || r.STATUS_TERBARU === 'Menunggu tindak lanjut dinas'; }).length,
-      selesai: reports.filter(function(r) { return r.STATUS_TERBARU === 'Sudah diperbaiki atau ditangani'; }).length,
-      tidakDapatDitindaklanjuti: reports.filter(function(r) { return r.STATUS_TERBARU === 'Tidak dapat ditindaklanjuti'; }).length,
+      selesai: selesaiTotal,
+      tidakDapatDitindaklanjuti: ditolakTotal,
       totalWarga: warga.length,
       totalPetugas: petugas.length,
+      monthlyIncoming: monthlyIncoming,
+      topCategories: categoryDistribution,
       statusDistribution: statusDistribution,
+      completedVsUnfinished: {
+        selesai: selesaiTotal,
+        belumSelesai: Math.max(0, reports.length - selesaiTotal - ditolakTotal)
+      },
       categoryDistribution: categoryDistribution,
-      monthlyTrend: monthlyTrend,
+      monthlyTrend: monthlyIncoming,
       officerPerformance: officerPerformance
     }
   };
@@ -1293,15 +1371,20 @@ function getDriveTree(token) {
       VISIBILITAS: b.VISIBILITAS
     };
   });
+  var ticketSet = {};
+  docs.forEach(function(d) {
+    if (d.ID_LAPORAN) ticketSet[d.ID_LAPORAN] = true;
+  });
   return {
     rootFolder: 'SIWARGA_DESA',
     subfolders: [
-      { name: '01_LAPORAN_WARGA', fileCount: docs.length },
-      { name: '02_SURAT_ADMINISTRASI', fileCount: 0 },
-      { name: '03_BUKTI_PENANGANAN', fileCount: 0 },
-      { name: '04_SURAT_KE_DINAS', fileCount: 0 },
-      { name: '05_DOKUMEN_PENDUKUNG', fileCount: 0 }
+      '01_LAPORAN_WARGA',
+      '02_SURAT_ADMINISTRASI',
+      '03_BUKTI_PENANGANAN',
+      '04_SURAT_KE_DINAS',
+      '05_DOKUMEN_PENDUKUNG'
     ],
+    ticketFolders: Object.keys(ticketSet),
     evidence: docs
   };
 }
