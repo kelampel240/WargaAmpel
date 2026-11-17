@@ -28,7 +28,7 @@ jobs:
         run: npm install
       - name: Build static web app
         env:
-          VITE_GAS_WEB_APP_URL: ${{ vars.VITE_GAS_WEB_APP_URL || 'https://script.google.com/macros/s/AKfycbz898DjJanfBIwZxbm6cMq6hbIr5Gkd9eREGpJ-uBVeU3jVRwBpNvHKoLT4JLwncwh-lw/exec' }}
+          VITE_GAS_WEB_APP_URL: ${{ vars.VITE_GAS_WEB_APP_URL || 'https://script.google.com/macros/s/AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ/exec' }}
         run: npm run build
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

@@ -10,8 +10,8 @@
 var CONFIG = {
   SPREADSHEET_ID: 'GANTI_DENGAN_ID_GOOGLE_SHEETS_DATABASE_SIWARGA',
   ROOT_FOLDER_ID: '1gT7JFuHwe2LYhJp2BlZeQ9j5tgLC2IJx',
-  DEPLOYMENT_ID: 'AKfycbz898DjJanfBIwZxbm6cMq6hbIr5Gkd9eREGpJ-uBVeU3jVRwBpNvHKoLT4JLwncwh-lw',
-  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbz898DjJanfBIwZxbm6cMq6hbIr5Gkd9eREGpJ-uBVeU3jVRwBpNvHKoLT4JLwncwh-lw/exec',
+  DEPLOYMENT_ID: 'AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ',
+  WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ/exec',
   NAMA_DESA: 'Desa Ampel',
   SESSION_TTL_HOURS: 12,
   MAX_FILE_SIZE_BYTES: 5 * 1024 * 1024, // 5 MB

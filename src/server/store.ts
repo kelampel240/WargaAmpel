@@ -872,8 +872,8 @@ function createInitialDatabase(): SiwargaDatabase {
       { KUNCI: 'MAX_FILE_MB', NILAI: '5', KETERANGAN: 'Batas maksimal ukuran file unggahan (MB)' },
       { KUNCI: 'SPREADSHEET_ID', NILAI: 'DATABASE_SIWARGA_CONTOH_ID', KETERANGAN: 'ID Google Spreadsheet DATABASE_SIWARGA' },
       { KUNCI: 'DRIVE_ROOT_FOLDER_ID', NILAI: '1gT7JFuHwe2LYhJp2BlZeQ9j5tgLC2IJx', KETERANGAN: 'ID Folder Induk Google Drive SIWARGA_DESA (Foto & Dokumen)' },
-      { KUNCI: 'GAS_WEB_APP_URL', NILAI: 'https://script.google.com/macros/s/AKfycbz898DjJanfBIwZxbm6cMq6hbIr5Gkd9eREGpJ-uBVeU3jVRwBpNvHKoLT4JLwncwh-lw/exec', KETERANGAN: 'URL Web App Google Apps Script (/exec)' },
-      { KUNCI: 'GAS_DEPLOYMENT_ID', NILAI: 'AKfycbz898DjJanfBIwZxbm6cMq6hbIr5Gkd9eREGpJ-uBVeU3jVRwBpNvHKoLT4JLwncwh-lw', KETERANGAN: 'ID Penerapan Google Apps Script Web App' },
+      { KUNCI: 'GAS_WEB_APP_URL', NILAI: 'https://script.google.com/macros/s/AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ/exec', KETERANGAN: 'URL Web App Google Apps Script (/exec)' },
+      { KUNCI: 'GAS_DEPLOYMENT_ID', NILAI: 'AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ', KETERANGAN: 'ID Penerapan Google Apps Script Web App' },
       { KUNCI: 'GAS_SYNC_ENABLED', NILAI: 'false', KETERANGAN: 'Aktifkan sinkronisasi langsung ke Google Apps Script Web App' },
       {
         KUNCI: 'ORG_PENGUMUMAN',
@@ -1470,17 +1470,23 @@ export function loadDatabase(): SiwargaDatabase {
     mutated = true;
   }
   const gasUrlSetting = parsed.PENGATURAN?.find((p) => p.KUNCI === 'GAS_WEB_APP_URL');
-  const targetGasUrl = 'https://script.google.com/macros/s/AKfycbz898DjJanfBIwZxbm6cMq6hbIr5Gkd9eREGpJ-uBVeU3jVRwBpNvHKoLT4JLwncwh-lw/exec';
-  if (gasUrlSetting && !gasUrlSetting.NILAI) {
+  const targetGasUrl = 'https://script.google.com/macros/s/AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ/exec';
+  const oldGasUrl = 'https://script.google.com/macros/s/AKfycbz898DjJanfBIwZxbm6cMq6hbIr5Gkd9eREGpJ-uBVeU3jVRwBpNvHKoLT4JLwncwh-lw/exec';
+  if (gasUrlSetting && (!gasUrlSetting.NILAI || gasUrlSetting.NILAI === oldGasUrl)) {
     gasUrlSetting.NILAI = targetGasUrl;
     mutated = true;
   }
-  if (parsed.PENGATURAN && !parsed.PENGATURAN.some((p) => p.KUNCI === 'GAS_DEPLOYMENT_ID')) {
+  const gasDeploySetting = parsed.PENGATURAN?.find((p) => p.KUNCI === 'GAS_DEPLOYMENT_ID');
+  const targetDeployId = 'AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ';
+  if (!gasDeploySetting && parsed.PENGATURAN) {
     parsed.PENGATURAN.push({
       KUNCI: 'GAS_DEPLOYMENT_ID',
-      NILAI: 'AKfycbz898DjJanfBIwZxbm6cMq6hbIr5Gkd9eREGpJ-uBVeU3jVRwBpNvHKoLT4JLwncwh-lw',
+      NILAI: targetDeployId,
       KETERANGAN: 'ID Penerapan Google Apps Script Web App',
     });
+    mutated = true;
+  } else if (gasDeploySetting && gasDeploySetting.NILAI === 'AKfycbz898DjJanfBIwZxbm6cMq6hbIr5Gkd9eREGpJ-uBVeU3jVRwBpNvHKoLT4JLwncwh-lw') {
+    gasDeploySetting.NILAI = targetDeployId;
     mutated = true;
   }
   if (mutated) {

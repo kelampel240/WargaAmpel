@@ -1009,7 +1009,7 @@
     },
     {
       "KUNCI": "GAS_WEB_APP_URL",
-      "NILAI": "https://script.google.com/macros/s/AKfycbz898DjJanfBIwZxbm6cMq6hbIr5Gkd9eREGpJ-uBVeU3jVRwBpNvHKoLT4JLwncwh-lw/exec",
+      "NILAI": "https://script.google.com/macros/s/AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ/exec",
       "KETERANGAN": "URL Web App Google Apps Script (/exec) jika mode sinkronisasi eksternal diaktifkan"
     },
     {
@@ -1019,7 +1019,7 @@
     },
     {
       "KUNCI": "GAS_DEPLOYMENT_ID",
-      "NILAI": "AKfycbz898DjJanfBIwZxbm6cMq6hbIr5Gkd9eREGpJ-uBVeU3jVRwBpNvHKoLT4JLwncwh-lw",
+      "NILAI": "AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ",
       "KETERANGAN": "ID Penerapan Google Apps Script Web App"
     }
   ],

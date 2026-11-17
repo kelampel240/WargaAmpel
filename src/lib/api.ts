@@ -6,7 +6,7 @@ const USER_STORAGE_KEY = 'siwarga_auth_user';
 const GAS_URL_STORAGE_KEY = 'warga_ampel_gas_url';
 
 export const DEFAULT_GAS_WEB_APP_URL =
-  'https://script.google.com/macros/s/AKfycbz898DjJanfBIwZxbm6cMq6hbIr5Gkd9eREGpJ-uBVeU3jVRwBpNvHKoLT4JLwncwh-lw/exec';
+  'https://script.google.com/macros/s/AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ/exec';
 
 export function getGasWebAppUrl(): string {
   try {
