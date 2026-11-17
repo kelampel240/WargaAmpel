@@ -108,7 +108,14 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
       }),
     });
     const text = await res.text();
-    const data = JSON.parse(text || '{}') as Record<string, unknown>;
+    let data: Record<string, unknown> = {};
+    try {
+      data = JSON.parse(text || '{}') as Record<string, unknown>;
+    } catch {
+      throw new Error(
+        'Backend Google Apps Script mengembalikan halaman HTML, bukan JSON. Pastikan di Apps Script (Deploy → Manage deployments) akses disetel ke "Anyone" (Siapa saja) dan SPREADSHEET_ID pada Code.gs sudah diisi.'
+      );
+    }
     if (!res.ok || data.error) {
       throw new Error(String(data.error || `Permintaan GAS gagal (${res.status})`));
     }
