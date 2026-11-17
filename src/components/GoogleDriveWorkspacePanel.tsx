@@ -20,6 +20,7 @@ import {
   getGoogleDriveAccessToken,
   googleSignIn,
   initGoogleDriveAuth,
+  isFirebaseOAuthSupportedOrigin,
   logoutGoogleDrive,
 } from '../lib/googleDriveAuth';
 import {
@@ -37,7 +38,15 @@ import {
   updateFileContentInDrive,
   uploadFileToDrive,
 } from '../lib/googleDriveClient';
-import { apiFetch, formatTanggalIndo, getStoredToken } from '../lib/api';
+import {
+  apiFetch,
+  DEFAULT_DRIVE_FOLDER_ID,
+  DEFAULT_SPREADSHEET_ID,
+  fetchGasConnectionStatus,
+  formatTanggalIndo,
+  getStoredToken,
+  isGasMode,
+} from '../lib/api';
 import { SheetBuktiDokumen, SheetPengaturan } from '../shared/types';
 import { GoogleSignInButton } from './GoogleSignInButton';
 import { DriveConfirmDialog } from './DriveConfirmDialog';
@@ -77,7 +86,11 @@ export const GoogleDriveWorkspacePanel: React.FC<GoogleDriveWorkspacePanelProps>
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [folderInput, setFolderInput] = useState('');
-  const [configuredRootId, setConfiguredRootId] = useState('');
+  const [configuredRootId, setConfiguredRootId] = useState(DEFAULT_DRIVE_FOLDER_ID);
+  const [linkedSheetId, setLinkedSheetId] = useState(DEFAULT_SPREADSHEET_ID);
+  const [gasConnected, setGasConnected] = useState(false);
+  const canUseFirebaseOAuth = isFirebaseOAuthSupportedOrigin();
+  const gasMode = isGasMode();
 
   const [newFolderName, setNewFolderName] = useState('');
   const [showNewFolder, setShowNewFolder] = useState(false);
@@ -114,16 +127,38 @@ export const GoogleDriveWorkspacePanel: React.FC<GoogleDriveWorkspacePanelProps>
   }, []);
 
   useEffect(() => {
+    let active = true;
+    fetchGasConnectionStatus().then((status) => {
+      if (!active) return;
+      setGasConnected(status.connected);
+      if (status.rootFolderId) setConfiguredRootId(status.rootFolderId);
+      if (status.spreadsheetId) setLinkedSheetId(status.spreadsheetId);
+    });
+
     apiFetch<{ settings: SheetPengaturan[] }>('/api/admin/settings')
       .then((res) => {
-        const rootSetting = res.settings.find((s) => s.KUNCI === 'DRIVE_ROOT_FOLDER_ID')?.NILAI || '';
-        if (rootSetting && !rootSetting.includes('ISI_')) {
+        if (!active) return;
+        const list = Array.isArray(res?.settings) ? res.settings : [];
+        const rootSetting = String(list.find((s) => s.KUNCI === 'DRIVE_ROOT_FOLDER_ID')?.NILAI || '');
+        if (rootSetting && !rootSetting.includes('ISI_') && !rootSetting.includes('GANTI_')) {
           setConfiguredRootId(rootSetting);
+        }
+        const sheetSetting = String(list.find((s) => s.KUNCI === 'SPREADSHEET_ID')?.NILAI || '');
+        if (
+          sheetSetting &&
+          !sheetSetting.includes('CONTOH') &&
+          !sheetSetting.includes('ISI_') &&
+          !sheetSetting.includes('GANTI_')
+        ) {
+          setLinkedSheetId(sheetSetting);
         }
       })
       .catch(() => {
         // ignore if settings unavailable
       });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const loadFolder = async (folderId: string, search = searchQuery) => {
@@ -280,7 +315,8 @@ export const GoogleDriveWorkspacePanel: React.FC<GoogleDriveWorkspacePanelProps>
         confirmLabel: 'Simpan ke Pengaturan',
         onConfirm: async () => {
           const currentSettings = await apiFetch<{ settings: SheetPengaturan[] }>('/api/admin/settings');
-          const nextSettings = currentSettings.settings.map((s) =>
+          const list = Array.isArray(currentSettings?.settings) ? currentSettings.settings : [];
+          const nextSettings = list.map((s) =>
             s.KUNCI === 'DRIVE_ROOT_FOLDER_ID' ? { ...s, NILAI: rootFolder.id } : s
           );
           await apiFetch('/api/admin/settings', {
@@ -459,17 +495,23 @@ export const GoogleDriveWorkspacePanel: React.FC<GoogleDriveWorkspacePanelProps>
     }
   };
 
+  const effectiveDriveId = configuredRootId || DEFAULT_DRIVE_FOLDER_ID;
+  const effectiveDriveUrl = `https://drive.google.com/drive/folders/${effectiveDriveId}`;
+  const effectiveSheetUrl = `https://docs.google.com/spreadsheets/d/${linkedSheetId || DEFAULT_SPREADSHEET_ID}/edit`;
+
   return (
     <div className="space-y-5">
       {/* Google Drive Connection Card */}
       <div className="bg-white border border-slate-200 rounded-xl p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h3 className="font-display text-lg font-bold text-[#0F2942]">
-            Integrasi Langsung Google Drive
+            Integrasi Google Drive (SIWARGA_DESA)
           </h3>
           {needsAuth ? (
             <p className="text-sm text-slate-600 mt-0.5">
-              Masuk dengan akun Google untuk menjelajahi folder, mengunggah bukti laporan, dan mencadangkan database ke Google Drive Anda.
+              {gasMode || !canUseFirebaseOAuth
+                ? `Terhubung ${gasConnected ? 'aktif' : ''} melalui Google Apps Script · ID Folder Drive: ${effectiveDriveId}`
+                : 'Masuk dengan akun Google untuk menjelajahi folder, mengunggah bukti laporan, dan mencadangkan database ke Google Drive Anda.'}
             </p>
           ) : (
             <p className="text-sm text-slate-700 mt-0.5">
@@ -485,12 +527,32 @@ export const GoogleDriveWorkspacePanel: React.FC<GoogleDriveWorkspacePanelProps>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <a
+            href={effectiveDriveUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="px-3.5 py-2 text-xs sm:text-sm font-bold bg-[#0B6E4F] text-white rounded-lg hover:bg-[#08553d] flex items-center gap-1.5 whitespace-nowrap"
+          >
+            <ExternalLink className="w-4 h-4" aria-hidden="true" />
+            <span>Buka Folder Drive</span>
+          </a>
+          <a
+            href={effectiveSheetUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="px-3.5 py-2 text-xs sm:text-sm font-semibold border border-slate-300 text-slate-800 rounded-lg hover:bg-slate-100 flex items-center gap-1.5 whitespace-nowrap"
+          >
+            <ExternalLink className="w-4 h-4" aria-hidden="true" />
+            <span>Buka Google Sheets</span>
+          </a>
           {needsAuth ? (
-            <GoogleSignInButton
-              onClick={handleGoogleLogin}
-              disabled={signingIn}
-              label={signingIn ? 'Menghubungkan...' : 'Sign in with Google'}
-            />
+            canUseFirebaseOAuth ? (
+              <GoogleSignInButton
+                onClick={handleGoogleLogin}
+                disabled={signingIn}
+                label={signingIn ? 'Menghubungkan...' : 'Sign in with Google'}
+              />
+            ) : null
           ) : (
             <>
               <button

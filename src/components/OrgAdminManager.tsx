@@ -168,8 +168,16 @@ export const OrgAdminManager: React.FC<OrgAdminManagerProps> = ({ userRole, onOr
           : Promise.resolve({ logs: [] }),
       ]);
       setData(orgRes);
-      setDisplayDraft(orgRes.displaySettings);
-      setLogs(logsRes.logs.filter((l) => l.AKSI.startsWith('ORG_')));
+      if (orgRes?.displaySettings) {
+        setDisplayDraft((prev) => ({
+          ...prev,
+          ...orgRes.displaySettings,
+          urutanBagian: Array.isArray(orgRes.displaySettings.urutanBagian)
+            ? orgRes.displaySettings.urutanBagian
+            : prev.urutanBagian,
+        }));
+      }
+      setLogs((Array.isArray(logsRes?.logs) ? logsRes.logs : []).filter((l) => String(l.AKSI || '').startsWith('ORG_')));
     } catch (err) {
       setErrorMsg((err as Error).message);
     } finally {

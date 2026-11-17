@@ -422,7 +422,7 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
             </div>
 
             {/* Dynamic Service Builder Fields */}
-            {!isGeneral && selectedService && selectedService.fields.length > 0 && (
+            {!isGeneral && selectedService && Array.isArray(selectedService.fields) && selectedService.fields.length > 0 && (
               <div className="p-4 sm:p-5 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
                 <p className="font-display text-base font-bold text-[#0F2942]">
                   Pertanyaan Tambahan: {selectedService.NAMA_LAYANAN}
@@ -484,7 +484,7 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
                           className="w-full px-4 py-3 text-base border border-slate-300 rounded-xl bg-white"
                         >
                           <option value="">-- Pilih salah satu --</option>
-                          {field.OPSI_PILIHAN.map((opt) => (
+                          {(Array.isArray(field.OPSI_PILIHAN) ? field.OPSI_PILIHAN : []).map((opt) => (
                             <option key={opt} value={opt}>
                               {opt}
                             </option>
@@ -494,7 +494,7 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
 
                       {field.TIPE_ISIAN === 'radio' && (
                         <div className="space-y-2">
-                          {field.OPSI_PILIHAN.map((opt) => (
+                          {(Array.isArray(field.OPSI_PILIHAN) ? field.OPSI_PILIHAN : []).map((opt) => (
                             <label key={opt} className="flex items-center gap-3 text-base cursor-pointer">
                               <input
                                 type="radio"
@@ -513,7 +513,7 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
 
                       {field.TIPE_ISIAN === 'checkbox' && (
                         <div className="space-y-2">
-                          {field.OPSI_PILIHAN.map((opt) => {
+                          {(Array.isArray(field.OPSI_PILIHAN) ? field.OPSI_PILIHAN : []).map((opt) => {
                             const arr = Array.isArray(val) ? val : [];
                             const checked = arr.includes(opt);
                             return (

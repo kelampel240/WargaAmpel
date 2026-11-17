@@ -160,14 +160,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     if (filterStatus) list = list.filter((r) => r.STATUS_TERBARU === filterStatus);
     if (filterService) list = list.filter((r) => r.ID_LAYANAN === filterService);
-    if (filterDateFrom) list = list.filter((r) => r.CREATED_AT.slice(0, 10) >= filterDateFrom);
+    if (filterDateFrom) {
+      list = list.filter((r) => String(r.CREATED_AT || '').slice(0, 10) >= filterDateFrom);
+    }
     if (searchTicket.trim()) {
       const q = searchTicket.trim().toLowerCase();
       list = list.filter(
         (r) =>
-          r.ID_LAPORAN.toLowerCase().includes(q) ||
-          r.JUDUL_LAPORAN.toLowerCase().includes(q) ||
-          r.NAMA_PELAPOR.toLowerCase().includes(q)
+          String(r.ID_LAPORAN || '').toLowerCase().includes(q) ||
+          String(r.JUDUL_LAPORAN || '').toLowerCase().includes(q) ||
+          String(r.NAMA_PELAPOR || '').toLowerCase().includes(q)
       );
     }
     return list;
@@ -203,7 +205,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Desktop Sidebar (15 Modules) */}
       <aside className="hidden lg:flex lg:w-64 lg:flex-col bg-white border-r border-slate-200 shrink-0">
         <div className="p-5 border-b border-slate-200">
-          <p className="text-xs font-semibold text-[#0B6E4F]">{user.role.replace('_', ' ')}</p>
+          <p className="text-xs font-semibold text-[#0B6E4F]">{String(user.role || '').replace('_', ' ')}</p>
           <p className="font-display font-bold text-base text-[#0F2942] truncate">{user.namaLengkap}</p>
         </div>
         <nav aria-label="Menu Dashboard Admin" className="p-3 space-y-1 flex-1 overflow-y-auto">

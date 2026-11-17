@@ -428,7 +428,9 @@ export const ServiceBuilder: React.FC<ServiceBuilderProps> = ({
                 </td>
                 <td className="py-3 px-4 text-slate-700 whitespace-nowrap">{svc.KATEGORI_GRUP}</td>
                 <td className="py-3 px-4 text-slate-700">{svc.NAMA_PETUGAS_PJ}</td>
-                <td className="py-3 px-4 text-right font-mono tabular-nums">{svc.fields.length}</td>
+                <td className="py-3 px-4 text-right font-mono tabular-nums">
+                  {Array.isArray(svc.fields) ? svc.fields.length : 0}
+                </td>
                 <td className="py-3 px-4">
                   <span
                     className={`font-semibold ${

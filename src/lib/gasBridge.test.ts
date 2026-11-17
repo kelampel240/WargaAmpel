@@ -56,4 +56,18 @@ test('mapRestToGasCall maps public, auth, reporting, and admin routes accurately
   assert.equal(delBalai.action, 'deleteOrgItem');
   assert.equal(delBalai.payload.entity, 'balai_rw');
   assert.equal(delBalai.payload.id, 'BLR-1');
+
+  const driveTree = mapRestToGasCall('/api/admin/drive-tree', 'GET', {}, 'tok-1');
+  assert.equal(driveTree.action, 'getDriveTree');
+  assert.equal(driveTree.token, 'tok-1');
+
+  const verifyWarga = mapRestToGasCall(
+    '/api/admin/warga/WRG-001/verify',
+    'PATCH',
+    { status: 'TERVERIFIKASI' },
+    'tok-1'
+  );
+  assert.equal(verifyWarga.action, 'verifyWarga');
+  assert.equal(verifyWarga.payload.idWarga, 'WRG-001');
+  assert.equal(verifyWarga.payload.status, 'TERVERIFIKASI');
 });

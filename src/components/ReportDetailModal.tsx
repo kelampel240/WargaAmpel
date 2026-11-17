@@ -78,9 +78,9 @@ export const ReportDetailModal: React.FC<ReportDetailModalProps> = ({
         evidence: SheetBuktiDokumen[];
       }>(`/api/admin/reports/${encodeURIComponent(ticketId)}`);
       setReport(res.report);
-      setFollowUps(res.followUps);
-      setEvidence(res.evidence);
-      setStatus(res.report.STATUS_TERBARU);
+      setFollowUps(Array.isArray(res?.followUps) ? res.followUps : []);
+      setEvidence(Array.isArray(res?.evidence) ? res.evidence : []);
+      setStatus(res.report?.STATUS_TERBARU || 'Laporan diterima');
     } catch (err) {
       setError((err as Error).message);
     } finally {

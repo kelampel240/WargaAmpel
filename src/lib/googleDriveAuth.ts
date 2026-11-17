@@ -33,6 +33,18 @@ let isSigningIn = false;
 // In-memory only: access tokens must NEVER be written to localStorage or sessionStorage.
 let cachedAccessToken: string | null = null;
 
+export function isFirebaseOAuthSupportedOrigin(): boolean {
+  if (typeof window === 'undefined') return false;
+  const host = window.location.hostname.toLowerCase();
+  return (
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host.endsWith('.run.app') ||
+    host.endsWith('.firebaseapp.com') ||
+    host.endsWith('.web.app')
+  );
+}
+
 export function initGoogleDriveAuth(
   onAuthSuccess?: (user: User, token: string) => void,
   onAuthFailure?: () => void
@@ -62,6 +74,22 @@ export async function googleSignIn(): Promise<{ user: User; accessToken: string 
     }
     cachedAccessToken = credential.accessToken;
     return { user: result.user, accessToken: cachedAccessToken };
+  } catch (err) {
+    const code = (err as { code?: string })?.code || '';
+    const msg = (err as Error)?.message || '';
+    if (code === 'auth/unauthorized-domain' || msg.includes('unauthorized-domain')) {
+      const host = typeof window !== 'undefined' ? window.location.hostname : 'domain ini';
+      throw new Error(
+        `Domain "${host}" belum didaftarkan pada Authorized Domains di Firebase Console, sehingga login OAuth browser langsung tidak diizinkan. Koneksi Google Drive & Sheets tetap berjalan otomatis melalui Google Apps Script di bawah ini.`
+      );
+    }
+    if (code === 'auth/popup-blocked') {
+      throw new Error('Popup login Google diblokir browser. Izinkan popup atau gunakan akses langsung Google Apps Script.');
+    }
+    if (code === 'auth/popup-closed-by-user') {
+      throw new Error('Jendela login Google ditutup sebelum selesai.');
+    }
+    throw err;
   } finally {
     isSigningIn = false;
   }

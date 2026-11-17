@@ -24,15 +24,42 @@ export const CitizenDashboard: React.FC<CitizenDashboardProps> = ({ user, onNewR
     setLoading(true);
     try {
       const res = await apiFetch<{
-        myReports: CitizenTrackingResponse[];
-        notifications: SheetNotifikasi[];
-        announcements: SheetPengumuman[];
+        myReports?: CitizenTrackingResponse[];
+        reports?: CitizenTrackingResponse[];
+        notifications?: SheetNotifikasi[];
+        announcements?: SheetPengumuman[];
       }>('/api/citizen/dashboard');
-      setMyReports(Array.isArray(res?.myReports) ? res.myReports : []);
+      const reports = Array.isArray(res?.myReports)
+        ? res.myReports
+        : Array.isArray(res?.reports)
+        ? res.reports
+        : [];
+      setMyReports(reports);
       setNotifications(Array.isArray(res?.notifications) ? res.notifications : []);
       setAnnouncements(Array.isArray(res?.announcements) ? res.announcements : []);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      try {
+        const [repRes, annRes] = await Promise.all([
+          apiFetch<{
+            myReports?: CitizenTrackingResponse[];
+            reports?: CitizenTrackingResponse[];
+            notifications?: SheetNotifikasi[];
+          }>('/api/citizen/reports'),
+          apiFetch<{ announcements?: SheetPengumuman[] }>('/api/public/announcements').catch(() => ({
+            announcements: [],
+          })),
+        ]);
+        const reports = Array.isArray(repRes?.myReports)
+          ? repRes.myReports
+          : Array.isArray(repRes?.reports)
+          ? repRes.reports
+          : [];
+        setMyReports(reports);
+        setNotifications(Array.isArray(repRes?.notifications) ? repRes.notifications : []);
+        setAnnouncements(Array.isArray(annRes?.announcements) ? annRes.announcements : []);
+      } catch (fallbackErr) {
+        console.error(fallbackErr);
+      }
     } finally {
       setLoading(false);
     }

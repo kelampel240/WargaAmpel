@@ -8,6 +8,51 @@ const GAS_URL_STORAGE_KEY = 'warga_ampel_gas_url';
 export const DEFAULT_GAS_WEB_APP_URL =
   'https://script.google.com/macros/s/AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ/exec';
 
+export const DEFAULT_DRIVE_FOLDER_ID = '1gT7JFuHwe2LYhJp2BlZeQ9j5tgLC2IJx';
+export const DEFAULT_DRIVE_FOLDER_URL = `https://drive.google.com/drive/folders/${DEFAULT_DRIVE_FOLDER_ID}`;
+export const DEFAULT_SPREADSHEET_ID = '1yGeHQ_rWh24fhTrK9NP19hO3L0TwoKXOVboczMAPhkY';
+export const DEFAULT_SPREADSHEET_URL = `https://docs.google.com/spreadsheets/d/${DEFAULT_SPREADSHEET_ID}/edit`;
+
+export async function fetchGasConnectionStatus(): Promise<{
+  connected: boolean;
+  rootFolderId: string;
+  spreadsheetId: string;
+  desa: string;
+}> {
+  const gasUrl = getGasWebAppUrl();
+  if (!gasUrl) {
+    return {
+      connected: false,
+      rootFolderId: DEFAULT_DRIVE_FOLDER_ID,
+      spreadsheetId: DEFAULT_SPREADSHEET_ID,
+      desa: 'Desa Ampel',
+    };
+  }
+  try {
+    const sep = gasUrl.includes('?') ? '&' : '?';
+    const res = await fetch(`${gasUrl}${sep}action=ping`, { method: 'GET' });
+    const data = (await res.json()) as {
+      ok?: boolean;
+      rootFolderId?: string;
+      spreadsheetId?: string;
+      desa?: string;
+    };
+    return {
+      connected: Boolean(data?.ok),
+      rootFolderId: String(data?.rootFolderId || DEFAULT_DRIVE_FOLDER_ID),
+      spreadsheetId: String(data?.spreadsheetId || DEFAULT_SPREADSHEET_ID),
+      desa: String(data?.desa || 'Desa Ampel'),
+    };
+  } catch {
+    return {
+      connected: false,
+      rootFolderId: DEFAULT_DRIVE_FOLDER_ID,
+      spreadsheetId: DEFAULT_SPREADSHEET_ID,
+      desa: 'Desa Ampel',
+    };
+  }
+}
+
 export function getGasWebAppUrl(): string {
   try {
     if (typeof window !== 'undefined') {

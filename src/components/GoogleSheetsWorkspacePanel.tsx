@@ -13,6 +13,7 @@ import {
 import {
   googleSignIn,
   initGoogleDriveAuth,
+  isFirebaseOAuthSupportedOrigin,
   logoutGoogleDrive,
 } from '../lib/googleDriveAuth';
 import {
@@ -24,7 +25,13 @@ import {
   SpreadsheetMetadata,
   syncFullDatabaseToSpreadsheet,
 } from '../lib/googleSheetsClient';
-import { apiFetch } from '../lib/api';
+import {
+  apiFetch,
+  DEFAULT_DRIVE_FOLDER_ID,
+  DEFAULT_SPREADSHEET_ID,
+  fetchGasConnectionStatus,
+  isGasMode,
+} from '../lib/api';
 import { SheetPengaturan } from '../shared/types';
 import { GoogleSignInButton } from './GoogleSignInButton';
 import { DriveConfirmDialog } from './DriveConfirmDialog';
@@ -57,6 +64,18 @@ export const GoogleSheetsWorkspacePanel: React.FC<GoogleSheetsWorkspacePanelProp
   const [errorMsg, setErrorMsg] = useState('');
   const [notice, setNotice] = useState('');
 
+  const canUseFirebaseOAuth = isFirebaseOAuthSupportedOrigin();
+  const gasMode = isGasMode();
+  const [linkedFolderId, setLinkedFolderId] = useState(DEFAULT_DRIVE_FOLDER_ID);
+  const [gasConnected, setGasConnected] = useState(false);
+  const [gasTabKey, setGasTabKey] = useState<
+    'LAPORAN' | 'KATEGORI_LAYANAN' | 'WARGA' | 'PETUGAS' | 'PENGUMUMAN' | 'PENGATURAN' | 'LOG_AKTIVITAS'
+  >('LAPORAN');
+  const [gasHeaders, setGasHeaders] = useState<string[]>([]);
+  const [gasRows, setGasRows] = useState<string[][]>([]);
+  const [loadingGasTab, setLoadingGasTab] = useState(false);
+  const [gasSearch, setGasSearch] = useState('');
+
   const [confirmState, setConfirmState] = useState<{
     open: boolean;
     title: string;
@@ -82,18 +101,96 @@ export const GoogleSheetsWorkspacePanel: React.FC<GoogleSheetsWorkspacePanelProp
   }, []);
 
   useEffect(() => {
+    let active = true;
+    fetchGasConnectionStatus().then((status) => {
+      if (!active) return;
+      setGasConnected(status.connected);
+      if (status.rootFolderId) setLinkedFolderId(status.rootFolderId);
+      if (status.spreadsheetId) {
+        setSpreadsheetInput((prev) => prev || status.spreadsheetId);
+        setActiveSpreadsheetId((prev) => prev || status.spreadsheetId);
+      }
+    });
+
     apiFetch<{ settings: SheetPengaturan[] }>('/api/admin/settings')
       .then((res) => {
-        const sid = res.settings.find((s) => s.KUNCI === 'SPREADSHEET_ID')?.NILAI || '';
-        if (sid && !sid.includes('CONTOH') && !sid.includes('ISI_')) {
+        if (!active) return;
+        const list = Array.isArray(res?.settings) ? res.settings : [];
+        const sid = String(list.find((s) => s.KUNCI === 'SPREADSHEET_ID')?.NILAI || '');
+        if (sid && !sid.includes('CONTOH') && !sid.includes('ISI_') && !sid.includes('GANTI_')) {
           setSpreadsheetInput(sid);
           setActiveSpreadsheetId(sid);
+        }
+        const fid = String(list.find((s) => s.KUNCI === 'DRIVE_ROOT_FOLDER_ID')?.NILAI || '');
+        if (fid && !fid.includes('CONTOH') && !fid.includes('ISI_') && !fid.includes('GANTI_')) {
+          setLinkedFolderId(fid);
         }
       })
       .catch(() => {
         // ignore if settings unavailable
       });
+    return () => {
+      active = false;
+    };
   }, []);
+
+  const loadGasSheetTab = async (tab: typeof gasTabKey) => {
+    setLoadingGasTab(true);
+    try {
+      let items: Array<Record<string, unknown>> = [];
+      if (tab === 'LAPORAN') {
+        const res = await apiFetch<{ reports: Array<Record<string, unknown>> }>('/api/admin/reports');
+        items = Array.isArray(res?.reports) ? res.reports : [];
+      } else if (tab === 'KATEGORI_LAYANAN') {
+        const res = await apiFetch<{ services: Array<Record<string, unknown>> }>('/api/admin/services');
+        items = Array.isArray(res?.services) ? res.services : [];
+      } else if (tab === 'WARGA') {
+        const res = await apiFetch<{ warga: Array<Record<string, unknown>> }>('/api/admin/warga');
+        items = Array.isArray(res?.warga) ? res.warga : [];
+      } else if (tab === 'PETUGAS') {
+        const res = await apiFetch<{ petugas: Array<Record<string, unknown>> }>('/api/admin/petugas');
+        items = Array.isArray(res?.petugas) ? res.petugas : [];
+      } else if (tab === 'PENGUMUMAN') {
+        const res = await apiFetch<{ announcements: Array<Record<string, unknown>> }>('/api/admin/announcements');
+        items = Array.isArray(res?.announcements) ? res.announcements : [];
+      } else if (tab === 'PENGATURAN') {
+        const res = await apiFetch<{ settings: Array<Record<string, unknown>> }>('/api/admin/settings');
+        items = Array.isArray(res?.settings) ? res.settings : [];
+      } else if (tab === 'LOG_AKTIVITAS') {
+        const res = await apiFetch<{ logs: Array<Record<string, unknown>> }>('/api/admin/logs');
+        items = Array.isArray(res?.logs) ? res.logs : [];
+      }
+
+      if (items.length === 0) {
+        setGasHeaders([]);
+        setGasRows([]);
+      } else {
+        const cols = Object.keys(items[0]).filter((k) => k !== '_rowIndex' && k !== 'PASSWORD_HASH' && k !== 'NIK_HASH');
+        setGasHeaders(cols);
+        setGasRows(
+          items.map((row) =>
+            cols.map((c) => {
+              const v = row[c];
+              if (v === null || v === undefined) return '';
+              if (typeof v === 'object') return JSON.stringify(v);
+              return String(v);
+            })
+          )
+        );
+      }
+    } catch {
+      setGasHeaders([]);
+      setGasRows([]);
+    } finally {
+      setLoadingGasTab(false);
+    }
+  };
+
+  useEffect(() => {
+    if (needsAuth && !compact) {
+      void loadGasSheetTab(gasTabKey);
+    }
+  }, [needsAuth, compact, gasTabKey]);
 
   const loadSheetTab = async (spreadsheetId: string, sheetTitle: string) => {
     setLoadingSheet(true);
@@ -172,7 +269,8 @@ export const GoogleSheetsWorkspacePanel: React.FC<GoogleSheetsWorkspacePanelProp
 
   const saveSpreadsheetIdToSettings = async (spreadsheetId: string) => {
     const current = await apiFetch<{ settings: SheetPengaturan[] }>('/api/admin/settings');
-    const updated = current.settings.map((s) =>
+    const currentList = Array.isArray(current?.settings) ? current.settings : [];
+    const updated = currentList.map((s) =>
       s.KUNCI === 'SPREADSHEET_ID' ? { ...s, NILAI: spreadsheetId } : s
     );
     await apiFetch('/api/admin/settings', {
@@ -312,7 +410,16 @@ export const GoogleSheetsWorkspacePanel: React.FC<GoogleSheetsWorkspacePanelProp
   const dataRows = rows.slice(1).filter((r) => {
     if (!searchTerm.trim()) return true;
     const q = searchTerm.trim().toLowerCase();
-    return r.some((cell) => cell.toLowerCase().includes(q));
+    return r.some((cell) => String(cell || '').toLowerCase().includes(q));
+  });
+
+  const effectiveSheetId = activeSpreadsheetId || DEFAULT_SPREADSHEET_ID;
+  const effectiveSheetUrl = `https://docs.google.com/spreadsheets/d/${effectiveSheetId}/edit`;
+  const effectiveDriveUrl = `https://drive.google.com/drive/folders/${linkedFolderId}`;
+  const filteredGasRows = gasRows.filter((r) => {
+    if (!gasSearch.trim()) return true;
+    const q = gasSearch.trim().toLowerCase();
+    return r.some((cell) => String(cell || '').toLowerCase().includes(q));
   });
 
   return (
@@ -321,11 +428,13 @@ export const GoogleSheetsWorkspacePanel: React.FC<GoogleSheetsWorkspacePanelProp
         <div>
           <h3 className="font-display text-lg font-bold text-[#0F2942] flex items-center gap-2">
             <FileSpreadsheet className="w-5 h-5 text-[#0B6E4F]" aria-hidden="true" />
-            <span>Integrasi Langsung Google Sheets</span>
+            <span>Integrasi Google Sheets (DATABASE_SIWARGA)</span>
           </h3>
           {needsAuth ? (
             <p className="text-sm text-slate-600 mt-0.5">
-              Masuk dengan akun Google untuk membaca, membuat, dan menyinkronkan database desa langsung ke Google Sheets.
+              {gasMode || !canUseFirebaseOAuth
+                ? `Terhubung ${gasConnected ? 'aktif' : ''} ke DATABASE_SIWARGA melalui Google Apps Script · ID: ${effectiveSheetId}`
+                : 'Masuk dengan akun Google untuk membaca, membuat, dan menyinkronkan database desa langsung ke Google Sheets.'}
             </p>
           ) : (
             <p className="text-sm text-slate-700 mt-0.5">
@@ -339,12 +448,32 @@ export const GoogleSheetsWorkspacePanel: React.FC<GoogleSheetsWorkspacePanelProp
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <a
+            href={effectiveSheetUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="px-3.5 py-2 text-xs sm:text-sm font-bold bg-[#0B6E4F] text-white rounded-lg hover:bg-[#08553d] flex items-center gap-1.5 whitespace-nowrap"
+          >
+            <ExternalLink className="w-4 h-4" aria-hidden="true" />
+            <span>Buka Google Sheets</span>
+          </a>
+          <a
+            href={effectiveDriveUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="px-3.5 py-2 text-xs sm:text-sm font-semibold border border-slate-300 text-slate-800 rounded-lg hover:bg-slate-100 flex items-center gap-1.5 whitespace-nowrap"
+          >
+            <ExternalLink className="w-4 h-4" aria-hidden="true" />
+            <span>Buka Folder Drive</span>
+          </a>
           {needsAuth ? (
-            <GoogleSignInButton
-              onClick={handleGoogleLogin}
-              disabled={signingIn}
-              label={signingIn ? 'Menghubungkan...' : 'Sign in with Google'}
-            />
+            canUseFirebaseOAuth ? (
+              <GoogleSignInButton
+                onClick={handleGoogleLogin}
+                disabled={signingIn}
+                label={signingIn ? 'Menghubungkan...' : 'Sign in with Google'}
+              />
+            ) : null
           ) : (
             <>
               <button
@@ -386,6 +515,118 @@ export const GoogleSheetsWorkspacePanel: React.FC<GoogleSheetsWorkspacePanelProp
       {notice && (
         <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-xl text-sm font-medium text-emerald-950">
           {notice}
+        </div>
+      )}
+
+      {needsAuth && !compact && (
+        <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold text-[#0B6E4F]">
+                Tampilan Langsung Database Google Sheets (via Apps Script)
+              </p>
+              <p className="text-xs font-mono text-slate-600 mt-0.5">
+                Spreadsheet: {effectiveSheetId} · Folder Drive: {linkedFolderId}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void loadGasSheetTab(gasTabKey)}
+              disabled={loadingGasTab}
+              className="px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-lg hover:bg-slate-100 flex items-center gap-1.5 cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loadingGasTab ? 'animate-spin' : ''}`} aria-hidden="true" />
+              <span>Muat Ulang</span>
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5 border-b border-slate-200 pb-3">
+            {(
+              [
+                'LAPORAN',
+                'KATEGORI_LAYANAN',
+                'WARGA',
+                'PETUGAS',
+                'PENGUMUMAN',
+                'PENGATURAN',
+                'LOG_AKTIVITAS',
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setGasTabKey(tab)}
+                className={`px-3 py-1.5 text-xs font-mono font-semibold rounded-lg flex items-center gap-1.5 cursor-pointer ${
+                  gasTabKey === tab
+                    ? 'bg-[#0F2942] text-white'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <Table2 className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>{tab}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="relative flex-1 min-w-[220px] max-w-sm">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" aria-hidden="true" />
+              <input
+                type="search"
+                value={gasSearch}
+                onChange={(e) => setGasSearch(e.target.value)}
+                placeholder="Cari baris pada tab ini..."
+                aria-label="Cari baris database"
+                className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-300 rounded-lg"
+              />
+            </div>
+            <span className="text-xs text-slate-500 tabular-nums">
+              {filteredGasRows.length} baris ditampilkan
+            </span>
+          </div>
+
+          <div className="overflow-x-auto border border-slate-200 rounded-xl max-h-[420px]">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50 text-slate-700 font-semibold sticky top-0">
+                  {gasHeaders.length > 0 ? (
+                    gasHeaders.map((col, idx) => (
+                      <th key={`${col}-${idx}`} className="py-2.5 px-3 font-mono whitespace-nowrap">
+                        {col}
+                      </th>
+                    ))
+                  ) : (
+                    <th className="py-2.5 px-3">Data Tab {gasTabKey}</th>
+                  )}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {loadingGasTab ? (
+                  <tr>
+                    <td colSpan={Math.max(1, gasHeaders.length)} className="py-8 text-center text-slate-500">
+                      Memuat data {gasTabKey} dari DATABASE_SIWARGA...
+                    </td>
+                  </tr>
+                ) : filteredGasRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={Math.max(1, gasHeaders.length)} className="py-8 text-center text-slate-500">
+                      Belum ada baris data pada tab {gasTabKey}.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredGasRows.map((row, rIdx) => (
+                    <tr key={rIdx} className="hover:bg-slate-50">
+                      {gasHeaders.map((_, cIdx) => (
+                        <td key={cIdx} className="py-2 px-3 text-slate-800 max-w-xs truncate tabular-nums">
+                          {row[cIdx] ?? ''}
+                        </td>
+                      ))}
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

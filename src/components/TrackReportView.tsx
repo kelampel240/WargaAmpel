@@ -214,7 +214,7 @@ export const TrackReportView: React.FC<TrackReportViewProps> = ({ initialTicketI
               <span>Riwayat Tindak Lanjut Petugas</span>
             </h3>
             <ol className="space-y-4">
-              {tracking.riwayatTindakLanjut.map((item) => (
+              {(Array.isArray(tracking.riwayatTindakLanjut) ? tracking.riwayatTindakLanjut : []).map((item) => (
                 <li
                   key={item.idUpdate}
                   className="p-4 rounded-xl border border-slate-200 bg-slate-50"
@@ -239,15 +239,17 @@ export const TrackReportView: React.FC<TrackReportViewProps> = ({ initialTicketI
           <div>
             <h3 className="font-display text-lg font-bold text-[#0F2942] mb-4 flex items-center gap-2">
               <FileText className="w-5 h-5 text-[#0B6E4F]" aria-hidden="true" />
-              <span>Bukti Penanganan untuk Warga ({tracking.buktiPublik.length})</span>
+              <span>
+                Bukti Penanganan untuk Warga ({(Array.isArray(tracking.buktiPublik) ? tracking.buktiPublik : []).length})
+              </span>
             </h3>
-            {tracking.buktiPublik.length === 0 ? (
+            {(Array.isArray(tracking.buktiPublik) ? tracking.buktiPublik : []).length === 0 ? (
               <p className="text-base text-slate-600">
                 Belum ada foto atau dokumen bukti publik yang dilampirkan.
               </p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {tracking.buktiPublik.map((doc) => (
+                {(Array.isArray(tracking.buktiPublik) ? tracking.buktiPublik : []).map((doc) => (
                   <div key={doc.idBukti} className="border border-slate-200 rounded-xl overflow-hidden bg-white">
                     {doc.mimeType.startsWith('image/') ? (
                       <img

@@ -143,7 +143,7 @@ export function mapRestToGasCall(
     return { action: 'getWarga', payload: {}, token: token || undefined };
   }
   const verifyWargaMatch = pathname.match(/^\/api\/admin\/warga\/([^/]+)\/verify$/);
-  if (verifyWargaMatch && upperMethod === 'POST') {
+  if (verifyWargaMatch && (upperMethod === 'POST' || upperMethod === 'PATCH')) {
     return {
       action: 'verifyWarga',
       payload: { ...bodyObj, idWarga: decodeURIComponent(verifyWargaMatch[1]) },
@@ -159,7 +159,7 @@ export function mapRestToGasCall(
   if (pathname === '/api/admin/petugas/import' && upperMethod === 'POST') {
     return { action: 'importPetugasBatch', payload: bodyObj, token: token || undefined };
   }
-  if (pathname === '/api/admin/drive' && upperMethod === 'GET') {
+  if ((pathname === '/api/admin/drive' || pathname === '/api/admin/drive-tree') && upperMethod === 'GET') {
     return { action: 'getDriveTree', payload: {}, token: token || undefined };
   }
   if (pathname === '/api/admin/announcements' && upperMethod === 'GET') {

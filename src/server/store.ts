@@ -870,7 +870,7 @@ function createInitialDatabase(): SiwargaDatabase {
       { KUNCI: 'TAHUN_TIKET', NILAI: '2026', KETERANGAN: 'Tahun aktif penomoran tiket SW-TAHUN-NOMOR' },
       { KUNCI: 'TICKET_COUNTER', NILAI: '5', KETERANGAN: 'Counter berurutan nomor tiket terakhir (dilindungi Lock)' },
       { KUNCI: 'MAX_FILE_MB', NILAI: '5', KETERANGAN: 'Batas maksimal ukuran file unggahan (MB)' },
-      { KUNCI: 'SPREADSHEET_ID', NILAI: 'DATABASE_SIWARGA_CONTOH_ID', KETERANGAN: 'ID Google Spreadsheet DATABASE_SIWARGA' },
+      { KUNCI: 'SPREADSHEET_ID', NILAI: '1yGeHQ_rWh24fhTrK9NP19hO3L0TwoKXOVboczMAPhkY', KETERANGAN: 'ID Google Spreadsheet DATABASE_SIWARGA' },
       { KUNCI: 'DRIVE_ROOT_FOLDER_ID', NILAI: '1gT7JFuHwe2LYhJp2BlZeQ9j5tgLC2IJx', KETERANGAN: 'ID Folder Induk Google Drive SIWARGA_DESA (Foto & Dokumen)' },
       { KUNCI: 'GAS_WEB_APP_URL', NILAI: 'https://script.google.com/macros/s/AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ/exec', KETERANGAN: 'URL Web App Google Apps Script (/exec)' },
       { KUNCI: 'GAS_DEPLOYMENT_ID', NILAI: 'AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ', KETERANGAN: 'ID Penerapan Google Apps Script Web App' },
@@ -1467,6 +1467,16 @@ export function loadDatabase(): SiwargaDatabase {
   const driveSetting = parsed.PENGATURAN?.find((p) => p.KUNCI === 'DRIVE_ROOT_FOLDER_ID');
   if (driveSetting && (!driveSetting.NILAI || driveSetting.NILAI === '105o5hBhSGAUI_ckmVFADFTLbhqScmFIy')) {
     driveSetting.NILAI = '1gT7JFuHwe2LYhJp2BlZeQ9j5tgLC2IJx';
+    mutated = true;
+  }
+  const sheetSetting = parsed.PENGATURAN?.find((p) => p.KUNCI === 'SPREADSHEET_ID');
+  if (
+    sheetSetting &&
+    (!sheetSetting.NILAI ||
+      sheetSetting.NILAI === 'DATABASE_SIWARGA_CONTOH_ID' ||
+      sheetSetting.NILAI.includes('GANTI_DENGAN'))
+  ) {
+    sheetSetting.NILAI = '1yGeHQ_rWh24fhTrK9NP19hO3L0TwoKXOVboczMAPhkY';
     mutated = true;
   }
   const gasUrlSetting = parsed.PENGATURAN?.find((p) => p.KUNCI === 'GAS_WEB_APP_URL');
