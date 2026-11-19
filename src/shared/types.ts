@@ -212,6 +212,70 @@ export interface SheetLogAktivitas {
   DETAIL: string;
 }
 
+export const PROGRAM_STATUS_OPTIONS = ['Akan Datang', 'Berjalan', 'Selesai'] as const;
+export type ProgramStatus = (typeof PROGRAM_STATUS_OPTIONS)[number];
+
+export interface SheetBanner {
+  ID_BANNER: string;
+  JUDUL: string;
+  KALIMAT_SAMBUTAN: string;
+  GAMBAR_URL: string;
+  DRIVE_FILE_ID?: string;
+  AKTIF: boolean;
+  UPDATED_AT: string;
+  UPDATED_BY?: string;
+}
+
+export interface SheetProgram {
+  ID_PROGRAM: string;
+  JUDUL: string;
+  TANGGAL: string;
+  RINGKASAN: string;
+  STATUS: ProgramStatus;
+  FOTO_URL: string;
+  DRIVE_FILE_ID?: string;
+  URUTAN: number;
+  AKTIF: boolean;
+  CREATED_AT: string;
+  UPDATED_AT: string;
+}
+
+export interface SheetGaleri {
+  ID_GALERI: string;
+  JUDUL: string;
+  KETERANGAN: string;
+  TANGGAL: string;
+  FOTO_URL: string;
+  DRIVE_FILE_ID?: string;
+  URUTAN: number;
+  AKTIF: boolean;
+  CREATED_AT: string;
+}
+
+export interface BerandaFooterInfo {
+  namaKantor: string;
+  alamat: string;
+  telepon: string;
+  email: string;
+  jamLayanan: string;
+}
+
+export interface BerandaStats {
+  programBerjalan: number;
+  pengaduanSelesaiBulanIni: number;
+  totalProgram: number;
+}
+
+export interface PublicBerandaResponse {
+  banner: SheetBanner | null;
+  program: SheetProgram[];
+  galeri: SheetGaleri[];
+  pengumuman: SheetPengumuman[];
+  stats: BerandaStats;
+  footer: BerandaFooterInfo;
+  updatedAt: string;
+}
+
 export type OrgKelurahanLevel = 'LURAH' | 'KASI' | 'STAF';
 
 export interface SheetOrgKelurahan {
@@ -506,6 +570,9 @@ export interface SiwargaDatabase {
   ORG_SEKOLAH: SheetOrgSekolah[];
   ORG_GURU: SheetOrgGuru[];
   ORG_BALAI_RW: SheetOrgBalaiRw[];
+  BANNER?: SheetBanner[];
+  PROGRAM?: SheetProgram[];
+  GALERI?: SheetGaleri[];
 }
 
 export interface PublicUserSession {

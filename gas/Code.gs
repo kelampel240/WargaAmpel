@@ -10,6 +10,7 @@
 var CONFIG = {
   SPREADSHEET_ID: '1yGeHQ_rWh24fhTrK9NP19hO3L0TwoKXOVboczMAPhkY',
   ROOT_FOLDER_ID: '1gT7JFuHwe2LYhJp2BlZeQ9j5tgLC2IJx',
+  BERANDA_DRIVE_FOLDER_ID: '1wR1Kt5shcFFll0OiM3-Jxtv8MauBOkFv',
   DEPLOYMENT_ID: 'AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ',
   WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ/exec',
   NAMA_DESA: 'Desa Ampel',
@@ -50,6 +51,9 @@ function doGet(e) {
   }
   if (action === 'getPublicOrgStructure') {
     return jsonResponse(getPublicOrgStructure());
+  }
+  if (action === 'getBerandaContent') {
+    return jsonResponse(getBerandaContent());
   }
   if (action === 'getDriveEvidence') {
     return jsonResponse(getDriveEvidence(params.idBukti, params.ticketId, params.token));
@@ -188,6 +192,24 @@ function doPost(e) {
         return jsonResponse(deleteOrgItem(payload, token));
       case 'saveOrgSettings':
         return jsonResponse(saveOrgSettings(payload, token));
+      case 'getBerandaContent':
+        return jsonResponse(getBerandaContent());
+      case 'getAdminBeranda':
+        return jsonResponse(getAdminBeranda(token));
+      case 'uploadBerandaMedia':
+        return jsonResponse(uploadBerandaMedia(payload, token));
+      case 'updateHeroBanner':
+        return jsonResponse(updateHeroBanner(payload, token));
+      case 'saveBerandaProgram':
+        return jsonResponse(saveBerandaProgram(payload, token));
+      case 'deleteBerandaProgram':
+        return jsonResponse(deleteBerandaProgram(payload.idProgram, token));
+      case 'saveBerandaGaleri':
+        return jsonResponse(saveBerandaGaleri(payload, token));
+      case 'deleteBerandaGaleri':
+        return jsonResponse(deleteBerandaGaleri(payload.idGaleri, token));
+      case 'saveBerandaFooter':
+        return jsonResponse(saveBerandaFooter(payload, token));
       default:
         return jsonResponse({ error: 'Aksi tidak dikenali: ' + action }, 400);
     }
@@ -2220,4 +2242,356 @@ function updateEvidenceDriveLink(payload, token) {
   }
   throw new Error('Data bukti tidak ditemukan.');
 }
+
+// --- 8. BERANDA WARGA AMPEL & KELOLA KONTEN SUPER ADMIN ---
+function ensureBerandaSheetGas_(tabName, headers) {
+  var ss = getSpreadsheet_();
+  var sh = ss.getSheetByName(tabName);
+  if (!sh) {
+    sh = ss.insertSheet(tabName);
+    sh.appendRow(headers);
+    sh.getRange(1, 1, 1, headers.length)
+      .setFontWeight('bold')
+      .setBackground('#0F2942')
+      .setFontColor('#FFFFFF');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+function getBerandaDriveFolder_() {
+  var folderId = CONFIG.BERANDA_DRIVE_FOLDER_ID || '1wR1Kt5shcFFll0OiM3-Jxtv8MauBOkFv';
+  try {
+    var settings = sheetToObjects_('PENGATURAN');
+    for (var i = 0; i < settings.length; i++) {
+      if (settings[i].KUNCI === 'BERANDA_DRIVE_FOLDER_ID' && settings[i].NILAI) {
+        folderId = String(settings[i].NILAI).trim();
+        break;
+      }
+    }
+  } catch (ignore) {}
+  if (folderId) {
+    try {
+      return DriveApp.getFolderById(folderId);
+    } catch (ignore) {}
+  }
+  var root = getRootDriveFolder_();
+  var subIt = root.getFoldersByName('07_MEDIA_BERANDA');
+  return subIt.hasNext() ? subIt.next() : root.createFolder('07_MEDIA_BERANDA');
+}
+
+function saveBerandaImageToDriveGas_(rawInput, prefixName, maxSizeW) {
+  var raw = String(rawInput || '').trim();
+  if (!raw) return { url: '', fileId: '' };
+  if (raw.indexOf('data:image/') !== 0) {
+    return { url: raw, fileId: '' };
+  }
+  var match = raw.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match) return { url: raw, fileId: '' };
+  var mimeType = match[1];
+  var base64Data = match[2];
+  var ext = mimeType.indexOf('png') !== -1 ? 'png' : 'jpg';
+  var bytes = Utilities.base64Decode(base64Data);
+  var safeName = String(prefixName || 'beranda').replace(/[^A-Za-z0-9_-]/g, '_');
+  var blob = Utilities.newBlob(bytes, mimeType, safeName + '_' + Date.now() + '.' + ext);
+  var folder = getBerandaDriveFolder_();
+  var file = folder.createFile(blob);
+  trySetSharing_(file, DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  var sizeParam = maxSizeW || 1600;
+  return {
+    url: 'https://drive.google.com/thumbnail?id=' + file.getId() + '&sz=w' + sizeParam,
+    fileId: file.getId()
+  };
+}
+
+function buildBerandaFooterGas_() {
+  var map = {};
+  try {
+    sheetToObjects_('PENGATURAN').forEach(function(p) {
+      map[p.KUNCI] = String(p.NILAI || '');
+    });
+  } catch (ignore) {}
+  return {
+    namaKantor: map.FOOTER_NAMA_KANTOR || 'Balai Desa Ampel',
+    alamat: map.FOOTER_ALAMAT || 'Jl. Raya Desa Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember',
+    telepon: map.FOOTER_TELEPON || '(0336) 621-104 / 0811-0000-0003',
+    email: map.FOOTER_EMAIL || 'pelayanan@ampel.desa.id',
+    jamLayanan: map.FOOTER_JAM_LAYANAN || 'Senin–Jumat, 08.00–14.30 WIB (Portal online aktif 24 jam)'
+  };
+}
+
+function readBerandaRowsGas_(tabName, headers) {
+  ensureBerandaSheetGas_(tabName, headers);
+  return sheetToObjects_(tabName);
+}
+
+function getBerandaContent() {
+  var bannerRows = readBerandaRowsGas_('BANNER', [
+    'ID_BANNER', 'JUDUL', 'KALIMAT_SAMBUTAN', 'GAMBAR_URL', 'DRIVE_FILE_ID', 'AKTIF', 'UPDATED_AT', 'UPDATED_BY'
+  ]);
+  var activeBanner = null;
+  for (var i = 0; i < bannerRows.length; i++) {
+    if (isTrueFlag_(bannerRows[i].AKTIF) || String(bannerRows[i].AKTIF) === '') {
+      activeBanner = bannerRows[i];
+      break;
+    }
+  }
+  if (!activeBanner && bannerRows.length > 0) activeBanner = bannerRows[0];
+
+  var progRows = readBerandaRowsGas_('PROGRAM', [
+    'ID_PROGRAM', 'JUDUL', 'TANGGAL', 'RINGKASAN', 'STATUS', 'FOTO_URL', 'DRIVE_FILE_ID', 'URUTAN', 'AKTIF', 'CREATED_AT', 'UPDATED_AT'
+  ]).filter(function(p) {
+    return String(p.AKTIF) === '' || isTrueFlag_(p.AKTIF);
+  }).sort(function(a, b) {
+    return (Number(a.URUTAN) || 99) - (Number(b.URUTAN) || 99);
+  });
+
+  var galRows = readBerandaRowsGas_('GALERI', [
+    'ID_GALERI', 'JUDUL', 'KETERANGAN', 'TANGGAL', 'FOTO_URL', 'DRIVE_FILE_ID', 'URUTAN', 'AKTIF', 'CREATED_AT'
+  ]).filter(function(g) {
+    return String(g.AKTIF) === '' || isTrueFlag_(g.AKTIF);
+  }).sort(function(a, b) {
+    return (Number(a.URUTAN) || 99) - (Number(b.URUTAN) || 99);
+  });
+
+  var pengumuman = (getPublicAnnouncements().announcements || []).slice(0, 3);
+
+  var programBerjalan = progRows.filter(function(p) {
+    return String(p.STATUS || '').trim() === 'Berjalan';
+  }).length;
+
+  var nowYm = new Date().toISOString().slice(0, 7);
+  var selesaiBulanIni = 0;
+  try {
+    var lapRows = sheetToObjects_('LAPORAN');
+    for (var j = 0; j < lapRows.length; j++) {
+      if (lapRows[j].STATUS_TERBARU === 'Sudah diperbaiki atau ditangani') {
+        var refYm = String(lapRows[j].UPDATED_AT || lapRows[j].CREATED_AT || '').slice(0, 7);
+        if (refYm === nowYm) selesaiBulanIni++;
+      }
+    }
+  } catch (ignore) {}
+
+  return {
+    banner: activeBanner,
+    program: progRows,
+    galeri: galRows,
+    pengumuman: pengumuman,
+    stats: {
+      programBerjalan: programBerjalan,
+      pengaduanSelesaiBulanIni: selesaiBulanIni,
+      totalProgram: progRows.length
+    },
+    footer: buildBerandaFooterGas_(),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function getAdminBeranda(token) {
+  verifyTokenAndRole_(token, ['SUPER_ADMIN']);
+  var content = getBerandaContent();
+  return {
+    banner: content.banner,
+    program: readBerandaRowsGas_('PROGRAM', [
+      'ID_PROGRAM', 'JUDUL', 'TANGGAL', 'RINGKASAN', 'STATUS', 'FOTO_URL', 'DRIVE_FILE_ID', 'URUTAN', 'AKTIF', 'CREATED_AT', 'UPDATED_AT'
+    ]),
+    galeri: readBerandaRowsGas_('GALERI', [
+      'ID_GALERI', 'JUDUL', 'KETERANGAN', 'TANGGAL', 'FOTO_URL', 'DRIVE_FILE_ID', 'URUTAN', 'AKTIF', 'CREATED_AT'
+    ]),
+    footer: content.footer,
+    driveFolderId: CONFIG.BERANDA_DRIVE_FOLDER_ID || '1wR1Kt5shcFFll0OiM3-Jxtv8MauBOkFv'
+  };
+}
+
+function uploadBerandaMedia(payload, token) {
+  var actor = verifyTokenAndRole_(token, ['SUPER_ADMIN']);
+  var saved = saveBerandaImageToDriveGas_(
+    payload.base64,
+    payload.category || 'beranda',
+    payload.category === 'hero' ? 1600 : 1200
+  );
+  if (!saved.url) {
+    throw new Error('Berkas gambar tidak valid atau kosong.');
+  }
+  logActivity_(actor, 'BERANDA_UPLOAD_MEDIA', saved.fileId || 'DRIVE', 'Mengunggah media beranda ke Google Drive.');
+  return {
+    ok: true,
+    fotoUrl: saved.url,
+    driveFileId: saved.fileId,
+    fileName: payload.fileName || 'beranda.jpg'
+  };
+}
+
+function updateHeroBanner(payload, token) {
+  var actor = verifyTokenAndRole_(token, ['SUPER_ADMIN']);
+  var sh = ensureBerandaSheetGas_('BANNER', [
+    'ID_BANNER', 'JUDUL', 'KALIMAT_SAMBUTAN', 'GAMBAR_URL', 'DRIVE_FILE_ID', 'AKTIF', 'UPDATED_AT', 'UPDATED_BY'
+  ]);
+  var rows = sheetToObjects_('BANNER');
+  var existing = rows.length > 0 ? rows[0] : null;
+  var now = new Date().toISOString();
+  var media = { url: String(payload.gambarUrl || (existing ? existing.GAMBAR_URL : '') || ''), fileId: String(payload.driveFileId || (existing ? existing.DRIVE_FILE_ID : '') || '') };
+  if (payload.imageBase64 && String(payload.imageBase64).indexOf('data:image/') === 0) {
+    media = saveBerandaImageToDriveGas_(payload.imageBase64, 'hero_banner', 1600);
+  }
+  var idBanner = (existing && existing.ID_BANNER) ? existing.ID_BANNER : 'BNR-001';
+  var rowVals = [
+    idBanner,
+    String(payload.judul || (existing ? existing.JUDUL : 'WARGA AMPEL') || 'WARGA AMPEL').trim(),
+    String(payload.kalimatSambutan || (existing ? existing.KALIMAT_SAMBUTAN : '') || '').trim(),
+    media.url,
+    media.fileId,
+    true,
+    now,
+    actor.NAMA_LENGKAP
+  ];
+  if (existing) {
+    sh.getRange(existing._rowIndex, 1, 1, rowVals.length).setValues([rowVals]);
+  } else {
+    sh.appendRow(rowVals);
+  }
+  logActivity_(actor, 'BERANDA_UPDATE_BANNER', idBanner, 'Memperbarui Hero Banner Beranda.');
+  return {
+    ok: true,
+    banner: {
+      ID_BANNER: rowVals[0], JUDUL: rowVals[1], KALIMAT_SAMBUTAN: rowVals[2],
+      GAMBAR_URL: rowVals[3], DRIVE_FILE_ID: rowVals[4], AKTIF: true,
+      UPDATED_AT: rowVals[6], UPDATED_BY: rowVals[7]
+    }
+  };
+}
+
+function saveBerandaProgram(payload, token) {
+  var actor = verifyTokenAndRole_(token, ['SUPER_ADMIN']);
+  var sh = ensureBerandaSheetGas_('PROGRAM', [
+    'ID_PROGRAM', 'JUDUL', 'TANGGAL', 'RINGKASAN', 'STATUS', 'FOTO_URL', 'DRIVE_FILE_ID', 'URUTAN', 'AKTIF', 'CREATED_AT', 'UPDATED_AT'
+  ]);
+  var rows = sheetToObjects_('PROGRAM');
+  var id = payload.idProgram ? String(payload.idProgram).trim() : '';
+  var target = null;
+  if (id) {
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].ID_PROGRAM === id) { target = rows[i]; break; }
+    }
+  }
+  var now = new Date().toISOString();
+  var finalId = target ? target.ID_PROGRAM : ('PRG-' + Date.now());
+  var media = {
+    url: String(payload.fotoUrl !== undefined ? payload.fotoUrl : (target ? target.FOTO_URL : '')),
+    fileId: String(payload.driveFileId !== undefined ? payload.driveFileId : (target ? target.DRIVE_FILE_ID : ''))
+  };
+  if (payload.imageBase64 && String(payload.imageBase64).indexOf('data:image/') === 0) {
+    media = saveBerandaImageToDriveGas_(payload.imageBase64, 'program_' + finalId, 1200);
+  }
+  var rowVals = [
+    finalId,
+    String(payload.judul || (target ? target.JUDUL : '')).trim(),
+    String(payload.tanggal || (target ? target.TANGGAL : now.slice(0, 10))).trim(),
+    String(payload.ringkasan || (target ? target.RINGKASAN : '')).trim(),
+    String(payload.status || (target ? target.STATUS : 'Akan Datang')).trim(),
+    media.url,
+    media.fileId,
+    Number(payload.urutan) || (target ? Number(target.URUTAN) : (rows.length + 1)),
+    payload.aktif !== false,
+    target ? target.CREATED_AT : now,
+    now
+  ];
+  if (target) {
+    sh.getRange(target._rowIndex, 1, 1, rowVals.length).setValues([rowVals]);
+    logActivity_(actor, 'BERANDA_UPDATE_PROGRAM', finalId, 'Memperbarui program: ' + rowVals[1]);
+  } else {
+    sh.appendRow(rowVals);
+    logActivity_(actor, 'BERANDA_CREATE_PROGRAM', finalId, 'Menambah program: ' + rowVals[1]);
+  }
+  return { ok: true, idProgram: finalId };
+}
+
+function deleteBerandaProgram(idProgram, token) {
+  var actor = verifyTokenAndRole_(token, ['SUPER_ADMIN']);
+  var sh = ensureBerandaSheetGas_('PROGRAM', [
+    'ID_PROGRAM', 'JUDUL', 'TANGGAL', 'RINGKASAN', 'STATUS', 'FOTO_URL', 'DRIVE_FILE_ID', 'URUTAN', 'AKTIF', 'CREATED_AT', 'UPDATED_AT'
+  ]);
+  var rows = sheetToObjects_('PROGRAM');
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i].ID_PROGRAM === idProgram) {
+      sh.deleteRow(rows[i]._rowIndex);
+      logActivity_(actor, 'BERANDA_DELETE_PROGRAM', idProgram, 'Menghapus program: ' + rows[i].JUDUL);
+      return { ok: true };
+    }
+  }
+  throw new Error('Program kelurahan tidak ditemukan.');
+}
+
+function saveBerandaGaleri(payload, token) {
+  var actor = verifyTokenAndRole_(token, ['SUPER_ADMIN']);
+  var sh = ensureBerandaSheetGas_('GALERI', [
+    'ID_GALERI', 'JUDUL', 'KETERANGAN', 'TANGGAL', 'FOTO_URL', 'DRIVE_FILE_ID', 'URUTAN', 'AKTIF', 'CREATED_AT'
+  ]);
+  var rows = sheetToObjects_('GALERI');
+  var id = payload.idGaleri ? String(payload.idGaleri).trim() : '';
+  var target = null;
+  if (id) {
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].ID_GALERI === id) { target = rows[i]; break; }
+    }
+  }
+  var now = new Date().toISOString();
+  var finalId = target ? target.ID_GALERI : ('GLR-' + Date.now());
+  var media = {
+    url: String(payload.fotoUrl !== undefined ? payload.fotoUrl : (target ? target.FOTO_URL : '')),
+    fileId: String(payload.driveFileId !== undefined ? payload.driveFileId : (target ? target.DRIVE_FILE_ID : ''))
+  };
+  if (payload.imageBase64 && String(payload.imageBase64).indexOf('data:image/') === 0) {
+    media = saveBerandaImageToDriveGas_(payload.imageBase64, 'galeri_' + finalId, 1200);
+  }
+  var rowVals = [
+    finalId,
+    String(payload.judul || (target ? target.JUDUL : '')).trim(),
+    String(payload.keterangan !== undefined ? payload.keterangan : (target ? target.KETERANGAN : '')).trim(),
+    String(payload.tanggal || (target ? target.TANGGAL : now.slice(0, 10))).trim(),
+    media.url,
+    media.fileId,
+    Number(payload.urutan) || (target ? Number(target.URUTAN) : (rows.length + 1)),
+    payload.aktif !== false,
+    target ? target.CREATED_AT : now
+  ];
+  if (target) {
+    sh.getRange(target._rowIndex, 1, 1, rowVals.length).setValues([rowVals]);
+    logActivity_(actor, 'BERANDA_UPDATE_GALERI', finalId, 'Memperbarui galeri: ' + rowVals[1]);
+  } else {
+    sh.appendRow(rowVals);
+    logActivity_(actor, 'BERANDA_CREATE_GALERI', finalId, 'Menambah foto galeri: ' + rowVals[1]);
+  }
+  return { ok: true, idGaleri: finalId };
+}
+
+function deleteBerandaGaleri(idGaleri, token) {
+  var actor = verifyTokenAndRole_(token, ['SUPER_ADMIN']);
+  var sh = ensureBerandaSheetGas_('GALERI', [
+    'ID_GALERI', 'JUDUL', 'KETERANGAN', 'TANGGAL', 'FOTO_URL', 'DRIVE_FILE_ID', 'URUTAN', 'AKTIF', 'CREATED_AT'
+  ]);
+  var rows = sheetToObjects_('GALERI');
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i].ID_GALERI === idGaleri) {
+      sh.deleteRow(rows[i]._rowIndex);
+      logActivity_(actor, 'BERANDA_DELETE_GALERI', idGaleri, 'Menghapus foto galeri: ' + rows[i].JUDUL);
+      return { ok: true };
+    }
+  }
+  throw new Error('Item galeri tidak ditemukan.');
+}
+
+function saveBerandaFooter(payload, token) {
+  verifyTokenAndRole_(token, ['SUPER_ADMIN']);
+  return saveSettings({
+    settings: [
+      { KUNCI: 'FOOTER_NAMA_KANTOR', NILAI: String(payload.namaKantor || 'Balai Desa Ampel').trim() },
+      { KUNCI: 'FOOTER_ALAMAT', NILAI: String(payload.alamat || '').trim() },
+      { KUNCI: 'FOOTER_TELEPON', NILAI: String(payload.telepon || '').trim() },
+      { KUNCI: 'FOOTER_EMAIL', NILAI: String(payload.email || '').trim() },
+      { KUNCI: 'FOOTER_JAM_LAYANAN', NILAI: String(payload.jamLayanan || '').trim() }
+    ]
+  }, token);
+}
+
 

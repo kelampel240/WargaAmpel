@@ -77,4 +77,74 @@ test('mapRestToGasCall maps public, auth, reporting, and admin routes accurately
   assert.equal(verifyWarga.action, 'verifyWarga');
   assert.equal(verifyWarga.payload.idWarga, 'WRG-001');
   assert.equal(verifyWarga.payload.status, 'TERVERIFIKASI');
+
+  // Beranda & Super Admin Beranda CMS routes
+  const pubBeranda = mapRestToGasCall('/api/public/beranda', 'GET');
+  assert.equal(pubBeranda.action, 'getBerandaContent');
+
+  const adminBeranda = mapRestToGasCall('/api/admin/beranda', 'GET', {}, 'tok-sa');
+  assert.equal(adminBeranda.action, 'getAdminBeranda');
+  assert.equal(adminBeranda.token, 'tok-sa');
+
+  const uploadMedia = mapRestToGasCall(
+    '/api/admin/beranda/upload',
+    'POST',
+    { fileName: 'hero.jpg', mimeType: 'image/jpeg', base64Data: 'abc', category: 'banner' },
+    'tok-sa'
+  );
+  assert.equal(uploadMedia.action, 'uploadBerandaMedia');
+  assert.equal(uploadMedia.payload.category, 'banner');
+  assert.equal(uploadMedia.token, 'tok-sa');
+
+  const updateBanner = mapRestToGasCall(
+    '/api/admin/beranda/banner',
+    'PUT',
+    { judul: 'WARGA AMPEL', subjudul: 'Sambutan hangat' },
+    'tok-sa'
+  );
+  assert.equal(updateBanner.action, 'updateHeroBanner');
+  assert.equal(updateBanner.payload.judul, 'WARGA AMPEL');
+
+  const createProgram = mapRestToGasCall(
+    '/api/admin/beranda/program',
+    'POST',
+    { judul: 'Kerja Bakti', status: 'Berjalan' },
+    'tok-sa'
+  );
+  assert.equal(createProgram.action, 'saveBerandaProgram');
+  assert.equal(createProgram.payload.judul, 'Kerja Bakti');
+
+  const updateProgram = mapRestToGasCall(
+    '/api/admin/beranda/program/PRG-001',
+    'PUT',
+    { judul: 'Kerja Bakti RW 02', status: 'Selesai' },
+    'tok-sa'
+  );
+  assert.equal(updateProgram.action, 'saveBerandaProgram');
+  assert.equal(updateProgram.payload.idProgram, 'PRG-001');
+
+  const deleteProgram = mapRestToGasCall('/api/admin/beranda/program/PRG-001', 'DELETE', {}, 'tok-sa');
+  assert.equal(deleteProgram.action, 'deleteBerandaProgram');
+  assert.equal(deleteProgram.payload.idProgram, 'PRG-001');
+
+  const createGaleri = mapRestToGasCall(
+    '/api/admin/beranda/galeri',
+    'POST',
+    { judul: 'Musrenbang', fotoUrl: 'https://example.com/a.jpg' },
+    'tok-sa'
+  );
+  assert.equal(createGaleri.action, 'saveBerandaGaleri');
+
+  const deleteGaleri = mapRestToGasCall('/api/admin/beranda/galeri/GAL-001', 'DELETE', {}, 'tok-sa');
+  assert.equal(deleteGaleri.action, 'deleteBerandaGaleri');
+  assert.equal(deleteGaleri.payload.idGaleri, 'GAL-001');
+
+  const saveFooter = mapRestToGasCall(
+    '/api/admin/beranda/footer',
+    'PUT',
+    { alamatKantor: 'Balai Desa Ampel', jamLayanan: 'Senin - Jumat, 08.00 - 15.00 WIB' },
+    'tok-sa'
+  );
+  assert.equal(saveFooter.action, 'saveBerandaFooter');
+  assert.equal(saveFooter.payload.alamatKantor, 'Balai Desa Ampel');
 });

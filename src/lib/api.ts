@@ -9,7 +9,9 @@ export const DEFAULT_GAS_WEB_APP_URL =
   'https://script.google.com/macros/s/AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ/exec';
 
 export const DEFAULT_DRIVE_FOLDER_ID = '1gT7JFuHwe2LYhJp2BlZeQ9j5tgLC2IJx';
+export const BERANDA_DRIVE_FOLDER_ID = '1wR1Kt5shcFFll0OiM3-Jxtv8MauBOkFv';
 export const DEFAULT_DRIVE_FOLDER_URL = `https://drive.google.com/drive/folders/${DEFAULT_DRIVE_FOLDER_ID}`;
+export const BERANDA_DRIVE_FOLDER_URL = `https://drive.google.com/drive/folders/${BERANDA_DRIVE_FOLDER_ID}`;
 export const DEFAULT_SPREADSHEET_ID = '1yGeHQ_rWh24fhTrK9NP19hO3L0TwoKXOVboczMAPhkY';
 export const DEFAULT_SPREADSHEET_URL = `https://docs.google.com/spreadsheets/d/${DEFAULT_SPREADSHEET_ID}/edit`;
 
@@ -152,6 +154,7 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
       'getPublicAnnouncements',
       'getPublicOrgStructure',
       'getPublicRoleAccounts',
+      'getBerandaContent',
     ]);
 
     let res: Response;
@@ -159,6 +162,7 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
       // Gunakan text/plain agar browser GitHub Pages tidak memicu CORS preflight OPTIONS ke Google Apps Script
       res = await fetch(targetUrl, {
         method: 'POST',
+        cache: 'no-store',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
           action: spec.action,
@@ -170,9 +174,13 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
       if (publicGetActions.has(spec.action)) {
         try {
           const sep = targetUrl.includes('?') ? '&' : '?';
-          res = await fetch(`${targetUrl}${sep}action=${encodeURIComponent(spec.action)}`, {
-            method: 'GET',
-          });
+          res = await fetch(
+            `${targetUrl}${sep}action=${encodeURIComponent(spec.action)}&_ts=${Date.now()}`,
+            {
+              method: 'GET',
+              cache: 'no-store',
+            }
+          );
         } catch {
           throw new Error(
             'Gagal terhubung ke backend Google Apps Script (CORS/jaringan). Pastikan Code.gs sudah ditempel di Apps Script, di-deploy ulang sebagai "New version", dan akses disetel ke "Anyone".'
@@ -220,7 +228,7 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
-  const res = await fetch(url, { ...options, headers });
+  const res = await fetch(url, { ...options, cache: 'no-store', headers });
   const contentType = res.headers.get('content-type') || '';
   const rawText = await res.text().catch(() => '');
   let data: Record<string, unknown> = {};

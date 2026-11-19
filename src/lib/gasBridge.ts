@@ -266,5 +266,58 @@ export function mapRestToGasCall(
     };
   }
 
+  // Beranda & Konten Publik (Additive routes)
+  if (pathname === '/api/public/beranda' && upperMethod === 'GET') {
+    return { action: 'getBerandaContent', payload: {} };
+  }
+  if (pathname === '/api/admin/beranda' && upperMethod === 'GET') {
+    return { action: 'getAdminBeranda', payload: {}, token: token || undefined };
+  }
+  if (pathname === '/api/admin/beranda/upload' && upperMethod === 'POST') {
+    return { action: 'uploadBerandaMedia', payload: bodyObj, token: token || undefined };
+  }
+  if (pathname === '/api/admin/beranda/banner' && upperMethod === 'PUT') {
+    return { action: 'updateHeroBanner', payload: bodyObj, token: token || undefined };
+  }
+  if (pathname === '/api/admin/beranda/program' && upperMethod === 'POST') {
+    return { action: 'saveBerandaProgram', payload: bodyObj, token: token || undefined };
+  }
+  const programMatch = pathname.match(/^\/api\/admin\/beranda\/program\/([^/]+)$/);
+  if (programMatch && upperMethod === 'PUT') {
+    return {
+      action: 'saveBerandaProgram',
+      payload: { ...bodyObj, idProgram: decodeURIComponent(programMatch[1]) },
+      token: token || undefined,
+    };
+  }
+  if (programMatch && upperMethod === 'DELETE') {
+    return {
+      action: 'deleteBerandaProgram',
+      payload: { idProgram: decodeURIComponent(programMatch[1]) },
+      token: token || undefined,
+    };
+  }
+  if (pathname === '/api/admin/beranda/galeri' && upperMethod === 'POST') {
+    return { action: 'saveBerandaGaleri', payload: bodyObj, token: token || undefined };
+  }
+  const galeriMatch = pathname.match(/^\/api\/admin\/beranda\/galeri\/([^/]+)$/);
+  if (galeriMatch && upperMethod === 'PUT') {
+    return {
+      action: 'saveBerandaGaleri',
+      payload: { ...bodyObj, idGaleri: decodeURIComponent(galeriMatch[1]) },
+      token: token || undefined,
+    };
+  }
+  if (galeriMatch && upperMethod === 'DELETE') {
+    return {
+      action: 'deleteBerandaGaleri',
+      payload: { idGaleri: decodeURIComponent(galeriMatch[1]) },
+      token: token || undefined,
+    };
+  }
+  if (pathname === '/api/admin/beranda/footer' && upperMethod === 'PUT') {
+    return { action: 'saveBerandaFooter', payload: bodyObj, token: token || undefined };
+  }
+
   throw new Error(`Endpoint ${upperMethod} ${pathname} belum dipetakan ke Google Apps Script.`);
 }

@@ -25,6 +25,7 @@ export const DRIVE_SUBFOLDERS = [
   '04_SURAT_KE_DINAS',
   '05_DOKUMEN_PENDUKUNG',
   '06_FOTO_ORGANISASI',
+  '07_MEDIA_BERANDA',
 ] as const;
 
 export const ticketLock = new TicketLockManager();
@@ -890,6 +891,36 @@ function createInitialDatabase(): SiwargaDatabase {
         NILAI: JSON.stringify({ kelurahan: true, lpmk: true, rwRt: true, kader: true }),
         KETERANGAN: 'Kontrol tampil/sembunyikan tiap bagian Struktur Organisasi',
       },
+      {
+        KUNCI: 'BERANDA_DRIVE_FOLDER_ID',
+        NILAI: '1wR1Kt5shcFFll0OiM3-Jxtv8MauBOkFv',
+        KETERANGAN: 'ID Folder Google Drive khusus foto Beranda (Banner, Program, Galeri)',
+      },
+      {
+        KUNCI: 'FOOTER_NAMA_KANTOR',
+        NILAI: 'Balai Desa Ampel',
+        KETERANGAN: 'Nama kantor pelayanan pada Footer Beranda',
+      },
+      {
+        KUNCI: 'FOOTER_ALAMAT',
+        NILAI: 'Jl. Raya Desa Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember',
+        KETERANGAN: 'Alamat kantor desa pada Footer Beranda',
+      },
+      {
+        KUNCI: 'FOOTER_TELEPON',
+        NILAI: '(0336) 621-104 / 0811-0000-0003',
+        KETERANGAN: 'Nomor telepon/WhatsApp layanan pada Footer Beranda',
+      },
+      {
+        KUNCI: 'FOOTER_EMAIL',
+        NILAI: 'pelayanan@ampel.desa.id',
+        KETERANGAN: 'Email resmi pelayanan pada Footer Beranda',
+      },
+      {
+        KUNCI: 'FOOTER_JAM_LAYANAN',
+        NILAI: 'Senin–Jumat, 08.00–14.30 WIB (Portal online aktif 24 jam)',
+        KETERANGAN: 'Jam layanan kantor desa pada Footer Beranda',
+      },
     ],
     LOG_AKTIVITAS: [
       {
@@ -914,6 +945,108 @@ function createInitialDatabase(): SiwargaDatabase {
       },
     ],
     ...createInitialOrgSeed(),
+    ...createInitialBerandaSeed(),
+  };
+}
+
+function createInitialBerandaSeed(): Pick<SiwargaDatabase, 'BANNER' | 'PROGRAM' | 'GALERI'> {
+  const now = '2026-11-01T08:00:00.000Z';
+  return {
+    BANNER: [
+      {
+        ID_BANNER: 'BNR-001',
+        JUDUL: 'WARGA AMPEL',
+        KALIMAT_SAMBUTAN:
+          'Ikuti program kegiatan kelurahan, cek kabar terbaru desa, atau sampaikan kebutuhan layanan Anda secara mudah.',
+        GAMBAR_URL: '/src/assets/images/hero_desa_ampel_1795122998295.jpg',
+        AKTIF: true,
+        UPDATED_AT: now,
+        UPDATED_BY: 'Super Admin Desa Ampel',
+      },
+    ],
+    PROGRAM: [
+      {
+        ID_PROGRAM: 'PRG-001',
+        JUDUL: 'Posyandu Balita & Lansia Terpadu',
+        TANGGAL: '2026-11-24',
+        RINGKASAN:
+          'Pemeriksaan kesehatan rutin, imunisasi balita, dan senam kebugaran lansia bersama kader PKK di Pendopo Balai Desa.',
+        STATUS: 'Akan Datang',
+        FOTO_URL: '/src/assets/images/program_posyandu_sehat_1795123000134.jpg',
+        URUTAN: 1,
+        AKTIF: true,
+        CREATED_AT: now,
+        UPDATED_AT: now,
+      },
+      {
+        ID_PROGRAM: 'PRG-002',
+        JUDUL: 'Kerja Bakti Bersih Saluran & Penghijauan',
+        TANGGAL: '2026-11-16',
+        RINGKASAN:
+          'Gotong royong pembersihan drainase lingkungan dan penanaman tanaman pelindung jalan bersama pengurus RW/RT.',
+        STATUS: 'Berjalan',
+        FOTO_URL: '/src/assets/images/program_kerja_bakti_1795123000265.jpg',
+        URUTAN: 2,
+        AKTIF: true,
+        CREATED_AT: now,
+        UPDATED_AT: now,
+      },
+      {
+        ID_PROGRAM: 'PRG-003',
+        JUDUL: 'Pelatihan Kemasan & Pemasaran UMKM Desa',
+        TANGGAL: '2026-10-28',
+        RINGKASAN:
+          'Pendampingan pelaku usaha warga dan TP PKK dalam pengemasan produk pangan lokal dan pemasaran digital.',
+        STATUS: 'Selesai',
+        FOTO_URL: '/src/assets/images/program_umkm_desa_1795122999705.jpg',
+        URUTAN: 3,
+        AKTIF: true,
+        CREATED_AT: now,
+        UPDATED_AT: now,
+      },
+    ],
+    GALERI: [
+      {
+        ID_GALERI: 'GLR-001',
+        JUDUL: 'Suasana Pelayanan Pagi di Balai Desa Ampel',
+        KETERANGAN: 'Warga dan perangkat desa berinteraksi hangat di halaman Balai Desa Ampel.',
+        TANGGAL: '2026-11-12',
+        FOTO_URL: '/src/assets/images/hero_desa_ampel_1795122998295.jpg',
+        URUTAN: 1,
+        AKTIF: true,
+        CREATED_AT: now,
+      },
+      {
+        ID_GALERI: 'GLR-002',
+        JUDUL: 'Gotong Royong Penghijauan Dusun Krajan',
+        KETERANGAN: 'Warga bersama kader menanam bibit tanaman di tepi jalan lingkungan desa.',
+        TANGGAL: '2026-11-10',
+        FOTO_URL: '/src/assets/images/program_kerja_bakti_1795123000265.jpg',
+        URUTAN: 2,
+        AKTIF: true,
+        CREATED_AT: now,
+      },
+      {
+        ID_GALERI: 'GLR-003',
+        JUDUL: 'Layanan Posyandu Keluarga Bersama Kader',
+        KETERANGAN: 'Kegiatan pemeriksaan ibu dan balita yang didampingi kader Posyandu aktif.',
+        TANGGAL: '2026-11-06',
+        FOTO_URL: '/src/assets/images/program_posyandu_sehat_1795123000134.jpg',
+        URUTAN: 3,
+        AKTIF: true,
+        CREATED_AT: now,
+      },
+      {
+        ID_GALERI: 'GLR-004',
+        JUDUL: 'Bazar & Pendampingan Produk UMKM TP PKK',
+        KETERANGAN: 'Pameran produk kerajinan dan kuliner karya ibu-ibu TP PKK Kelurahan Ampel.',
+        TANGGAL: '2026-10-28',
+        FOTO_URL: '/src/assets/images/program_umkm_desa_1795122999705.jpg',
+        URUTAN: 4,
+        AKTIF: true,
+        CREATED_AT: now,
+      },
+    ],
   };
 }
 
@@ -1634,6 +1767,29 @@ export function loadDatabase(): SiwargaDatabase {
   if (seedAdmin && seedAdmin.NAMA_LENGKAP === 'Arif Rahman (Super Admin)') {
     seedAdmin.NAMA_LENGKAP = 'Super Admin Desa Ampel';
     mutated = true;
+  }
+  if (!parsed.BANNER || !parsed.PROGRAM || !parsed.GALERI) {
+    const berandaSeed = createInitialBerandaSeed();
+    parsed.BANNER = parsed.BANNER || berandaSeed.BANNER;
+    parsed.PROGRAM = parsed.PROGRAM || berandaSeed.PROGRAM;
+    parsed.GALERI = parsed.GALERI || berandaSeed.GALERI;
+    mutated = true;
+  }
+  const berandaDefaults: Array<[string, string, string]> = [
+    ['BERANDA_DRIVE_FOLDER_ID', '1wR1Kt5shcFFll0OiM3-Jxtv8MauBOkFv', 'ID Folder Google Drive khusus foto Beranda'],
+    ['FOOTER_NAMA_KANTOR', 'Balai Desa Ampel', 'Nama kantor pelayanan pada Footer Beranda'],
+    ['FOOTER_ALAMAT', 'Jl. Raya Desa Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember', 'Alamat kantor desa pada Footer Beranda'],
+    ['FOOTER_TELEPON', '(0336) 621-104 / 0811-0000-0003', 'Nomor telepon/WhatsApp layanan pada Footer Beranda'],
+    ['FOOTER_EMAIL', 'pelayanan@ampel.desa.id', 'Email resmi pelayanan pada Footer Beranda'],
+    ['FOOTER_JAM_LAYANAN', 'Senin–Jumat, 08.00–14.30 WIB (Portal online aktif 24 jam)', 'Jam layanan kantor desa pada Footer Beranda'],
+  ];
+  if (parsed.PENGATURAN) {
+    berandaDefaults.forEach(([k, v, desc]) => {
+      if (!parsed.PENGATURAN.some((p) => p.KUNCI === k)) {
+        parsed.PENGATURAN.push({ KUNCI: k, NILAI: v, KETERANGAN: desc });
+        mutated = true;
+      }
+    });
   }
   if (mutated) {
     fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), 'utf8');

@@ -104,6 +104,18 @@ function setupDatabase() {
       'ID_BALAI', 'ID_RW', 'NAMA_BALAI', 'ALAMAT', 'JAM_LAYANAN',
       'MAPS_URL', 'FOTO_URL', 'NO_HP', 'TAMPILKAN_HP', 'TAMPILKAN_PUBLIK',
       'AKTIF', 'URUTAN', 'CREATED_AT', 'UPDATED_AT'
+    ],
+    BANNER: [
+      'ID_BANNER', 'JUDUL', 'KALIMAT_SAMBUTAN', 'GAMBAR_URL',
+      'DRIVE_FILE_ID', 'AKTIF', 'UPDATED_AT', 'UPDATED_BY'
+    ],
+    PROGRAM: [
+      'ID_PROGRAM', 'JUDUL', 'TANGGAL', 'RINGKASAN', 'STATUS',
+      'FOTO_URL', 'DRIVE_FILE_ID', 'URUTAN', 'AKTIF', 'CREATED_AT', 'UPDATED_AT'
+    ],
+    GALERI: [
+      'ID_GALERI', 'JUDUL', 'KETERANGAN', 'TANGGAL',
+      'FOTO_URL', 'DRIVE_FILE_ID', 'URUTAN', 'AKTIF', 'CREATED_AT'
     ]
   };
 
@@ -130,6 +142,12 @@ function setupDatabase() {
     shPengaturan.appendRow(['TICKET_COUNTER', '0', 'Counter nomor tiket berurutan']);
     shPengaturan.appendRow(['MAX_FILE_MB', '5', 'Batas ukuran file unggahan']);
     shPengaturan.appendRow(['DRIVE_ROOT_FOLDER_ID', CONFIG.ROOT_FOLDER_ID, 'ID Folder Google Drive SIWARGA_DESA']);
+    shPengaturan.appendRow(['BERANDA_DRIVE_FOLDER_ID', CONFIG.BERANDA_DRIVE_FOLDER_ID || '1wR1Kt5shcFFll0OiM3-Jxtv8MauBOkFv', 'ID Folder Google Drive Foto Beranda']);
+    shPengaturan.appendRow(['FOOTER_NAMA_KANTOR', 'Balai Desa Ampel', 'Nama kantor pelayanan pada Footer Beranda']);
+    shPengaturan.appendRow(['FOOTER_ALAMAT', 'Jl. Raya Desa Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember', 'Alamat kantor desa pada Footer Beranda']);
+    shPengaturan.appendRow(['FOOTER_TELEPON', '(0336) 621-104 / 0811-0000-0003', 'Nomor telepon/WhatsApp layanan pada Footer Beranda']);
+    shPengaturan.appendRow(['FOOTER_EMAIL', 'pelayanan@ampel.desa.id', 'Email resmi pelayanan pada Footer Beranda']);
+    shPengaturan.appendRow(['FOOTER_JAM_LAYANAN', 'Senin–Jumat, 08.00–14.30 WIB (Portal online aktif 24 jam)', 'Jam layanan kantor desa pada Footer Beranda']);
   }
 
   // Seed Semua Akun Bawaan (Super Admin, Kades, Operator, Petugas, dan Contoh Warga)
@@ -280,5 +298,62 @@ function setupDatabase() {
     shBalai.appendRow(['BLI-001', 'RW-01', 'Balai RW 01 Dusun Krajan Utara', 'Jl. Melati No. 14, RT 01 / RW 01, Kelurahan Ampel', 'Senin-Sabtu, 08.00-16.00 WIB', '', '', '081234500301', true, true, true, 1, nowOrg, nowOrg]);
   }
 
-  Logger.log('DATABASE_SIWARGA berhasil diinisialisasi beserta tab Struktur Organisasi, Sekolah, Guru, dan Balai RW.');
+  // Seed Konten Beranda Awal (BANNER, PROGRAM, GALERI) jika masih kosong
+  var shBanner = ss.getSheetByName('BANNER');
+  if (shBanner && shBanner.getLastRow() <= 1) {
+    shBanner.appendRow([
+      'BNR-001',
+      'WARGA AMPEL',
+      'Ikuti program kegiatan kelurahan, cek kabar terbaru desa, atau sampaikan kebutuhan layanan Anda secara mudah.',
+      '',
+      '',
+      true,
+      nowOrg,
+      'Super Admin Desa Ampel'
+    ]);
+  }
+  var shProgram = ss.getSheetByName('PROGRAM');
+  if (shProgram && shProgram.getLastRow() <= 1) {
+    shProgram.appendRow([
+      'PRG-001',
+      'Posyandu Balita & Lansia Terpadu',
+      '2026-11-24',
+      'Pemeriksaan kesehatan rutin, imunisasi balita, dan senam kebugaran lansia bersama kader PKK di Pendopo Balai Desa.',
+      'Akan Datang',
+      '',
+      '',
+      1,
+      true,
+      nowOrg,
+      nowOrg
+    ]);
+    shProgram.appendRow([
+      'PRG-002',
+      'Kerja Bakti Bersih Saluran & Penghijauan',
+      '2026-11-16',
+      'Gotong royong pembersihan drainase lingkungan dan penanaman tanaman pelindung jalan bersama pengurus RW/RT.',
+      'Berjalan',
+      '',
+      '',
+      2,
+      true,
+      nowOrg,
+      nowOrg
+    ]);
+    shProgram.appendRow([
+      'PRG-003',
+      'Pelatihan Kemasan & Pemasaran UMKM Desa',
+      '2026-10-28',
+      'Pendampingan pelaku usaha warga dan TP PKK dalam pengemasan produk pangan lokal dan pemasaran digital.',
+      'Selesai',
+      '',
+      '',
+      3,
+      true,
+      nowOrg,
+      nowOrg
+    ]);
+  }
+
+  Logger.log('DATABASE_SIWARGA berhasil diinisialisasi beserta tab Struktur Organisasi, Sekolah, Guru, Balai RW, dan Beranda (BANNER, PROGRAM, GALERI).');
 }

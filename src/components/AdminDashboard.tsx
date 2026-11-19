@@ -8,6 +8,7 @@ import {
   FolderOpen,
   HandHeart,
   History,
+  Home,
   LayoutDashboard,
   Lightbulb,
   Menu,
@@ -46,9 +47,11 @@ import {
   WargaManager,
 } from './AdminModules';
 import { GoogleSheetsWorkspacePanel } from './GoogleSheetsWorkspacePanel';
+import { BerandaAdminManager } from './BerandaAdminManager';
 
 export type SidebarModule =
   | 'dashboard'
+  | 'kelola-beranda'
   | 'laporan-masuk'
   | 'permohonan-bantuan'
   | 'layanan-administrasi'
@@ -76,8 +79,10 @@ const SIDEBAR_ITEMS: Array<{
   id: SidebarModule;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  superAdminOnly?: boolean;
 }> = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'kelola-beranda', label: 'Kelola Beranda', icon: Home, superAdminOnly: true },
   { id: 'laporan-masuk', label: 'Laporan Masuk', icon: ClipboardList },
   { id: 'permohonan-bantuan', label: 'Permohonan Bantuan', icon: HandHeart },
   { id: 'layanan-administrasi', label: 'Layanan Administrasi', icon: FileText },
@@ -209,7 +214,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <p className="font-display font-bold text-base text-[#0F2942] truncate">{user.namaLengkap}</p>
         </div>
         <nav aria-label="Menu Dashboard Admin" className="p-3 space-y-1 flex-1 overflow-y-auto">
-          {SIDEBAR_ITEMS.map((item) => {
+          {SIDEBAR_ITEMS.filter((item) => !item.superAdminOnly || user.role === 'SUPER_ADMIN').map((item) => {
             const Icon = item.icon;
             const active = activeTab === item.id;
             return (
@@ -243,7 +248,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </button>
             </div>
             <nav className="p-3 space-y-1 overflow-y-auto flex-1">
-              {SIDEBAR_ITEMS.map((item) => {
+              {SIDEBAR_ITEMS.filter((item) => !item.superAdminOnly || user.role === 'SUPER_ADMIN').map((item) => {
                 const Icon = item.icon;
                 return (
                   <button
@@ -509,6 +514,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           />
         )}
 
+        {activeTab === 'kelola-beranda' && (
+          <BerandaAdminManager userRole={user.role} onBerandaChanged={onServicesChanged} />
+        )}
         {activeTab === 'struktur-organisasi' && <OrgAdminManager userRole={user.role} />}
         {activeTab === 'data-warga' && <WargaManager />}
         {activeTab === 'data-petugas' && <PetugasManager userRole={user.role} onUpdated={loadAll} />}

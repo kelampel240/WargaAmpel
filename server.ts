@@ -23,17 +23,23 @@ import {
   validateOrgInput,
 } from './src/shared/orgLogic';
 import {
+  BerandaFooterInfo,
   EvidenceType,
   EvidenceVisibility,
   FORM_FIELD_TYPES,
+  PROGRAM_STATUS_OPTIONS,
+  ProgramStatus,
   PublicUserSession,
   REPORT_STATUSES,
   ReportStatus,
   SERVICE_GROUPS,
+  SheetBanner,
   SheetBuktiDokumen,
+  SheetGaleri,
   SheetKategoriLayanan,
   SheetKonfigurasiForm,
   SheetLaporan,
+  SheetProgram,
   SheetUser,
   SiwargaDatabase,
   UserRole,
@@ -2156,6 +2162,417 @@ async function startServer() {
     );
     saveDatabase(db);
     return res.json({ displaySettings: extractOrgDisplaySettings(db.PENGATURAN) });
+  });
+
+  // ===========================================================================
+  // BERANDA WARGA AMPEL (PUBLIK & KELOLA KONTEN KHUSUS SUPER_ADMIN)
+  // ===========================================================================
+  const buildBerandaFooter = (db: SiwargaDatabase): BerandaFooterInfo => ({
+    namaKantor: getSettingValue(db, 'FOOTER_NAMA_KANTOR', 'Balai Desa Ampel'),
+    alamat: getSettingValue(
+      db,
+      'FOOTER_ALAMAT',
+      'Jl. Raya Desa Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember'
+    ),
+    telepon: getSettingValue(db, 'FOOTER_TELEPON', '(0336) 621-104 / 0811-0000-0003'),
+    email: getSettingValue(db, 'FOOTER_EMAIL', 'pelayanan@ampel.desa.id'),
+    jamLayanan: getSettingValue(
+      db,
+      'FOOTER_JAM_LAYANAN',
+      'Senin–Jumat, 08.00–14.30 WIB (Portal online aktif 24 jam)'
+    ),
+  });
+
+  const saveBerandaMediaFile = (
+    dataUrlOrBase64: string,
+    prefix: string,
+    rawName?: string
+  ): { fotoUrl: string; driveFileId: string; fileName: string } => {
+    const cleanInput = String(dataUrlOrBase64 || '').trim();
+    if (!cleanInput) {
+      throw new Error('Berkas gambar belum dipilih.');
+    }
+    if (!cleanInput.startsWith('data:image/') && /^https?:\/\//i.test(cleanInput)) {
+      return { fotoUrl: cleanInput, driveFileId: '', fileName: rawName || 'external-url' };
+    }
+    ensureDriveStructure();
+    const mediaDir = path.join(DRIVE_ROOT_DIR, '07_MEDIA_BERANDA');
+    if (!fs.existsSync(mediaDir)) {
+      fs.mkdirSync(mediaDir, { recursive: true });
+    }
+    const ext = cleanInput.includes('image/png') ? 'png' : 'jpg';
+    const safeBase = (rawName || prefix).replace(/\.[^/.]+$/, '').replace(/[^A-Za-z0-9_-]/g, '_');
+    const fileName = `${prefix}_${safeBase}_${Date.now()}.${ext}`;
+    const buf = parseBase64Upload(cleanInput);
+    if (buf.length > 5 * 1024 * 1024) {
+      throw new Error('Ukuran gambar melebihi batas 5 MB setelah kompresi.');
+    }
+    fs.writeFileSync(path.join(mediaDir, fileName), buf);
+    return {
+      fotoUrl: `/api/public/beranda-media/${encodeURIComponent(fileName)}`,
+      driveFileId: `LOCAL-BERANDA-${Date.now()}`,
+      fileName,
+    };
+  };
+
+  app.get('/api/public/beranda-media/:fileName', (req, res) => {
+    const safeName = path.basename(String(req.params.fileName || ''));
+    const fullPath = path.join(DRIVE_ROOT_DIR, '07_MEDIA_BERANDA', safeName);
+    if (!safeName || !fs.existsSync(fullPath)) {
+      return res.status(404).json({ error: 'Berkas media beranda tidak ditemukan.' });
+    }
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    return res.sendFile(fullPath);
+  });
+
+  app.get('/api/public/beranda', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    const db = loadDatabase();
+    const banners = Array.isArray(db.BANNER) ? db.BANNER : [];
+    const activeBanner = banners.find((b) => b.AKTIF !== false) || banners[0] || null;
+    const programs = (Array.isArray(db.PROGRAM) ? db.PROGRAM : [])
+      .filter((p) => p.AKTIF !== false)
+      .sort((a, b) => (Number(a.URUTAN) || 99) - (Number(b.URUTAN) || 99));
+    const galeri = (Array.isArray(db.GALERI) ? db.GALERI : [])
+      .filter((g) => g.AKTIF !== false)
+      .sort((a, b) => (Number(a.URUTAN) || 99) - (Number(b.URUTAN) || 99));
+    const pengumuman = (Array.isArray(db.PENGUMUMAN) ? db.PENGUMUMAN : [])
+      .filter((p) => p.AKTIF !== false)
+      .sort((a, b) => String(b.TANGGAL_TERBIT || '').localeCompare(String(a.TANGGAL_TERBIT || '')))
+      .slice(0, 3);
+
+    const nowYm = new Date().toISOString().slice(0, 7);
+    const selesaiBulanIni = db.LAPORAN.filter((l) => {
+      if (l.STATUS_TERBARU !== 'Sudah diperbaiki atau ditangani') return false;
+      const refDate = String(l.UPDATED_AT || l.CREATED_AT || '').slice(0, 7);
+      return refDate === nowYm;
+    }).length;
+
+    return res.json({
+      banner: activeBanner,
+      program: programs,
+      galeri,
+      pengumuman,
+      stats: {
+        programBerjalan: programs.filter((p) => p.STATUS === 'Berjalan').length,
+        pengaduanSelesaiBulanIni: selesaiBulanIni,
+        totalProgram: programs.length,
+      },
+      footer: buildBerandaFooter(db),
+      updatedAt: new Date().toISOString(),
+    });
+  });
+
+  app.get('/api/admin/beranda', requireAuth(['SUPER_ADMIN']), (_req: AuthedRequest, res) => {
+    const db = loadDatabase();
+    const banners = Array.isArray(db.BANNER) ? db.BANNER : [];
+    const program = (Array.isArray(db.PROGRAM) ? db.PROGRAM : [])
+      .slice()
+      .sort((a, b) => (Number(a.URUTAN) || 99) - (Number(b.URUTAN) || 99));
+    const galeri = (Array.isArray(db.GALERI) ? db.GALERI : [])
+      .slice()
+      .sort((a, b) => (Number(a.URUTAN) || 99) - (Number(b.URUTAN) || 99));
+    return res.json({
+      banner: banners[0] || null,
+      program,
+      galeri,
+      footer: buildBerandaFooter(db),
+      driveFolderId: getSettingValue(db, 'BERANDA_DRIVE_FOLDER_ID', '1wR1Kt5shcFFll0OiM3-Jxtv8MauBOkFv'),
+    });
+  });
+
+  app.post('/api/admin/beranda/upload', requireAuth(['SUPER_ADMIN']), (req: AuthedRequest, res) => {
+    const body = (req.body || {}) as {
+      base64?: string;
+      fileName?: string;
+      category?: string;
+    };
+    try {
+      const saved = saveBerandaMediaFile(
+        String(body.base64 || ''),
+        String(body.category || 'beranda').toLowerCase(),
+        body.fileName
+      );
+      return res.json({ ok: true, ...saved });
+    } catch (err) {
+      return res.status(400).json({ error: (err as Error).message || 'Gagal mengunggah media beranda.' });
+    }
+  });
+
+  app.put('/api/admin/beranda/banner', requireAuth(['SUPER_ADMIN']), (req: AuthedRequest, res) => {
+    const body = (req.body || {}) as {
+      judul?: string;
+      kalimatSambutan?: string;
+      gambarUrl?: string;
+      driveFileId?: string;
+      imageBase64?: string;
+      fileName?: string;
+    };
+    const db = loadDatabase();
+    const now = new Date().toISOString();
+    let gambarUrl = String(body.gambarUrl || '').trim();
+    let driveFileId = String(body.driveFileId || '').trim();
+    if (body.imageBase64 && body.imageBase64.startsWith('data:image/')) {
+      const saved = saveBerandaMediaFile(body.imageBase64, 'hero', body.fileName || 'hero_banner');
+      gambarUrl = saved.fotoUrl;
+      driveFileId = saved.driveFileId;
+    }
+    db.BANNER = Array.isArray(db.BANNER) ? db.BANNER : [];
+    const existing = db.BANNER[0];
+    const updated: SheetBanner = {
+      ID_BANNER: existing?.ID_BANNER || 'BNR-001',
+      JUDUL: String(body.judul || existing?.JUDUL || 'WARGA AMPEL').trim(),
+      KALIMAT_SAMBUTAN: String(
+        body.kalimatSambutan ||
+          existing?.KALIMAT_SAMBUTAN ||
+          'Ikuti program kegiatan kelurahan, cek kabar terbaru desa, atau sampaikan kebutuhan layanan Anda secara mudah.'
+      ).trim(),
+      GAMBAR_URL: gambarUrl || existing?.GAMBAR_URL || '',
+      DRIVE_FILE_ID: driveFileId || existing?.DRIVE_FILE_ID || '',
+      AKTIF: true,
+      UPDATED_AT: now,
+      UPDATED_BY: req.sessionUser!.namaLengkap,
+    };
+    if (existing) {
+      db.BANNER[0] = updated;
+    } else {
+      db.BANNER.push(updated);
+    }
+    appendActivityLog(
+      db,
+      { idUser: req.sessionUser!.idUser, nama: req.sessionUser!.namaLengkap, role: req.sessionUser!.role },
+      'BERANDA_UPDATE_BANNER',
+      updated.ID_BANNER,
+      `Memperbarui hero banner Beranda (${updated.JUDUL}).`
+    );
+    saveDatabase(db);
+    return res.json({ ok: true, banner: updated });
+  });
+
+  app.post('/api/admin/beranda/program', requireAuth(['SUPER_ADMIN']), (req: AuthedRequest, res) => {
+    const body = (req.body || {}) as Record<string, unknown>;
+    const judul = String(body.judul || '').trim();
+    const tanggal = String(body.tanggal || '').trim();
+    const ringkasan = String(body.ringkasan || '').trim();
+    const rawStatus = String(body.status || 'Akan Datang').trim() as ProgramStatus;
+    if (judul.length < 3 || !ringkasan) {
+      return res.status(400).json({ error: 'Judul dan ringkasan program wajib diisi.' });
+    }
+    const status: ProgramStatus = PROGRAM_STATUS_OPTIONS.includes(rawStatus) ? rawStatus : 'Akan Datang';
+    const db = loadDatabase();
+    db.PROGRAM = Array.isArray(db.PROGRAM) ? db.PROGRAM : [];
+    const now = new Date().toISOString();
+    const id = `PRG-${Date.now()}`;
+    let fotoUrl = String(body.fotoUrl || '').trim();
+    let driveFileId = String(body.driveFileId || '').trim();
+    if (typeof body.imageBase64 === 'string' && body.imageBase64.startsWith('data:image/')) {
+      const saved = saveBerandaMediaFile(body.imageBase64, 'program', String(body.fileName || id));
+      fotoUrl = saved.fotoUrl;
+      driveFileId = saved.driveFileId;
+    }
+    const item: SheetProgram = {
+      ID_PROGRAM: id,
+      JUDUL: judul,
+      TANGGAL: tanggal || now.slice(0, 10),
+      RINGKASAN: ringkasan,
+      STATUS: status,
+      FOTO_URL: fotoUrl,
+      DRIVE_FILE_ID: driveFileId,
+      URUTAN: Number(body.urutan) || db.PROGRAM.length + 1,
+      AKTIF: body.aktif !== false,
+      CREATED_AT: now,
+      UPDATED_AT: now,
+    };
+    db.PROGRAM.unshift(item);
+    appendActivityLog(
+      db,
+      { idUser: req.sessionUser!.idUser, nama: req.sessionUser!.namaLengkap, role: req.sessionUser!.role },
+      'BERANDA_CREATE_PROGRAM',
+      id,
+      `Menambah program kelurahan: ${judul}`
+    );
+    saveDatabase(db);
+    return res.status(201).json({ ok: true, program: item });
+  });
+
+  app.put('/api/admin/beranda/program/:id', requireAuth(['SUPER_ADMIN']), (req: AuthedRequest, res) => {
+    const id = String(req.params.id || '');
+    const body = (req.body || {}) as Record<string, unknown>;
+    const db = loadDatabase();
+    db.PROGRAM = Array.isArray(db.PROGRAM) ? db.PROGRAM : [];
+    const target = db.PROGRAM.find((p) => p.ID_PROGRAM === id);
+    if (!target) {
+      return res.status(404).json({ error: 'Program kelurahan tidak ditemukan.' });
+    }
+    const judul = String(body.judul ?? target.JUDUL).trim();
+    const ringkasan = String(body.ringkasan ?? target.RINGKASAN).trim();
+    if (judul.length < 3 || !ringkasan) {
+      return res.status(400).json({ error: 'Judul dan ringkasan program wajib diisi.' });
+    }
+    const rawStatus = String(body.status ?? target.STATUS).trim() as ProgramStatus;
+    let fotoUrl = String(body.fotoUrl ?? target.FOTO_URL).trim();
+    let driveFileId = String(body.driveFileId ?? target.DRIVE_FILE_ID ?? '').trim();
+    if (typeof body.imageBase64 === 'string' && body.imageBase64.startsWith('data:image/')) {
+      const saved = saveBerandaMediaFile(body.imageBase64, 'program', String(body.fileName || id));
+      fotoUrl = saved.fotoUrl;
+      driveFileId = saved.driveFileId;
+    }
+    target.JUDUL = judul;
+    target.TANGGAL = String(body.tanggal ?? target.TANGGAL).trim();
+    target.RINGKASAN = ringkasan;
+    target.STATUS = PROGRAM_STATUS_OPTIONS.includes(rawStatus) ? rawStatus : target.STATUS;
+    target.FOTO_URL = fotoUrl;
+    target.DRIVE_FILE_ID = driveFileId;
+    target.URUTAN = Number(body.urutan) || target.URUTAN;
+    target.AKTIF = body.aktif !== undefined ? body.aktif !== false : target.AKTIF;
+    target.UPDATED_AT = new Date().toISOString();
+    appendActivityLog(
+      db,
+      { idUser: req.sessionUser!.idUser, nama: req.sessionUser!.namaLengkap, role: req.sessionUser!.role },
+      'BERANDA_UPDATE_PROGRAM',
+      id,
+      `Memperbarui program kelurahan: ${judul}`
+    );
+    saveDatabase(db);
+    return res.json({ ok: true, program: target });
+  });
+
+  app.delete('/api/admin/beranda/program/:id', requireAuth(['SUPER_ADMIN']), (req: AuthedRequest, res) => {
+    const id = String(req.params.id || '');
+    const db = loadDatabase();
+    db.PROGRAM = Array.isArray(db.PROGRAM) ? db.PROGRAM : [];
+    const idx = db.PROGRAM.findIndex((p) => p.ID_PROGRAM === id);
+    if (idx === -1) {
+      return res.status(404).json({ error: 'Program kelurahan tidak ditemukan.' });
+    }
+    const deletedTitle = db.PROGRAM[idx].JUDUL;
+    db.PROGRAM.splice(idx, 1);
+    appendActivityLog(
+      db,
+      { idUser: req.sessionUser!.idUser, nama: req.sessionUser!.namaLengkap, role: req.sessionUser!.role },
+      'BERANDA_DELETE_PROGRAM',
+      id,
+      `Menghapus program kelurahan: ${deletedTitle}`
+    );
+    saveDatabase(db);
+    return res.json({ ok: true });
+  });
+
+  app.post('/api/admin/beranda/galeri', requireAuth(['SUPER_ADMIN']), (req: AuthedRequest, res) => {
+    const body = (req.body || {}) as Record<string, unknown>;
+    const judul = String(body.judul || '').trim();
+    if (judul.length < 2) {
+      return res.status(400).json({ error: 'Judul foto kegiatan wajib diisi.' });
+    }
+    const db = loadDatabase();
+    db.GALERI = Array.isArray(db.GALERI) ? db.GALERI : [];
+    const now = new Date().toISOString();
+    const id = `GLR-${Date.now()}`;
+    let fotoUrl = String(body.fotoUrl || '').trim();
+    let driveFileId = String(body.driveFileId || '').trim();
+    if (typeof body.imageBase64 === 'string' && body.imageBase64.startsWith('data:image/')) {
+      const saved = saveBerandaMediaFile(body.imageBase64, 'galeri', String(body.fileName || id));
+      fotoUrl = saved.fotoUrl;
+      driveFileId = saved.driveFileId;
+    }
+    if (!fotoUrl) {
+      return res.status(400).json({ error: 'Foto kegiatan wajib diunggah atau diisi URL-nya.' });
+    }
+    const item: SheetGaleri = {
+      ID_GALERI: id,
+      JUDUL: judul,
+      KETERANGAN: String(body.keterangan || '').trim(),
+      TANGGAL: String(body.tanggal || now.slice(0, 10)).trim(),
+      FOTO_URL: fotoUrl,
+      DRIVE_FILE_ID: driveFileId,
+      URUTAN: Number(body.urutan) || db.GALERI.length + 1,
+      AKTIF: body.aktif !== false,
+      CREATED_AT: now,
+    };
+    db.GALERI.unshift(item);
+    appendActivityLog(
+      db,
+      { idUser: req.sessionUser!.idUser, nama: req.sessionUser!.namaLengkap, role: req.sessionUser!.role },
+      'BERANDA_CREATE_GALERI',
+      id,
+      `Menambah foto galeri: ${judul}`
+    );
+    saveDatabase(db);
+    return res.status(201).json({ ok: true, galeri: item });
+  });
+
+  app.put('/api/admin/beranda/galeri/:id', requireAuth(['SUPER_ADMIN']), (req: AuthedRequest, res) => {
+    const id = String(req.params.id || '');
+    const body = (req.body || {}) as Record<string, unknown>;
+    const db = loadDatabase();
+    db.GALERI = Array.isArray(db.GALERI) ? db.GALERI : [];
+    const target = db.GALERI.find((g) => g.ID_GALERI === id);
+    if (!target) {
+      return res.status(404).json({ error: 'Item galeri tidak ditemukan.' });
+    }
+    let fotoUrl = String(body.fotoUrl ?? target.FOTO_URL).trim();
+    let driveFileId = String(body.driveFileId ?? target.DRIVE_FILE_ID ?? '').trim();
+    if (typeof body.imageBase64 === 'string' && body.imageBase64.startsWith('data:image/')) {
+      const saved = saveBerandaMediaFile(body.imageBase64, 'galeri', String(body.fileName || id));
+      fotoUrl = saved.fotoUrl;
+      driveFileId = saved.driveFileId;
+    }
+    target.JUDUL = String(body.judul ?? target.JUDUL).trim();
+    target.KETERANGAN = String(body.keterangan ?? target.KETERANGAN).trim();
+    target.TANGGAL = String(body.tanggal ?? target.TANGGAL).trim();
+    target.FOTO_URL = fotoUrl;
+    target.DRIVE_FILE_ID = driveFileId;
+    target.URUTAN = Number(body.urutan) || target.URUTAN;
+    target.AKTIF = body.aktif !== undefined ? body.aktif !== false : target.AKTIF;
+    appendActivityLog(
+      db,
+      { idUser: req.sessionUser!.idUser, nama: req.sessionUser!.namaLengkap, role: req.sessionUser!.role },
+      'BERANDA_UPDATE_GALERI',
+      id,
+      `Memperbarui foto galeri: ${target.JUDUL}`
+    );
+    saveDatabase(db);
+    return res.json({ ok: true, galeri: target });
+  });
+
+  app.delete('/api/admin/beranda/galeri/:id', requireAuth(['SUPER_ADMIN']), (req: AuthedRequest, res) => {
+    const id = String(req.params.id || '');
+    const db = loadDatabase();
+    db.GALERI = Array.isArray(db.GALERI) ? db.GALERI : [];
+    const idx = db.GALERI.findIndex((g) => g.ID_GALERI === id);
+    if (idx === -1) {
+      return res.status(404).json({ error: 'Item galeri tidak ditemukan.' });
+    }
+    const deletedTitle = db.GALERI[idx].JUDUL;
+    db.GALERI.splice(idx, 1);
+    appendActivityLog(
+      db,
+      { idUser: req.sessionUser!.idUser, nama: req.sessionUser!.namaLengkap, role: req.sessionUser!.role },
+      'BERANDA_DELETE_GALERI',
+      id,
+      `Menghapus foto galeri: ${deletedTitle}`
+    );
+    saveDatabase(db);
+    return res.json({ ok: true });
+  });
+
+  app.put('/api/admin/beranda/footer', requireAuth(['SUPER_ADMIN']), (req: AuthedRequest, res) => {
+    const body = (req.body || {}) as Partial<BerandaFooterInfo>;
+    const db = loadDatabase();
+    if (typeof body.namaKantor === 'string') setSettingValue(db, 'FOOTER_NAMA_KANTOR', body.namaKantor.trim());
+    if (typeof body.alamat === 'string') setSettingValue(db, 'FOOTER_ALAMAT', body.alamat.trim());
+    if (typeof body.telepon === 'string') setSettingValue(db, 'FOOTER_TELEPON', body.telepon.trim());
+    if (typeof body.email === 'string') setSettingValue(db, 'FOOTER_EMAIL', body.email.trim());
+    if (typeof body.jamLayanan === 'string') setSettingValue(db, 'FOOTER_JAM_LAYANAN', body.jamLayanan.trim());
+    appendActivityLog(
+      db,
+      { idUser: req.sessionUser!.idUser, nama: req.sessionUser!.namaLengkap, role: req.sessionUser!.role },
+      'BERANDA_UPDATE_FOOTER',
+      'PENGATURAN',
+      'Memperbarui informasi kontak dan jam layanan Footer Beranda.'
+    );
+    saveDatabase(db);
+    return res.json({ ok: true, footer: buildBerandaFooter(db) });
   });
 
   // ===========================================================================

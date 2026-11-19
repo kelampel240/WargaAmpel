@@ -1,51 +1,123 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   ArrowRight,
+  Calendar,
+  Camera,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
   FileText,
   HandHeart,
   HelpCircle,
   Megaphone,
+  PlayCircle,
   SearchCheck,
   Users,
+  X,
 } from 'lucide-react';
-import { ServiceGroup, ServiceWithForm, SheetPengumuman } from '../shared/types';
+import {
+  ProgramStatus,
+  PublicBerandaResponse,
+  ServiceGroup,
+  ServiceWithForm,
+  SheetGaleri,
+  SheetPengumuman,
+  SheetProgram,
+} from '../shared/types';
 import { formatTanggalIndo } from '../lib/api';
-const balaiAssetModules = import.meta.glob<string>(
-  '../assets/images/desa_ampel_balai_1794843784317.jpg',
-  { eager: true, import: 'default' }
-);
-const balaiDesaImg = Object.values(balaiAssetModules)[0] || '';
+
+import heroFallbackImg from '../assets/images/hero_desa_ampel_1795122998295.jpg';
+import kerjaBaktiFallbackImg from '../assets/images/program_kerja_bakti_1795123000265.jpg';
+import posyanduFallbackImg from '../assets/images/program_posyandu_sehat_1795123000134.jpg';
+import umkmFallbackImg from '../assets/images/program_umkm_desa_1795122999705.jpg';
+
+const BUNDLED_IMAGE_MAP: Record<string, string> = {
+  '/src/assets/images/hero_desa_ampel_1795122998295.jpg': heroFallbackImg,
+  '/src/assets/images/program_kerja_bakti_1795123000265.jpg': kerjaBaktiFallbackImg,
+  '/src/assets/images/program_posyandu_sehat_1795123000134.jpg': posyanduFallbackImg,
+  '/src/assets/images/program_umkm_desa_1795122999705.jpg': umkmFallbackImg,
+};
+
+function resolveBerandaImageUrl(url?: string, defaultFallback?: string): string {
+  const clean = String(url || '').trim();
+  if (!clean) return defaultFallback || '';
+  if (BUNDLED_IMAGE_MAP[clean]) return BUNDLED_IMAGE_MAP[clean];
+  return clean;
+}
 
 export type WizardEntryMode = 'pengaduan' | 'bantuan' | 'administrasi' | 'tidak-tahu';
 
 interface CitizenHomeProps {
   services: ServiceWithForm[];
   announcements: SheetPengumuman[];
+  beranda?: PublicBerandaResponse | null;
+  berandaLoading?: boolean;
   loading?: boolean;
   loadError?: string;
   onRetry?: () => void;
   onStartWizard: (mode: WizardEntryMode, preselectedService?: ServiceWithForm) => void;
   onGoTrack: () => void;
   onGoAllAnnouncements: () => void;
+  onGoAllServices?: () => void;
   onGoStruktur?: () => void;
   activeSection?: 'home' | 'services' | 'announcements';
 }
 
+const BerandaImageFrame: React.FC<{
+  src: string;
+  alt: string;
+  fallbackTitle: string;
+  className?: string;
+  imgClassName?: string;
+}> = ({ src, alt, fallbackTitle, className = '', imgClassName = 'w-full h-full object-cover' }) => {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+
+  if (!src || failed) {
+    return (
+      <div
+        className={`bg-gradient-to-br from-[#0F2942] via-[#134E5E] to-[#0B6E4F] flex flex-col items-center justify-center p-6 text-center text-white ${className}`}
+      >
+        <Camera className="w-8 h-8 text-emerald-200 mb-2" aria-hidden="true" />
+        <p className="font-display font-bold text-sm leading-snug line-clamp-2">{fallbackTitle}</p>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      referrerPolicy="no-referrer"
+      onError={() => setFailed(true)}
+      className={imgClassName}
+    />
+  );
+};
+
 export const CitizenHome: React.FC<CitizenHomeProps> = ({
   services = [],
   announcements = [],
+  beranda = null,
+  berandaLoading = false,
   loading = false,
   loadError = '',
   onRetry,
   onStartWizard,
   onGoTrack,
   onGoAllAnnouncements,
+  onGoAllServices,
   onGoStruktur,
   activeSection = 'home',
 }) => {
-  const [imgError, setImgError] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<ServiceGroup | 'ALL'>('ALL');
+  const [programFilter, setProgramFilter] = useState<ProgramStatus | 'SEMUA'>('SEMUA');
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const safeServices = Array.isArray(services) ? services : [];
   const safeAnnouncements = Array.isArray(announcements) ? announcements : [];
@@ -55,6 +127,47 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
       ? safeServices
       : safeServices.filter((s) => s.KATEGORI_GRUP === selectedGroup);
 
+  const programs: SheetProgram[] = useMemo(() => {
+    const raw = Array.isArray(beranda?.program) ? beranda.program : [];
+    return raw;
+  }, [beranda]);
+
+  const filteredPrograms = useMemo(() => {
+    if (programFilter === 'SEMUA') return programs;
+    return programs.filter((p) => p.STATUS === programFilter);
+  }, [programs, programFilter]);
+
+  const galeriList: SheetGaleri[] = useMemo(() => {
+    return Array.isArray(beranda?.galeri) ? beranda.galeri : [];
+  }, [beranda]);
+
+  const topAnnouncements = useMemo(() => {
+    if (Array.isArray(beranda?.pengumuman) && beranda.pengumuman.length > 0) {
+      return beranda.pengumuman.slice(0, 3);
+    }
+    return safeAnnouncements.slice(0, 3);
+  }, [beranda, safeAnnouncements]);
+
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxIndex(null);
+      if (e.key === 'ArrowRight' && galeriList.length > 1) {
+        setLightboxIndex((prev) => (prev === null ? null : (prev + 1) % galeriList.length));
+      }
+      if (e.key === 'ArrowLeft' && galeriList.length > 1) {
+        setLightboxIndex((prev) =>
+          prev === null ? null : (prev - 1 + galeriList.length) % galeriList.length
+        );
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [lightboxIndex, galeriList.length]);
+
+  // --------------------------------------------------------------------------
+  // PRESERVED VIEW: DAFTAR LAYANAN (/services)
+  // --------------------------------------------------------------------------
   if (activeSection === 'services') {
     return (
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
@@ -137,6 +250,9 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
     );
   }
 
+  // --------------------------------------------------------------------------
+  // PRESERVED VIEW: SEMUA PENGUMUMAN (/announcements)
+  // --------------------------------------------------------------------------
   if (activeSection === 'announcements') {
     return (
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
@@ -175,10 +291,30 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
     );
   }
 
+  // --------------------------------------------------------------------------
+  // NEW BERANDA WARGA AMPEL (7 SECTIONS)
+  // --------------------------------------------------------------------------
+  const heroTitle = beranda?.banner?.JUDUL || 'WARGA AMPEL';
+  const heroSambutan =
+    beranda?.banner?.KALIMAT_SAMBUTAN ||
+    'Ikuti program kegiatan kelurahan, cek kabar terbaru desa, atau sampaikan kebutuhan layanan Anda secara mudah.';
+  const heroImgSrc = resolveBerandaImageUrl(beranda?.banner?.GAMBAR_URL, heroFallbackImg);
+
+  const isLoadingHome = (berandaLoading || loading) && !beranda;
+  const activeLightboxItem = lightboxIndex !== null ? galeriList[lightboxIndex] : null;
+
+  const scrollToProgram = () => {
+    const el = document.getElementById('program-kelurahan');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
-    <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-12">
+    <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-12 sm:space-y-14">
       {loadError && (
-        <div role="alert" className="p-4 bg-rose-50 border border-rose-300 rounded-xl flex flex-wrap items-center justify-between gap-3">
+        <div
+          role="alert"
+          className="p-4 bg-rose-50 border border-rose-300 rounded-xl flex flex-wrap items-center justify-between gap-3"
+        >
           <p className="text-sm font-medium text-rose-900">{loadError}</p>
           {onRetry && (
             <button
@@ -191,252 +327,532 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
           )}
         </div>
       )}
-      {/* Hero & 4 Giant Accessible Buttons */}
-      <section aria-labelledby="hero-heading" className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-          <div className="lg:col-span-7 flex flex-col justify-center">
-            <p className="text-sm font-semibold text-[#0B6E4F] tracking-wide">
-              Portal Resmi Pelayanan Warga · Pemerintah Desa Ampel
-            </p>
-            <h1
-              id="hero-heading"
-              className="mt-2 font-display text-4xl sm:text-5xl font-extrabold text-[#0F2942] tracking-tight text-balance"
-            >
-              WARGA AMPEL
-            </h1>
-            <p className="mt-4 text-lg sm:text-xl text-slate-700 leading-relaxed max-w-2xl">
-              Jangan bingung. Ceritakan kebutuhan atau masalah Anda. Pemerintah desa akan membantu menindaklanjutinya.
-            </p>
 
-            {/* Secondary Link Required by Spec */}
-            <div className="mt-6">
-              <button
-                type="button"
-                onClick={onGoTrack}
-                className="inline-flex items-center gap-3 px-5 py-3 text-left text-base font-bold text-[#0F2942] bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl transition-colors cursor-pointer"
+      {/* 1. HERO BANNER */}
+      <section aria-labelledby="hero-heading">
+        {isLoadingHome ? (
+          <div className="h-[340px] sm:h-[420px] rounded-2xl bg-slate-200 animate-pulse border border-slate-200" />
+        ) : (
+          <div className="relative rounded-2xl overflow-hidden border border-slate-200 min-h-[340px] sm:min-h-[420px] flex items-end bg-[#0F2942]">
+            <div className="absolute inset-0">
+              <BerandaImageFrame
+                src={heroImgSrc}
+                alt="Suasana Balai Desa Ampel dan kegiatan masyarakat"
+                fallbackTitle={heroTitle}
+                className="w-full h-full"
+                imgClassName="w-full h-full object-cover"
+              />
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 bg-gradient-to-t from-[#0F2942]/95 via-[#0F2942]/70 to-[#0B6E4F]/30 sm:bg-gradient-to-r sm:from-[#0F2942]/92 sm:via-[#0F2942]/72 sm:to-[#0B6E4F]/25"
+              />
+            </div>
+
+            <div className="relative z-10 w-full p-6 sm:p-10 lg:p-12 max-w-3xl text-white">
+              <p className="text-xs sm:text-sm font-semibold text-emerald-200 tracking-wide">
+                Portal Warga &amp; Informasi Kelurahan · Desa Ampel
+              </p>
+              <h1
+                id="hero-heading"
+                className="mt-2 font-display text-3xl sm:text-5xl font-extrabold tracking-tight text-white text-balance"
               >
-                <SearchCheck className="w-6 h-6 text-[#0B6E4F] shrink-0" aria-hidden="true" />
-                <span>SAYA SUDAH PERNAH MELAPOR – CEK LAPORAN SAYA</span>
-              </button>
+                {heroTitle}
+              </h1>
+              <p className="mt-3 text-base sm:text-lg text-slate-100 leading-relaxed max-w-2xl">
+                {heroSambutan}
+              </p>
+
+              <div className="mt-6 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => onStartWizard('pengaduan')}
+                  className="px-5 py-3 bg-[#0B6E4F] hover:bg-[#095c41] text-white text-sm sm:text-base font-bold rounded-xl transition-colors inline-flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <span>Buat Pengaduan</span>
+                  <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={scrollToProgram}
+                  className="px-5 py-3 bg-white/95 hover:bg-white text-[#0F2942] text-sm sm:text-base font-bold rounded-xl transition-colors inline-flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <span>Lihat Program</span>
+                </button>
+              </div>
             </div>
           </div>
-
-          <div className="lg:col-span-5">
-            {balaiDesaImg && !imgError ? (
-              <div className="h-full min-h-[220px] rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
-                <img
-                  src={balaiDesaImg}
-                  alt="Balai Desa Ampel tempat pelayanan warga desa"
-                  referrerPolicy="no-referrer"
-                  onError={() => setImgError(true)}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ) : (
-              <div className="h-full min-h-[220px] rounded-xl border border-slate-200 bg-slate-100 flex flex-col items-center justify-center p-6 text-center">
-                <FileText className="w-10 h-10 text-[#0F2942] mb-2" aria-hidden="true" />
-                <p className="font-display font-bold text-slate-800">Balai Desa Ampel</p>
-                <p className="text-sm text-slate-600">Layanan Pengaduan, Bantuan &amp; Administrasi</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 4 Giant Accessible Action Buttons */}
-        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-          <button
-            type="button"
-            onClick={() => onStartWizard('pengaduan')}
-            className="group text-left p-6 sm:p-7 rounded-xl border-2 border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-[#0B6E4F] transition-colors flex items-start gap-5 cursor-pointer"
-          >
-            <div className="w-14 h-14 rounded-xl bg-[#0B6E4F] text-white flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-8 h-8" aria-hidden="true" />
-            </div>
-            <div>
-              <span className="block font-display text-lg sm:text-xl font-extrabold text-[#0F2942]">
-                SAYA INGIN MELAPORKAN MASALAH
-              </span>
-              <span className="mt-1.5 block text-base text-slate-700">
-                Jalan rusak, sampah menumpuk, lampu jalan mati, saluran air tersumbat, atau gangguan lingkungan.
-              </span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onStartWizard('bantuan')}
-            className="group text-left p-6 sm:p-7 rounded-xl border-2 border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-[#0B6E4F] transition-colors flex items-start gap-5 cursor-pointer"
-          >
-            <div className="w-14 h-14 rounded-xl bg-[#0F2942] text-white flex items-center justify-center shrink-0">
-              <HandHeart className="w-8 h-8" aria-hidden="true" />
-            </div>
-            <div>
-              <span className="block font-display text-lg sm:text-xl font-extrabold text-[#0F2942]">
-                SAYA MEMBUTUHKAN BANTUAN
-              </span>
-              <span className="mt-1.5 block text-base text-slate-700">
-                Bantuan sosial pangan, pendidikan anak sekolah, rujukan kesehatan, atau kondisi darurat keluarga.
-              </span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onStartWizard('administrasi')}
-            className="group text-left p-6 sm:p-7 rounded-xl border-2 border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-[#0B6E4F] transition-colors flex items-start gap-5 cursor-pointer"
-          >
-            <div className="w-14 h-14 rounded-xl bg-amber-700 text-white flex items-center justify-center shrink-0">
-              <FileText className="w-8 h-8" aria-hidden="true" />
-            </div>
-            <div>
-              <span className="block font-display text-lg sm:text-xl font-extrabold text-[#0F2942]">
-                SAYA INGIN MENGURUS SURAT ATAU LAYANAN
-              </span>
-              <span className="mt-1.5 block text-base text-slate-700">
-                Surat domisili, surat keterangan usaha, surat tidak mampu, atau surat pengantar desa.
-              </span>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onStartWizard('tidak-tahu')}
-            className="group text-left p-6 sm:p-7 rounded-xl border-2 border-slate-300 bg-white hover:bg-sky-50 hover:border-[#0F2942] transition-colors flex items-start gap-5 cursor-pointer"
-          >
-            <div className="w-14 h-14 rounded-xl bg-slate-800 text-white flex items-center justify-center shrink-0">
-              <HelpCircle className="w-8 h-8" aria-hidden="true" />
-            </div>
-            <div>
-              <span className="block font-display text-lg sm:text-xl font-extrabold text-[#0F2942]">
-                SAYA TIDAK TAHU HARUS PILIH YANG MANA
-              </span>
-              <span className="mt-1.5 block text-base text-slate-700">
-                Cukup ceritakan masalah atau pertanyaan Anda dengan bahasa sehari-hari. Petugas desa akan mengarahkan.
-              </span>
-            </div>
-          </button>
-        </div>
+        )}
       </section>
 
-      {/* Active Dynamic Services Preview */}
-      <section aria-labelledby="layanan-aktif-heading">
-        <div className="flex flex-wrap items-end justify-between gap-4 mb-5">
+      {/* 2. PROGRAM KELURAHAN */}
+      <section id="program-kelurahan" aria-labelledby="program-heading" className="space-y-6 scroll-mt-20">
+        <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 id="layanan-aktif-heading" className="font-display text-2xl font-bold text-[#0F2942]">
-              Layanan Desa yang Tersedia
+            <h2 id="program-heading" className="font-display text-2xl sm:text-3xl font-bold text-[#0F2942] text-balance">
+              Program Kelurahan Ampel
             </h2>
-            <p className="mt-1 text-base text-slate-700">
-              Klik salah satu layanan di bawah untuk langsung mengisi formulir bertahap.
+            <p className="mt-1 text-base text-slate-600">
+              Agenda kegiatan warga, pemberdayaan masyarakat, dan pembangunan desa yang terbuka untuk diikuti bersama.
             </p>
           </div>
-          <span className="text-sm font-medium text-slate-600 tabular-nums">
-            {loading ? 'Memuat layanan...' : `${safeServices.length} layanan aktif`}
-          </span>
+
+          <div
+            role="tablist"
+            aria-label="Filter status program"
+            className="flex flex-wrap items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200"
+          >
+            {(['SEMUA', 'Akan Datang', 'Berjalan', 'Selesai'] as const).map((statusTab) => {
+              const active = programFilter === statusTab;
+              return (
+                <button
+                  key={statusTab}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setProgramFilter(statusTab)}
+                  className={`px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                    active
+                      ? 'bg-white text-[#0F2942] shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {statusTab === 'SEMUA' ? 'Semua' : statusTab}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {loading && safeServices.length === 0 ? (
-            Array.from({ length: 3 }).map((_, idx) => (
-              <div key={idx} className="bg-white border border-slate-200 rounded-xl p-5 h-36 animate-pulse" />
-            ))
-          ) : safeServices.slice(0, 6).map((svc) => (
-            <button
-              key={svc.ID_LAYANAN}
-              type="button"
-              onClick={() => {
-                const mode: WizardEntryMode = svc.KATEGORI_GRUP.startsWith('B.')
-                  ? 'bantuan'
-                  : svc.KATEGORI_GRUP.startsWith('C.')
-                  ? 'administrasi'
-                  : 'pengaduan';
-                onStartWizard(mode, svc);
-              }}
-              className="text-left bg-white border border-slate-200 rounded-xl p-5 hover:border-[#0B6E4F] transition-colors flex flex-col justify-between gap-3 cursor-pointer"
-            >
-              <div>
-                <span className="text-xs font-semibold text-slate-500">
-                  {svc.KATEGORI_GRUP}
-                </span>
-                <h3 className="mt-1 font-display text-lg font-bold text-slate-900">
-                  {svc.NAMA_LAYANAN}
-                </h3>
-                <p className="mt-1 text-sm text-slate-700 line-clamp-2">
-                  {svc.DESKRIPSI}
-                </p>
+        {isLoadingHome ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="bg-white border border-slate-200 rounded-2xl overflow-hidden h-80 animate-pulse">
+                <div className="h-44 bg-slate-200" />
+                <div className="p-5 space-y-3">
+                  <div className="h-3 w-1/3 bg-slate-200 rounded" />
+                  <div className="h-5 w-3/4 bg-slate-200 rounded" />
+                  <div className="h-4 w-full bg-slate-100 rounded" />
+                </div>
               </div>
-              <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0B6E4F]">
-                Mulai ajukan <ArrowRight className="w-4 h-4" aria-hidden="true" />
-              </span>
-            </button>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : filteredPrograms.length === 0 ? (
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
+            <p className="font-display font-bold text-[#0F2942] text-lg">
+              Belum ada program pada kategori ini
+            </p>
+            <p className="mt-1 text-sm text-slate-600">
+              Program kelurahan terbaru akan muncul di sini setelah diterbitkan oleh pengelola desa.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filteredPrograms.map((prog) => {
+              const StatusIcon =
+                prog.STATUS === 'Selesai'
+                  ? CheckCircle2
+                  : prog.STATUS === 'Berjalan'
+                  ? PlayCircle
+                  : Clock;
+              const statusTone =
+                prog.STATUS === 'Selesai'
+                  ? 'text-[#0B6E4F]'
+                  : prog.STATUS === 'Berjalan'
+                  ? 'text-sky-800'
+                  : 'text-amber-800';
+              const fallbackImg =
+                prog.STATUS === 'Berjalan'
+                  ? kerjaBaktiFallbackImg
+                  : prog.STATUS === 'Selesai'
+                  ? umkmFallbackImg
+                  : posyanduFallbackImg;
+              return (
+                <article
+                  key={prog.ID_PROGRAM}
+                  className="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col hover:border-[#0B6E4F] transition-colors"
+                >
+                  <div className="aspect-[4/3] bg-slate-100 overflow-hidden">
+                    <BerandaImageFrame
+                      src={resolveBerandaImageUrl(prog.FOTO_URL, fallbackImg)}
+                      alt={prog.JUDUL}
+                      fallbackTitle={prog.JUDUL}
+                      className="w-full h-full"
+                      imgClassName="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="p-5 flex-1 flex flex-col">
+                    <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-600">
+                      <span className={`inline-flex items-center gap-1 ${statusTone}`}>
+                        <StatusIcon className="w-3.5 h-3.5" aria-hidden="true" />
+                        <span>{prog.STATUS}</span>
+                      </span>
+                      <span aria-hidden="true">·</span>
+                      <span className="inline-flex items-center gap-1 tabular-nums">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />
+                        <span>{formatTanggalIndo(prog.TANGGAL)}</span>
+                      </span>
+                    </div>
+                    <h3 className="mt-2 font-display text-lg font-bold text-[#0F2942] leading-snug">
+                      {prog.JUDUL}
+                    </h3>
+                    <p className="mt-1.5 text-sm text-slate-700 leading-relaxed line-clamp-2">
+                      {prog.RINGKASAN}
+                    </p>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </section>
 
-      {/* Village Announcements */}
+      {/* 3. GALERI KEGIATAN */}
+      <section id="galeri-kegiatan" aria-labelledby="galeri-heading" className="space-y-5">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 id="galeri-heading" className="font-display text-2xl sm:text-3xl font-bold text-[#0F2942] text-balance">
+              Galeri Kegiatan Warga
+            </h2>
+            <p className="mt-1 text-base text-slate-600">
+              Dokumentasi kebersamaan masyarakat dan kegiatan kelurahan. Ketuk foto untuk memperbesar.
+            </p>
+          </div>
+        </div>
+
+        {isLoadingHome ? (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="aspect-[4/3] bg-slate-200 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        ) : galeriList.length === 0 ? (
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center">
+            <p className="font-display font-bold text-[#0F2942]">Galeri kegiatan belum memiliki foto</p>
+            <p className="mt-1 text-sm text-slate-600">
+              Dokumentasi foto kegiatan kelurahan akan ditampilkan di sini.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {galeriList.map((item, idx) => (
+              <button
+                key={item.ID_GALERI}
+                type="button"
+                onClick={() => setLightboxIndex(idx)}
+                className="group relative aspect-[4/3] rounded-xl overflow-hidden border border-slate-200 bg-slate-100 text-left cursor-pointer"
+              >
+                <BerandaImageFrame
+                  src={resolveBerandaImageUrl(item.FOTO_URL, kerjaBaktiFallbackImg)}
+                  alt={item.JUDUL}
+                  fallbackTitle={item.JUDUL}
+                  className="w-full h-full"
+                  imgClassName="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                />
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 via-black/35 to-transparent"
+                />
+                <div className="absolute inset-x-0 bottom-0 p-3 text-white">
+                  <p className="text-xs font-semibold line-clamp-1">{item.JUDUL}</p>
+                  <p className="text-[11px] text-slate-200 tabular-nums">{formatTanggalIndo(item.TANGGAL)}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* 4. PENGUMUMAN (3 TERBARU) */}
       <section aria-labelledby="pengumuman-heading" className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
             <Megaphone className="w-6 h-6 text-[#0B6E4F]" aria-hidden="true" />
             <h2 id="pengumuman-heading" className="font-display text-2xl font-bold text-[#0F2942]">
-              Pengumuman Resmi Desa
+              Pengumuman Terbaru Desa
             </h2>
           </div>
           <button
             type="button"
             onClick={onGoAllAnnouncements}
-            className="text-base font-semibold text-[#0B6E4F] hover:underline cursor-pointer"
+            className="text-sm sm:text-base font-semibold text-[#0B6E4F] hover:underline whitespace-nowrap shrink-0 cursor-pointer"
           >
             Lihat semua pengumuman
           </button>
         </div>
 
         <div className="divide-y divide-slate-200">
-          {safeAnnouncements.length === 0 && !loading ? (
-            <p className="text-sm text-slate-500 py-4">Belum ada pengumuman aktif saat ini.</p>
-          ) : safeAnnouncements.slice(0, 3).map((item) => (
-            <div key={item.ID_PENGUMUMAN} className="py-4 first:pt-0 last:pb-0">
-              <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
-                <span className="font-semibold text-[#0B6E4F]">{item.KATEGORI}</span>
-                <span aria-hidden="true">·</span>
-                <span>{formatTanggalIndo(item.TANGGAL_TERBIT)}</span>
+          {isLoadingHome ? (
+            Array.from({ length: 3 }).map((_, idx) => (
+              <div key={idx} className="py-4 space-y-2 animate-pulse">
+                <div className="h-3 w-36 bg-slate-200 rounded" />
+                <div className="h-5 w-2/3 bg-slate-200 rounded" />
+                <div className="h-4 w-full bg-slate-100 rounded" />
               </div>
-              <h3 className="mt-1 font-display text-lg font-bold text-slate-900">
-                {item.JUDUL}
-              </h3>
-              <p className="mt-1 text-base text-slate-700">
-                {item.RINGKASAN}
-              </p>
-            </div>
-          ))}
+            ))
+          ) : topAnnouncements.length === 0 ? (
+            <p className="text-sm text-slate-500 py-4">Belum ada pengumuman aktif saat ini.</p>
+          ) : (
+            topAnnouncements.slice(0, 3).map((item) => (
+              <div key={item.ID_PENGUMUMAN} className="py-4 first:pt-0 last:pb-0">
+                <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-slate-600">
+                  <span className="font-semibold text-[#0B6E4F]">{item.KATEGORI}</span>
+                  <span aria-hidden="true">·</span>
+                  <span className="tabular-nums">{formatTanggalIndo(item.TANGGAL_TERBIT)}</span>
+                </div>
+                <h3 className="mt-1 font-display text-lg font-bold text-slate-900">
+                  {item.JUDUL}
+                </h3>
+                <p className="mt-1 text-sm sm:text-base text-slate-700 leading-relaxed">
+                  {item.RINGKASAN}
+                </p>
+              </div>
+            ))
+          )}
         </div>
       </section>
 
-      {onGoStruktur && (
-        <section
-          aria-labelledby="struktur-org-callout"
-          className="bg-[#0F2942] text-white rounded-2xl border-2 border-[#D4AF37] p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5"
-        >
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-amber-400/15 border border-[#D4AF37] text-amber-300 flex items-center justify-center shrink-0">
-              <Users className="w-6 h-6" aria-hidden="true" />
+      {/* 5. LAYANAN WARGA (4 KARTU IKON + BANTUAN UMUM + STRUKTUR ORGANISASI) */}
+      <section id="layanan-warga" aria-labelledby="layanan-warga-heading" className="space-y-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 id="layanan-warga-heading" className="font-display text-2xl sm:text-3xl font-bold text-[#0F2942] text-balance">
+              Layanan Warga Desa Ampel
+            </h2>
+            <p className="mt-1 text-base text-slate-600">
+              Sampaikan laporan, ajukan bantuan atau surat keterangan, dan pantau progresnya kapan saja.
+            </p>
+          </div>
+          {onGoAllServices && (
+            <button
+              type="button"
+              onClick={onGoAllServices}
+              className="text-sm sm:text-base font-semibold text-[#0B6E4F] hover:underline whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              Lihat semua layanan ({safeServices.length})
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <button
+            type="button"
+            onClick={() => onStartWizard('pengaduan')}
+            className="text-left p-5 bg-white border border-slate-200 hover:border-[#0B6E4F] hover:bg-emerald-50/40 rounded-2xl transition-colors flex flex-col justify-between gap-4 cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-xl bg-emerald-50 text-[#0B6E4F] border border-emerald-200 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6" aria-hidden="true" />
             </div>
             <div>
-              <h2 id="struktur-org-callout" className="font-display text-xl sm:text-2xl font-extrabold">
-                STRUKTUR ORGANISASI WARGA AMPEL
-              </h2>
-              <p className="mt-1 text-base text-slate-200">
-                Kenali Pengurus Pemerintahan Kelurahan, LPMK, Ketua RW/RT, dan Kader di lingkungan Anda.
+              <h3 className="font-display text-lg font-bold text-[#0F2942]">Pengaduan</h3>
+              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                Laporkan jalan rusak, lampu padam, sampah, atau saluran air tersumbat.
               </p>
             </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onStartWizard('bantuan')}
+            className="text-left p-5 bg-white border border-slate-200 hover:border-[#0F2942] hover:bg-sky-50/40 rounded-2xl transition-colors flex flex-col justify-between gap-4 cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-xl bg-sky-50 text-[#0F2942] border border-sky-200 flex items-center justify-center">
+              <HandHeart className="w-6 h-6" aria-hidden="true" />
+            </div>
+            <div>
+              <h3 className="font-display text-lg font-bold text-[#0F2942]">Bantuan</h3>
+              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                Ajukan bantuan sosial pangan, pendidikan sekolah, atau pendampingan kesehatan.
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onStartWizard('administrasi')}
+            className="text-left p-5 bg-white border border-slate-200 hover:border-[#0B6E4F] hover:bg-emerald-50/40 rounded-2xl transition-colors flex flex-col justify-between gap-4 cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-xl bg-emerald-50 text-[#0B6E4F] border border-emerald-200 flex items-center justify-center">
+              <FileText className="w-6 h-6" aria-hidden="true" />
+            </div>
+            <div>
+              <h3 className="font-display text-lg font-bold text-[#0F2942]">Surat</h3>
+              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                Urus surat domisili, keterangan usaha, surat tidak mampu, atau pengantar desa.
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={onGoTrack}
+            className="text-left p-5 bg-white border border-slate-200 hover:border-[#0F2942] hover:bg-sky-50/40 rounded-2xl transition-colors flex flex-col justify-between gap-4 cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-xl bg-sky-50 text-[#0F2942] border border-sky-200 flex items-center justify-center">
+              <SearchCheck className="w-6 h-6" aria-hidden="true" />
+            </div>
+            <div>
+              <h3 className="font-display text-lg font-bold text-[#0F2942]">Lacak Status</h3>
+              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                Pantau perkembangan tindak lanjut dan bukti penanganan dengan nomor tiket Anda.
+              </p>
+            </div>
+          </button>
+        </div>
+
+        {/* Preserved Bantuan Umum link */}
+        <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <HelpCircle className="w-5 h-5 text-[#0B6E4F] shrink-0" aria-hidden="true" />
+            <p className="text-sm sm:text-base text-slate-800">
+              Belum yakin memilih jenis layanan yang tepat? Cukup ceritakan kebutuhan Anda dengan bahasa sehari-hari.
+            </p>
           </div>
           <button
             type="button"
-            onClick={onGoStruktur}
-            className="px-5 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-[#0F2942] text-base font-extrabold whitespace-nowrap shrink-0 cursor-pointer"
+            onClick={() => onStartWizard('tidak-tahu')}
+            className="px-4 py-2 bg-white hover:bg-emerald-100 border border-[#0B6E4F] text-[#0B6E4F] text-sm font-bold rounded-lg whitespace-nowrap shrink-0 cursor-pointer"
           >
-            Lihat Struktur Organisasi
+            Saya Tidak Tahu Harus Pilih yang Mana
           </button>
-        </section>
+        </div>
+
+        {/* Preserved Struktur Organisasi Callout */}
+        {onGoStruktur && (
+          <div
+            aria-labelledby="struktur-org-callout"
+            className="bg-[#0F2942] text-white rounded-2xl border border-slate-700 p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/20 text-emerald-300 flex items-center justify-center shrink-0">
+                <Users className="w-6 h-6" aria-hidden="true" />
+              </div>
+              <div>
+                <h3 id="struktur-org-callout" className="font-display text-xl font-bold">
+                  Struktur Organisasi Warga Ampel
+                </h3>
+                <p className="mt-1 text-sm sm:text-base text-slate-200">
+                  Kenali pengurus Pemerintah Kelurahan, TP PKK, LPMK, Ketua RW/RT, dan Kader di lingkungan Anda.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onGoStruktur}
+              className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-[#0F2942] text-sm font-extrabold whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              Lihat Struktur Organisasi
+            </button>
+          </div>
+        )}
+      </section>
+
+      {/* 6. STATISTIK RINGKAS */}
+      <section aria-labelledby="statistik-heading">
+        <div className="bg-gradient-to-r from-[#0F2942] to-[#0B6E4F] text-white rounded-2xl p-6 sm:p-8">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div>
+              <h2 id="statistik-heading" className="font-display text-xl sm:text-2xl font-bold">
+                Ringkasan Kinerja &amp; Kegiatan Desa
+              </h2>
+              <p className="mt-1 text-sm text-emerald-100">
+                Dihitung langsung dari catatan program kelurahan dan laporan warga di database desa.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-8">
+              <div>
+                <p className="text-xs font-medium text-emerald-200">Program Berjalan</p>
+                <p className="mt-1 font-display text-3xl font-extrabold tabular-nums">
+                  {isLoadingHome ? '–' : beranda?.stats?.programBerjalan ?? 0}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-emerald-200">Pengaduan Selesai Bulan Ini</p>
+                <p className="mt-1 font-display text-3xl font-extrabold tabular-nums">
+                  {isLoadingHome ? '–' : beranda?.stats?.pengaduanSelesaiBulanIni ?? 0}
+                </p>
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <p className="text-xs font-medium text-emerald-200">Total Program Terdaftar</p>
+                <p className="mt-1 font-display text-3xl font-extrabold tabular-nums">
+                  {isLoadingHome ? '–' : beranda?.stats?.totalProgram ?? 0}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* LIGHTBOX MODAL GALERI */}
+      {activeLightboxItem && lightboxIndex !== null && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Foto kegiatan: ${activeLightboxItem.JUDUL}`}
+          className="fixed inset-0 z-50 bg-slate-950/85 flex items-center justify-center p-4"
+          onClick={() => setLightboxIndex(null)}
+        >
+          <div
+            className="relative max-w-4xl w-full bg-white rounded-2xl overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200">
+              <div>
+                <h3 className="font-display font-bold text-base sm:text-lg text-[#0F2942]">
+                  {activeLightboxItem.JUDUL}
+                </h3>
+                <p className="text-xs text-slate-500 tabular-nums">
+                  {formatTanggalIndo(activeLightboxItem.TANGGAL)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLightboxIndex(null)}
+                aria-label="Tutup perbesaran foto"
+                className="p-2 rounded-lg text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="relative bg-slate-950 flex items-center justify-center max-h-[70vh] overflow-hidden">
+              <BerandaImageFrame
+                src={resolveBerandaImageUrl(activeLightboxItem.FOTO_URL, kerjaBaktiFallbackImg)}
+                alt={activeLightboxItem.JUDUL}
+                fallbackTitle={activeLightboxItem.JUDUL}
+                className="w-full h-[55vh]"
+                imgClassName="max-h-[70vh] w-auto object-contain"
+              />
+              {galeriList.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Foto sebelumnya"
+                    onClick={() =>
+                      setLightboxIndex((lightboxIndex - 1 + galeriList.length) % galeriList.length)
+                    }
+                    className="absolute left-3 p-2.5 rounded-full bg-black/60 hover:bg-black/80 text-white cursor-pointer"
+                  >
+                    <ChevronLeft className="w-5 h-5" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Foto berikutnya"
+                    onClick={() => setLightboxIndex((lightboxIndex + 1) % galeriList.length)}
+                    className="absolute right-3 p-2.5 rounded-full bg-black/60 hover:bg-black/80 text-white cursor-pointer"
+                  >
+                    <ChevronRight className="w-5 h-5" aria-hidden="true" />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {activeLightboxItem.KETERANGAN && (
+              <div className="px-5 py-4 text-sm text-slate-700 bg-slate-50">
+                {activeLightboxItem.KETERANGAN}
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </main>
   );

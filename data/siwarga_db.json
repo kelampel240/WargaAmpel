@@ -1021,9 +1021,79 @@
       "KUNCI": "GAS_DEPLOYMENT_ID",
       "NILAI": "AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ",
       "KETERANGAN": "ID Penerapan Google Apps Script Web App"
+    },
+    {
+      "KUNCI": "BERANDA_DRIVE_FOLDER_ID",
+      "NILAI": "1wR1Kt5shcFFll0OiM3-Jxtv8MauBOkFv",
+      "KETERANGAN": "ID Folder Google Drive khusus foto Beranda"
+    },
+    {
+      "KUNCI": "FOOTER_NAMA_KANTOR",
+      "NILAI": "Balai Desa Ampel",
+      "KETERANGAN": "Nama kantor pelayanan pada Footer Beranda"
+    },
+    {
+      "KUNCI": "FOOTER_ALAMAT",
+      "NILAI": "Jl. Raya Desa Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember",
+      "KETERANGAN": "Alamat kantor desa pada Footer Beranda"
+    },
+    {
+      "KUNCI": "FOOTER_TELEPON",
+      "NILAI": "(0336) 621-104 / 0811-0000-0003",
+      "KETERANGAN": "Nomor telepon/WhatsApp layanan pada Footer Beranda"
+    },
+    {
+      "KUNCI": "FOOTER_EMAIL",
+      "NILAI": "pelayanan@ampel.desa.id",
+      "KETERANGAN": "Email resmi pelayanan pada Footer Beranda"
+    },
+    {
+      "KUNCI": "FOOTER_JAM_LAYANAN",
+      "NILAI": "Senin–Jumat, 08.00–14.30 WIB (Portal online aktif 24 jam)",
+      "KETERANGAN": "Jam layanan kantor desa pada Footer Beranda"
     }
   ],
   "LOG_AKTIVITAS": [
+    {
+      "ID_LOG": "LOG-1795123326207-118",
+      "WAKTU": "2026-11-19T21:22:06.207Z",
+      "ID_USER": "USR-ADMIN-01",
+      "NAMA_PENGGUNA": "Super Admin Desa Ampel",
+      "ROLE": "SUPER_ADMIN",
+      "AKSI": "BERANDA_DELETE_PROGRAM",
+      "ID_TERKAIT": "PRG-1795123326193",
+      "DETAIL": "Menghapus program kelurahan: Uji Program Sementara"
+    },
+    {
+      "ID_LOG": "LOG-1795123326193-144",
+      "WAKTU": "2026-11-19T21:22:06.193Z",
+      "ID_USER": "USR-ADMIN-01",
+      "NAMA_PENGGUNA": "Super Admin Desa Ampel",
+      "ROLE": "SUPER_ADMIN",
+      "AKSI": "BERANDA_CREATE_PROGRAM",
+      "ID_TERKAIT": "PRG-1795123326193",
+      "DETAIL": "Menambah program kelurahan: Uji Program Sementara"
+    },
+    {
+      "ID_LOG": "LOG-1795123326163-430",
+      "WAKTU": "2026-11-19T21:22:06.163Z",
+      "ID_USER": "USR-ADMIN-01",
+      "NAMA_PENGGUNA": "Super Admin Desa Ampel",
+      "ROLE": "SUPER_ADMIN",
+      "AKSI": "LOGIN",
+      "ID_TERKAIT": "USR-ADMIN-01",
+      "DETAIL": "Super Admin Desa Ampel berhasil masuk ke WARGA AMPEL."
+    },
+    {
+      "ID_LOG": "LOG-1795123326141-648",
+      "WAKTU": "2026-11-19T21:22:06.141Z",
+      "ID_USER": "USR-OP-01",
+      "NAMA_PENGGUNA": "Rina Kusuma (Operator)",
+      "ROLE": "OPERATOR",
+      "AKSI": "LOGIN",
+      "ID_TERKAIT": "USR-OP-01",
+      "DETAIL": "Rina Kusuma (Operator) berhasil masuk ke WARGA AMPEL."
+    },
     {
       "ID_LOG": "LOG-1794902583246-507",
       "WAKTU": "2026-11-17T08:03:03.246Z",
@@ -2038,6 +2108,97 @@
       "URUTAN": 9,
       "CREATED_AT": "2026-09-01T08:00:00.000Z",
       "UPDATED_AT": "2026-09-01T08:00:00.000Z"
+    }
+  ],
+  "BANNER": [
+    {
+      "ID_BANNER": "BNR-001",
+      "JUDUL": "WARGA AMPEL",
+      "KALIMAT_SAMBUTAN": "Ikuti program kegiatan kelurahan, cek kabar terbaru desa, atau sampaikan kebutuhan layanan Anda secara mudah.",
+      "GAMBAR_URL": "/src/assets/images/hero_desa_ampel_1795122998295.jpg",
+      "AKTIF": true,
+      "UPDATED_AT": "2026-11-01T08:00:00.000Z",
+      "UPDATED_BY": "Super Admin Desa Ampel"
+    }
+  ],
+  "PROGRAM": [
+    {
+      "ID_PROGRAM": "PRG-001",
+      "JUDUL": "Posyandu Balita & Lansia Terpadu",
+      "TANGGAL": "2026-11-24",
+      "RINGKASAN": "Pemeriksaan kesehatan rutin, imunisasi balita, dan senam kebugaran lansia bersama kader PKK di Pendopo Balai Desa.",
+      "STATUS": "Akan Datang",
+      "FOTO_URL": "/src/assets/images/program_posyandu_sehat_1795123000134.jpg",
+      "URUTAN": 1,
+      "AKTIF": true,
+      "CREATED_AT": "2026-11-01T08:00:00.000Z",
+      "UPDATED_AT": "2026-11-01T08:00:00.000Z"
+    },
+    {
+      "ID_PROGRAM": "PRG-002",
+      "JUDUL": "Kerja Bakti Bersih Saluran & Penghijauan",
+      "TANGGAL": "2026-11-16",
+      "RINGKASAN": "Gotong royong pembersihan drainase lingkungan dan penanaman tanaman pelindung jalan bersama pengurus RW/RT.",
+      "STATUS": "Berjalan",
+      "FOTO_URL": "/src/assets/images/program_kerja_bakti_1795123000265.jpg",
+      "URUTAN": 2,
+      "AKTIF": true,
+      "CREATED_AT": "2026-11-01T08:00:00.000Z",
+      "UPDATED_AT": "2026-11-01T08:00:00.000Z"
+    },
+    {
+      "ID_PROGRAM": "PRG-003",
+      "JUDUL": "Pelatihan Kemasan & Pemasaran UMKM Desa",
+      "TANGGAL": "2026-10-28",
+      "RINGKASAN": "Pendampingan pelaku usaha warga dan TP PKK dalam pengemasan produk pangan lokal dan pemasaran digital.",
+      "STATUS": "Selesai",
+      "FOTO_URL": "/src/assets/images/program_umkm_desa_1795122999705.jpg",
+      "URUTAN": 3,
+      "AKTIF": true,
+      "CREATED_AT": "2026-11-01T08:00:00.000Z",
+      "UPDATED_AT": "2026-11-01T08:00:00.000Z"
+    }
+  ],
+  "GALERI": [
+    {
+      "ID_GALERI": "GLR-001",
+      "JUDUL": "Suasana Pelayanan Pagi di Balai Desa Ampel",
+      "KETERANGAN": "Warga dan perangkat desa berinteraksi hangat di halaman Balai Desa Ampel.",
+      "TANGGAL": "2026-11-12",
+      "FOTO_URL": "/src/assets/images/hero_desa_ampel_1795122998295.jpg",
+      "URUTAN": 1,
+      "AKTIF": true,
+      "CREATED_AT": "2026-11-01T08:00:00.000Z"
+    },
+    {
+      "ID_GALERI": "GLR-002",
+      "JUDUL": "Gotong Royong Penghijauan Dusun Krajan",
+      "KETERANGAN": "Warga bersama kader menanam bibit tanaman di tepi jalan lingkungan desa.",
+      "TANGGAL": "2026-11-10",
+      "FOTO_URL": "/src/assets/images/program_kerja_bakti_1795123000265.jpg",
+      "URUTAN": 2,
+      "AKTIF": true,
+      "CREATED_AT": "2026-11-01T08:00:00.000Z"
+    },
+    {
+      "ID_GALERI": "GLR-003",
+      "JUDUL": "Layanan Posyandu Keluarga Bersama Kader",
+      "KETERANGAN": "Kegiatan pemeriksaan ibu dan balita yang didampingi kader Posyandu aktif.",
+      "TANGGAL": "2026-11-06",
+      "FOTO_URL": "/src/assets/images/program_posyandu_sehat_1795123000134.jpg",
+      "URUTAN": 3,
+      "AKTIF": true,
+      "CREATED_AT": "2026-11-01T08:00:00.000Z"
+    },
+    {
+      "ID_GALERI": "GLR-004",
+      "JUDUL": "Bazar & Pendampingan Produk UMKM TP PKK",
+      "KETERANGAN": "Pameran produk kerajinan dan kuliner karya ibu-ibu TP PKK Kelurahan Ampel.",
+      "TANGGAL": "2026-10-28",
+      "FOTO_URL": "/src/assets/images/program_umkm_desa_1795122999705.jpg",
+      "URUTAN": 4,
+      "AKTIF": true,
+      "CREATED_AT": "2026-11-01T08:00:00.000Z"
     }
   ]
 }
