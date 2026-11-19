@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  AlertTriangle,
   CheckCircle2,
   ExternalLink,
   FolderOpen,
@@ -22,7 +23,14 @@ import {
   SheetProgram,
   UserRole,
 } from '../shared/types';
-import { apiFetch, BERANDA_DRIVE_FOLDER_ID, BERANDA_DRIVE_FOLDER_URL, formatTanggalIndo } from '../lib/api';
+import {
+  apiFetch,
+  BERANDA_DRIVE_FOLDER_ID,
+  BERANDA_DRIVE_FOLDER_URL,
+  formatTanggalIndo,
+  getGasWebAppUrl,
+  setGasWebAppUrl,
+} from '../lib/api';
 import { compressImageFile, formatFileSize } from '../lib/imageCompression';
 import { AnnouncementsManager } from './AdminModules';
 
@@ -53,6 +61,8 @@ export const BerandaAdminManager: React.FC<BerandaAdminManagerProps> = ({
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [driveFolderId, setDriveFolderId] = useState(BERANDA_DRIVE_FOLDER_ID);
+  const [gasOutdated, setGasOutdated] = useState(false);
+  const [customGasUrl, setCustomGasUrl] = useState(() => getGasWebAppUrl());
 
   // Banner state
   const [bannerJudul, setBannerJudul] = useState('WARGA AMPEL');
@@ -105,7 +115,9 @@ export const BerandaAdminManager: React.FC<BerandaAdminManagerProps> = ({
         galeri: SheetGaleri[];
         footer: BerandaFooterInfo;
         driveFolderId?: string;
+        gasOutdated?: boolean;
       }>('/api/admin/beranda');
+      setGasOutdated(Boolean(res.gasOutdated));
       if (res.banner) {
         setBannerJudul(res.banner.JUDUL || 'WARGA AMPEL');
         setBannerSambutan(res.banner.KALIMAT_SAMBUTAN || '');
@@ -397,6 +409,54 @@ export const BerandaAdminManager: React.FC<BerandaAdminManagerProps> = ({
           );
         })}
       </div>
+
+      {gasOutdated && (
+        <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 sm:p-5 space-y-3 text-amber-950">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" aria-hidden="true" />
+            <div className="space-y-1 text-sm">
+              <p className="font-bold">Web App Google Apps Script (`Code.gs`) Masih Versi Lama</p>
+              <p className="text-amber-900">
+                Simpan Info Footer sudah otomatis tersambung ke sheet <code className="font-mono font-semibold">PENGATURAN</code>, namun tab Hero Banner, Program Kelurahan, Galeri Kegiatan, dan unggah foto Drive memerlukan pembaruan skrip Apps Script:
+              </p>
+              <ol className="list-decimal list-inside text-xs sm:text-sm space-y-0.5 text-amber-900">
+                <li>Salin isi terbaru <code className="font-mono">gas/Code.gs</code> &amp; <code className="font-mono">gas/SetupDatabase.gs</code> ke editor Google Apps Script Anda.</li>
+                <li>Jalankan fungsi <code className="font-mono">setupDatabase()</code> satu kali di editor Apps Script.</li>
+                <li>Pilih <strong>Deploy → Kelola deployment → Edit (ikon pensil) → Versi baru → Deploy</strong> agar URL Web App tetap sama.</li>
+              </ol>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <input
+              type="url"
+              value={customGasUrl}
+              onChange={(e) => setCustomGasUrl(e.target.value)}
+              placeholder="Atau tempel URL Web App GAS baru (https://script.google.com/.../exec)"
+              className="flex-1 min-w-[260px] px-3 py-1.5 text-xs font-mono bg-white border border-amber-300 rounded-lg"
+            />
+            <button
+              type="button"
+              onClick={async () => {
+                setErrorMsg('');
+                setSuccessMsg('');
+                try {
+                  if (customGasUrl.trim()) {
+                    setGasWebAppUrl(customGasUrl.trim());
+                  }
+                  await loadData();
+                  onBerandaChanged();
+                  flashSuccess('Koneksi Web App Google Apps Script diperbarui.');
+                } catch (err) {
+                  setErrorMsg((err as Error).message || 'URL Web App GAS tidak valid.');
+                }
+              }}
+              className="px-3.5 py-1.5 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-lg cursor-pointer"
+            >
+              Terapkan &amp; Muat Ulang
+            </button>
+          </div>
+        </div>
+      )}
 
       {errorMsg && (
         <div role="alert" className="p-4 bg-rose-50 border border-rose-300 rounded-xl text-sm font-semibold text-rose-900">

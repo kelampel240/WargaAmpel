@@ -2583,7 +2583,7 @@ function deleteBerandaGaleri(idGaleri, token) {
 
 function saveBerandaFooter(payload, token) {
   verifyTokenAndRole_(token, ['SUPER_ADMIN']);
-  return saveSettings({
+  saveSettings({
     settings: [
       { KUNCI: 'FOOTER_NAMA_KANTOR', NILAI: String(payload.namaKantor || 'Balai Desa Ampel').trim() },
       { KUNCI: 'FOOTER_ALAMAT', NILAI: String(payload.alamat || '').trim() },
@@ -2592,6 +2592,7 @@ function saveBerandaFooter(payload, token) {
       { KUNCI: 'FOOTER_JAM_LAYANAN', NILAI: String(payload.jamLayanan || '').trim() }
     ]
   }, token);
+  return { ok: true, footer: buildBerandaFooterGas_() };
 }
 
 

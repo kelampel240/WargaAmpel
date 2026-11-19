@@ -86,6 +86,22 @@ export function getGasWebAppUrl(): string {
   return '';
 }
 
+export function setGasWebAppUrl(url: string): void {
+  const trimmed = url.trim();
+  if (!isValidGasWebAppUrl(trimmed)) {
+    throw new Error('URL Web App GAS harus berupa link https://script.google.com/.../exec yang valid.');
+  }
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(GAS_URL_STORAGE_KEY, trimmed);
+  }
+}
+
+export function resetGasWebAppUrl(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(GAS_URL_STORAGE_KEY);
+  }
+}
+
 export function isGasMode(): boolean {
   return getGasWebAppUrl().length > 0;
 }
@@ -125,6 +141,94 @@ export function clearAuth(): void {
   }
 }
 
+const BERANDA_OUTDATED_GAS_GUIDE =
+  'Web App Google Apps Script (Code.gs) yang terhubung masih versi lama sehingga belum mengenali aksi Beranda terbaru. Buka editor Google Apps Script → salin ulang isi gas/Code.gs & gas/SetupDatabase.gs → jalankan setupDatabase() → pilih Deploy → Kelola deployment → Edit (ikon pensil) → Versi baru → Deploy.';
+
+async function executeGasAction(
+  targetUrl: string,
+  action: string,
+  payload: Record<string, unknown>,
+  token: string,
+  allowGetFallback: boolean
+): Promise<{ status: number; ok: boolean; rawText: string; data: Record<string, unknown> }> {
+  let res: Response;
+  try {
+    // Gunakan text/plain agar browser GitHub Pages tidak memicu CORS preflight OPTIONS ke Google Apps Script
+    res = await fetch(targetUrl, {
+      method: 'POST',
+      cache: 'no-store',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({
+        action,
+        payload,
+        token,
+      }),
+    });
+  } catch (postErr) {
+    if (allowGetFallback) {
+      try {
+        const sep = targetUrl.includes('?') ? '&' : '?';
+        res = await fetch(
+          `${targetUrl}${sep}action=${encodeURIComponent(action)}&_ts=${Date.now()}`,
+          {
+            method: 'GET',
+            cache: 'no-store',
+          }
+        );
+      } catch {
+        throw new Error(
+          'Gagal terhubung ke backend Google Apps Script (CORS/jaringan). Pastikan Code.gs sudah ditempel di Apps Script, di-deploy ulang sebagai "New version", dan akses disetel ke "Anyone".'
+        );
+      }
+    } else {
+      const msg = (postErr as Error)?.message || '';
+      if (msg === 'Failed to fetch' || msg.toLowerCase().includes('network')) {
+        throw new Error(
+          'Gagal terhubung ke backend Google Apps Script (CORS/jaringan). Pastikan Code.gs sudah ditempel di Apps Script, di-deploy ulang sebagai "New version", dan akses disetel ke "Anyone".'
+        );
+      }
+      throw postErr;
+    }
+  }
+
+  const rawText = await res.text();
+  let data: Record<string, unknown> = {};
+  try {
+    data = JSON.parse(rawText || '{}') as Record<string, unknown>;
+  } catch {
+    throw new Error(
+      'Backend Google Apps Script mengembalikan halaman HTML, bukan JSON. Pastikan di Apps Script (Deploy → Manage deployments → Edit → New version) akses disetel ke "Anyone" dan Code.gs berisi fungsi doGet/doPost.'
+    );
+  }
+  return { status: res.status, ok: res.ok, rawText, data };
+}
+
+function extractFooterFromSettings(settingsArr: unknown): {
+  namaKantor: string;
+  alamat: string;
+  telepon: string;
+  email: string;
+  jamLayanan: string;
+} {
+  const map: Record<string, string> = {};
+  if (Array.isArray(settingsArr)) {
+    for (const row of settingsArr) {
+      if (row && typeof row === 'object' && 'KUNCI' in row) {
+        const k = String((row as { KUNCI: unknown }).KUNCI || '');
+        const v = String((row as { NILAI?: unknown }).NILAI || '');
+        if (k) map[k] = v;
+      }
+    }
+  }
+  return {
+    namaKantor: map.FOOTER_NAMA_KANTOR || 'Balai Desa Ampel',
+    alamat: map.FOOTER_ALAMAT || 'Jl. Raya Desa Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember',
+    telepon: map.FOOTER_TELEPON || '(0336) 621-104 / 0811-0000-0003',
+    email: map.FOOTER_EMAIL || 'pelayanan@ampel.desa.id',
+    jamLayanan: map.FOOTER_JAM_LAYANAN || 'Senin–Jumat, 08.00–14.30 WIB (Portal online aktif 24 jam)',
+  };
+}
+
 export async function apiFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
   const token = getStoredToken();
   const gasUrl = getGasWebAppUrl();
@@ -157,57 +261,74 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
       'getBerandaContent',
     ]);
 
-    let res: Response;
-    try {
-      // Gunakan text/plain agar browser GitHub Pages tidak memicu CORS preflight OPTIONS ke Google Apps Script
-      res = await fetch(targetUrl, {
-        method: 'POST',
-        cache: 'no-store',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          action: spec.action,
-          payload: spec.payload,
-          token: spec.token || '',
-        }),
-      });
-    } catch (postErr) {
-      if (publicGetActions.has(spec.action)) {
-        try {
-          const sep = targetUrl.includes('?') ? '&' : '?';
-          res = await fetch(
-            `${targetUrl}${sep}action=${encodeURIComponent(spec.action)}&_ts=${Date.now()}`,
-            {
-              method: 'GET',
-              cache: 'no-store',
-            }
-          );
-        } catch {
-          throw new Error(
-            'Gagal terhubung ke backend Google Apps Script (CORS/jaringan). Pastikan Code.gs sudah ditempel di Apps Script, di-deploy ulang sebagai "New version", dan akses disetel ke "Anyone".'
-          );
-        }
-      } else {
-        const msg = (postErr as Error)?.message || '';
-        if (msg === 'Failed to fetch' || msg.toLowerCase().includes('network')) {
-          throw new Error(
-            'Gagal terhubung ke backend Google Apps Script (CORS/jaringan). Pastikan Code.gs sudah ditempel di Apps Script, di-deploy ulang sebagai "New version", dan akses disetel ke "Anyone".'
-          );
-        }
-        throw postErr;
-      }
-    }
+    const { status, ok, rawText, data } = await executeGasAction(
+      targetUrl,
+      spec.action,
+      spec.payload,
+      spec.token || '',
+      publicGetActions.has(spec.action)
+    );
 
-    const text = await res.text();
-    let data: Record<string, unknown> = {};
-    try {
-      data = JSON.parse(text || '{}') as Record<string, unknown>;
-    } catch {
-      throw new Error(
-        'Backend Google Apps Script mengembalikan halaman HTML, bukan JSON. Pastikan di Apps Script (Deploy → Manage deployments → Edit → New version) akses disetel ke "Anyone" dan Code.gs berisi fungsi doGet/doPost.'
-      );
-    }
-    if (!res.ok || data.error) {
-      const errMsg = String(data.error || `Permintaan GAS gagal (${res.status})`);
+    if (!ok || data.error) {
+      const errMsg = String(data.error || `Permintaan GAS gagal (${status})`);
+
+      // Fallback otomatis jika Web App GAS masih versi lama
+      if (errMsg.includes('Aksi tidak dikenali')) {
+        if (spec.action === 'saveBerandaFooter') {
+          const footerSettings = [
+            { KUNCI: 'FOOTER_NAMA_KANTOR', NILAI: String(parsedBody.namaKantor || 'Balai Desa Ampel').trim() },
+            { KUNCI: 'FOOTER_ALAMAT', NILAI: String(parsedBody.alamat || '').trim() },
+            { KUNCI: 'FOOTER_TELEPON', NILAI: String(parsedBody.telepon || '').trim() },
+            { KUNCI: 'FOOTER_EMAIL', NILAI: String(parsedBody.email || '').trim() },
+            { KUNCI: 'FOOTER_JAM_LAYANAN', NILAI: String(parsedBody.jamLayanan || '').trim() },
+          ];
+          const fb = await executeGasAction(
+            targetUrl,
+            'saveSettings',
+            { settings: footerSettings },
+            spec.token || '',
+            false
+          );
+          if (!fb.ok || fb.data.error) {
+            throw new Error(String(fb.data.error || errMsg));
+          }
+          return {
+            ok: true,
+            footer: extractFooterFromSettings(fb.data.settings),
+            savedViaFallback: true,
+          } as unknown as T;
+        }
+
+        if (spec.action === 'getAdminBeranda') {
+          const fb = await executeGasAction(targetUrl, 'getSettings', {}, spec.token || '', false);
+          if (fb.ok && !fb.data.error) {
+            return {
+              banner: null,
+              program: [],
+              galeri: [],
+              footer: extractFooterFromSettings(fb.data.settings),
+              driveFolderId: BERANDA_DRIVE_FOLDER_ID,
+              gasOutdated: true,
+            } as unknown as T;
+          }
+        }
+
+        const berandaActions = [
+          'getBerandaContent',
+          'getAdminBeranda',
+          'uploadBerandaMedia',
+          'updateHeroBanner',
+          'saveBerandaProgram',
+          'deleteBerandaProgram',
+          'saveBerandaGaleri',
+          'deleteBerandaGaleri',
+          'saveBerandaFooter',
+        ];
+        if (berandaActions.some((a) => errMsg.includes(a))) {
+          throw new Error(BERANDA_OUTDATED_GAS_GUIDE);
+        }
+      }
+
       if (errMsg.includes('Entitas organisasi tidak valid')) {
         throw new Error(
           'Script Google Apps Script (Code.gs) pada Web App Anda masih versi lama sehingga belum mendukung entitas terbaru (TP PKK / Sekolah / Balai RW). Salin ulang isi gas/Code.gs & gas/SetupDatabase.gs ke editor Apps Script, jalankan setupDatabase(), lalu pilih Deploy → Kelola deployment → Edit → Versi baru.'
@@ -216,7 +337,7 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
       throw new Error(errMsg);
     }
     if (url === '/api/admin/test-gas') {
-      return { ok: true, status: res.status, preview: text.slice(0, 300) } as unknown as T;
+      return { ok: true, status, preview: rawText.slice(0, 300) } as unknown as T;
     }
     return data as T;
   }
