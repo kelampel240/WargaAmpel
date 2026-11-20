@@ -10,9 +10,7 @@ import {
   History,
   Home,
   LayoutDashboard,
-  Lightbulb,
   Menu,
-  MessageSquare,
   Megaphone,
   Network,
   Settings,
@@ -56,8 +54,6 @@ export type SidebarModule =
   | 'permohonan-bantuan'
   | 'layanan-administrasi'
   | 'pengaduan'
-  | 'aspirasi'
-  | 'konsultasi'
   | 'kelola-layanan'
   | 'struktur-organisasi'
   | 'data-warga'
@@ -87,8 +83,6 @@ const SIDEBAR_ITEMS: Array<{
   { id: 'permohonan-bantuan', label: 'Permohonan Bantuan', icon: HandHeart },
   { id: 'layanan-administrasi', label: 'Layanan Administrasi', icon: FileText },
   { id: 'pengaduan', label: 'Pengaduan', icon: ShieldAlert },
-  { id: 'aspirasi', label: 'Aspirasi', icon: Lightbulb },
-  { id: 'konsultasi', label: 'Konsultasi', icon: MessageSquare },
   { id: 'kelola-layanan', label: 'Kelola Jenis Layanan', icon: Wrench },
   { id: 'struktur-organisasi', label: 'Struktur Organisasi', icon: Network },
   { id: 'data-warga', label: 'Data Warga', icon: Users },
@@ -160,8 +154,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (activeTab === 'permohonan-bantuan') list = list.filter((r) => r.KODE_GRUP === 'B. Bantuan');
     if (activeTab === 'layanan-administrasi') list = list.filter((r) => r.KODE_GRUP === 'C. Administrasi');
     if (activeTab === 'pengaduan') list = list.filter((r) => r.KODE_GRUP === 'A. Pengaduan');
-    if (activeTab === 'aspirasi') list = list.filter((r) => r.KODE_GRUP === 'D. Aspirasi');
-    if (activeTab === 'konsultasi') list = list.filter((r) => r.KODE_GRUP === 'E. Konsultasi');
 
     if (filterStatus) list = list.filter((r) => r.STATUS_TERBARU === filterStatus);
     if (filterService) list = list.filter((r) => r.ID_LAYANAN === filterService);
@@ -186,8 +178,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     'permohonan-bantuan',
     'layanan-administrasi',
     'pengaduan',
-    'aspirasi',
-    'konsultasi',
   ].includes(activeTab);
 
   const visibleReports = getFilteredReports();

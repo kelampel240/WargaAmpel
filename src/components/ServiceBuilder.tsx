@@ -253,7 +253,6 @@ export const ServiceBuilder: React.FC<ServiceBuilderProps> = ({
                 <option value="heart">Bantuan Sosial</option>
                 <option value="road">Infrastruktur Jalan</option>
                 <option value="building">Pembangunan</option>
-                <option value="message-circle">Konsultasi</option>
               </select>
             </div>
           </div>

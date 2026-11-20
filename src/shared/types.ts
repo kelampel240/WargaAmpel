@@ -16,8 +16,6 @@ export const SERVICE_GROUPS = [
   'A. Pengaduan',
   'B. Bantuan',
   'C. Administrasi',
-  'D. Aspirasi',
-  'E. Konsultasi',
 ] as const;
 
 export type ServiceGroup = (typeof SERVICE_GROUPS)[number];

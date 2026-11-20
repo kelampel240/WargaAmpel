@@ -173,7 +173,7 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="mb-8">
           <h1 className="font-display text-3xl sm:text-4xl font-bold text-[#0F2942] text-balance">
-            Daftar Layanan Warga Desa Ampel
+            Layanan Kelurahan Ampel
           </h1>
           <p className="mt-2 text-base sm:text-lg text-slate-700 max-w-2xl">
             Pilih layanan yang Anda butuhkan. Jika ragu memilih kategori, Anda tetap bisa menekan tombol bantuan umum.
@@ -365,10 +365,17 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => onStartWizard('pengaduan')}
+                  onClick={() => {
+                    if (onGoAllServices) {
+                      onGoAllServices();
+                    } else {
+                      const el = document.getElementById('layanan-warga');
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }}
                   className="px-5 py-3 bg-[#0B6E4F] hover:bg-[#095c41] text-white text-sm sm:text-base font-bold rounded-xl transition-colors inline-flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer"
                 >
-                  <span>Buat Pengaduan</span>
+                  <span>Layanan Kelurahan</span>
                   <ArrowRight className="w-4 h-4" aria-hidden="true" />
                 </button>
                 <button
@@ -384,7 +391,113 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
         )}
       </section>
 
-      {/* 2. PROGRAM KELURAHAN */}
+      {/* 2. LAYANAN WARGA (4 KARTU IKON + BANTUAN UMUM) */}
+      <section id="layanan-warga" aria-labelledby="layanan-warga-heading" className="space-y-6">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 id="layanan-warga-heading" className="font-display text-2xl sm:text-3xl font-bold text-[#0F2942] text-balance">
+              Layanan Warga Desa Ampel
+            </h2>
+            <p className="mt-1 text-base text-slate-600">
+              Sampaikan laporan, ajukan bantuan atau surat keterangan, dan pantau progresnya kapan saja.
+            </p>
+          </div>
+          {onGoAllServices && (
+            <button
+              type="button"
+              onClick={onGoAllServices}
+              className="text-sm sm:text-base font-semibold text-[#0B6E4F] hover:underline whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              Lihat semua layanan ({safeServices.length})
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <button
+            type="button"
+            onClick={() => onStartWizard('pengaduan')}
+            className="text-left p-5 bg-white border border-slate-200 hover:border-[#0B6E4F] hover:bg-emerald-50/40 rounded-2xl transition-colors flex flex-col justify-between gap-4 cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-xl bg-emerald-50 text-[#0B6E4F] border border-emerald-200 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6" aria-hidden="true" />
+            </div>
+            <div>
+              <h3 className="font-display text-lg font-bold text-[#0F2942]">Pengaduan</h3>
+              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                Laporkan jalan rusak, lampu padam, sampah, atau saluran air tersumbat.
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onStartWizard('bantuan')}
+            className="text-left p-5 bg-white border border-slate-200 hover:border-[#0F2942] hover:bg-sky-50/40 rounded-2xl transition-colors flex flex-col justify-between gap-4 cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-xl bg-sky-50 text-[#0F2942] border border-sky-200 flex items-center justify-center">
+              <HandHeart className="w-6 h-6" aria-hidden="true" />
+            </div>
+            <div>
+              <h3 className="font-display text-lg font-bold text-[#0F2942]">Bantuan</h3>
+              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                Ajukan bantuan sosial pangan, pendidikan sekolah, atau pendampingan kesehatan.
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onStartWizard('administrasi')}
+            className="text-left p-5 bg-white border border-slate-200 hover:border-[#0B6E4F] hover:bg-emerald-50/40 rounded-2xl transition-colors flex flex-col justify-between gap-4 cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-xl bg-emerald-50 text-[#0B6E4F] border border-emerald-200 flex items-center justify-center">
+              <FileText className="w-6 h-6" aria-hidden="true" />
+            </div>
+            <div>
+              <h3 className="font-display text-lg font-bold text-[#0F2942]">Surat</h3>
+              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                Urus surat domisili, keterangan usaha, surat tidak mampu, atau pengantar desa.
+              </p>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={onGoTrack}
+            className="text-left p-5 bg-white border border-slate-200 hover:border-[#0F2942] hover:bg-sky-50/40 rounded-2xl transition-colors flex flex-col justify-between gap-4 cursor-pointer"
+          >
+            <div className="w-12 h-12 rounded-xl bg-sky-50 text-[#0F2942] border border-sky-200 flex items-center justify-center">
+              <SearchCheck className="w-6 h-6" aria-hidden="true" />
+            </div>
+            <div>
+              <h3 className="font-display text-lg font-bold text-[#0F2942]">Lacak Status</h3>
+              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                Pantau perkembangan tindak lanjut dan bukti penanganan dengan nomor tiket Anda.
+              </p>
+            </div>
+          </button>
+        </div>
+
+        {/* Preserved Bantuan Umum link */}
+        <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <HelpCircle className="w-5 h-5 text-[#0B6E4F] shrink-0" aria-hidden="true" />
+            <p className="text-sm sm:text-base text-slate-800">
+              Belum yakin memilih jenis layanan yang tepat? Cukup ceritakan kebutuhan Anda dengan bahasa sehari-hari.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => onStartWizard('tidak-tahu')}
+            className="px-4 py-2 bg-white hover:bg-emerald-100 border border-[#0B6E4F] text-[#0B6E4F] text-sm font-bold rounded-lg whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            Saya Tidak Tahu Harus Pilih yang Mana
+          </button>
+        </div>
+      </section>
+
+      {/* 3. PROGRAM KELURAHAN */}
       <section id="program-kelurahan" aria-labelledby="program-heading" className="space-y-6 scroll-mt-20">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -611,117 +724,10 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
         </div>
       </section>
 
-      {/* 5. LAYANAN WARGA (4 KARTU IKON + BANTUAN UMUM + STRUKTUR ORGANISASI) */}
-      <section id="layanan-warga" aria-labelledby="layanan-warga-heading" className="space-y-6">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 id="layanan-warga-heading" className="font-display text-2xl sm:text-3xl font-bold text-[#0F2942] text-balance">
-              Layanan Warga Desa Ampel
-            </h2>
-            <p className="mt-1 text-base text-slate-600">
-              Sampaikan laporan, ajukan bantuan atau surat keterangan, dan pantau progresnya kapan saja.
-            </p>
-          </div>
-          {onGoAllServices && (
-            <button
-              type="button"
-              onClick={onGoAllServices}
-              className="text-sm sm:text-base font-semibold text-[#0B6E4F] hover:underline whitespace-nowrap shrink-0 cursor-pointer"
-            >
-              Lihat semua layanan ({safeServices.length})
-            </button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <button
-            type="button"
-            onClick={() => onStartWizard('pengaduan')}
-            className="text-left p-5 bg-white border border-slate-200 hover:border-[#0B6E4F] hover:bg-emerald-50/40 rounded-2xl transition-colors flex flex-col justify-between gap-4 cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 text-[#0B6E4F] border border-emerald-200 flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6" aria-hidden="true" />
-            </div>
-            <div>
-              <h3 className="font-display text-lg font-bold text-[#0F2942]">Pengaduan</h3>
-              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
-                Laporkan jalan rusak, lampu padam, sampah, atau saluran air tersumbat.
-              </p>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onStartWizard('bantuan')}
-            className="text-left p-5 bg-white border border-slate-200 hover:border-[#0F2942] hover:bg-sky-50/40 rounded-2xl transition-colors flex flex-col justify-between gap-4 cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-xl bg-sky-50 text-[#0F2942] border border-sky-200 flex items-center justify-center">
-              <HandHeart className="w-6 h-6" aria-hidden="true" />
-            </div>
-            <div>
-              <h3 className="font-display text-lg font-bold text-[#0F2942]">Bantuan</h3>
-              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
-                Ajukan bantuan sosial pangan, pendidikan sekolah, atau pendampingan kesehatan.
-              </p>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onStartWizard('administrasi')}
-            className="text-left p-5 bg-white border border-slate-200 hover:border-[#0B6E4F] hover:bg-emerald-50/40 rounded-2xl transition-colors flex flex-col justify-between gap-4 cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 text-[#0B6E4F] border border-emerald-200 flex items-center justify-center">
-              <FileText className="w-6 h-6" aria-hidden="true" />
-            </div>
-            <div>
-              <h3 className="font-display text-lg font-bold text-[#0F2942]">Surat</h3>
-              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
-                Urus surat domisili, keterangan usaha, surat tidak mampu, atau pengantar desa.
-              </p>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={onGoTrack}
-            className="text-left p-5 bg-white border border-slate-200 hover:border-[#0F2942] hover:bg-sky-50/40 rounded-2xl transition-colors flex flex-col justify-between gap-4 cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-xl bg-sky-50 text-[#0F2942] border border-sky-200 flex items-center justify-center">
-              <SearchCheck className="w-6 h-6" aria-hidden="true" />
-            </div>
-            <div>
-              <h3 className="font-display text-lg font-bold text-[#0F2942]">Lacak Status</h3>
-              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
-                Pantau perkembangan tindak lanjut dan bukti penanganan dengan nomor tiket Anda.
-              </p>
-            </div>
-          </button>
-        </div>
-
-        {/* Preserved Bantuan Umum link */}
-        <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <HelpCircle className="w-5 h-5 text-[#0B6E4F] shrink-0" aria-hidden="true" />
-            <p className="text-sm sm:text-base text-slate-800">
-              Belum yakin memilih jenis layanan yang tepat? Cukup ceritakan kebutuhan Anda dengan bahasa sehari-hari.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => onStartWizard('tidak-tahu')}
-            className="px-4 py-2 bg-white hover:bg-emerald-100 border border-[#0B6E4F] text-[#0B6E4F] text-sm font-bold rounded-lg whitespace-nowrap shrink-0 cursor-pointer"
-          >
-            Saya Tidak Tahu Harus Pilih yang Mana
-          </button>
-        </div>
-
-        {/* Preserved Struktur Organisasi Callout */}
-        {onGoStruktur && (
-          <div
-            aria-labelledby="struktur-org-callout"
-            className="bg-[#0F2942] text-white rounded-2xl border border-slate-700 p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5"
-          >
+      {/* Preserved Struktur Organisasi Callout */}
+      {onGoStruktur && (
+        <section aria-labelledby="struktur-org-callout">
+          <div className="bg-[#0F2942] text-white rounded-2xl border border-slate-700 p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/20 text-emerald-300 flex items-center justify-center shrink-0">
                 <Users className="w-6 h-6" aria-hidden="true" />
@@ -743,8 +749,8 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
               Lihat Struktur Organisasi
             </button>
           </div>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* 6. STATISTIK RINGKAS */}
       <section aria-labelledby="statistik-heading">

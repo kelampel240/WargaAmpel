@@ -295,38 +295,6 @@ function buildSeedServices(): {
       URUTAN: 14,
       CREATED_AT: now,
     },
-    // D. Aspirasi
-    {
-      ID_LAYANAN: 'LAY-D01',
-      KODE_LAYANAN: 'ASP-PEMBANGUNAN',
-      NAMA_LAYANAN: 'Usulan pembangunan',
-      KATEGORI_GRUP: 'D. Aspirasi',
-      DESKRIPSI: 'Usulan pembangunan fasilitas umum, irigasi, atau musrenbang desa.',
-      IKON: 'building',
-      PERSYARATAN_DOKUMEN: 'Tidak ada',
-      ID_PETUGAS_PJ: 'PTG-001',
-      NAMA_PETUGAS_PJ: 'Hendra Wijaya',
-      ALUR_STATUS: defaultFlow,
-      STATUS_AKTIF: true,
-      URUTAN: 15,
-      CREATED_AT: now,
-    },
-    // E. Konsultasi
-    {
-      ID_LAYANAN: 'LAY-E01',
-      KODE_LAYANAN: 'KNS-UMUM',
-      NAMA_LAYANAN: 'Pertanyaan & konsultasi desa',
-      KATEGORI_GRUP: 'E. Konsultasi',
-      DESKRIPSI: 'Pertanyaan seputar administrasi, bantuan sosial, atau informasi pelayanan desa.',
-      IKON: 'message-circle',
-      PERSYARATAN_DOKUMEN: 'Tidak ada',
-      ID_PETUGAS_PJ: 'PTG-003',
-      NAMA_PETUGAS_PJ: 'Rina Kusuma',
-      ALUR_STATUS: defaultFlow,
-      STATUS_AKTIF: true,
-      URUTAN: 16,
-      CREATED_AT: now,
-    },
   ];
 
   const forms: SheetKonfigurasiForm[] = [
@@ -520,7 +488,7 @@ function createInitialDatabase(): SiwargaDatabase {
       ID_USER: 'USR-OP-01',
       NAMA_PETUGAS: 'Rina Kusuma',
       JABATAN: 'Kasi Pelayanan & Administrasi',
-      BIDANG_TUGAS: 'Surat Keterangan & Konsultasi Warga',
+      BIDANG_TUGAS: 'Surat Keterangan & Pelayanan Administrasi',
       NO_HP: '081100000003',
       STATUS: 'AKTIF',
       CREATED_AT: '2026-01-01T07:00:00.000Z',
@@ -1790,6 +1758,59 @@ export function loadDatabase(): SiwargaDatabase {
         mutated = true;
       }
     });
+  }
+  // Purge legacy D. Aspirasi & E. Konsultasi services, forms, and related entries
+  if (Array.isArray(parsed.KATEGORI_LAYANAN)) {
+    const removedServiceIds = new Set(
+      parsed.KATEGORI_LAYANAN.filter(
+        (s) =>
+          (s.KATEGORI_GRUP as string) === 'D. Aspirasi' ||
+          (s.KATEGORI_GRUP as string) === 'E. Konsultasi' ||
+          s.ID_LAYANAN === 'LAY-D01' ||
+          s.ID_LAYANAN === 'LAY-E01'
+      ).map((s) => s.ID_LAYANAN)
+    );
+    if (removedServiceIds.size > 0) {
+      parsed.KATEGORI_LAYANAN = parsed.KATEGORI_LAYANAN.filter(
+        (s) => !removedServiceIds.has(s.ID_LAYANAN)
+      );
+      if (Array.isArray(parsed.KONFIGURASI_FORM)) {
+        parsed.KONFIGURASI_FORM = parsed.KONFIGURASI_FORM.filter(
+          (f) => !removedServiceIds.has(f.ID_LAYANAN)
+        );
+      }
+      mutated = true;
+    }
+  }
+  if (Array.isArray(parsed.LAPORAN)) {
+    const removedReportIds = new Set(
+      parsed.LAPORAN.filter(
+        (r) =>
+          (r.KODE_GRUP as string) === 'D. Aspirasi' ||
+          (r.KODE_GRUP as string) === 'E. Konsultasi' ||
+          r.ID_LAYANAN === 'LAY-D01' ||
+          r.ID_LAYANAN === 'LAY-E01'
+      ).map((r) => r.ID_LAPORAN)
+    );
+    if (removedReportIds.size > 0) {
+      parsed.LAPORAN = parsed.LAPORAN.filter((r) => !removedReportIds.has(r.ID_LAPORAN));
+      if (Array.isArray(parsed.TINDAK_LANJUT)) {
+        parsed.TINDAK_LANJUT = parsed.TINDAK_LANJUT.filter(
+          (t) => !removedReportIds.has(t.ID_LAPORAN)
+        );
+      }
+      if (Array.isArray(parsed.BUKTI_DOKUMEN)) {
+        parsed.BUKTI_DOKUMEN = parsed.BUKTI_DOKUMEN.filter(
+          (b) => !removedReportIds.has(b.ID_LAPORAN)
+        );
+      }
+      if (Array.isArray(parsed.NOTIFIKASI)) {
+        parsed.NOTIFIKASI = parsed.NOTIFIKASI.filter(
+          (n) => !n.ID_LAPORAN || !removedReportIds.has(n.ID_LAPORAN)
+        );
+      }
+      mutated = true;
+    }
   }
   if (mutated) {
     fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), 'utf8');

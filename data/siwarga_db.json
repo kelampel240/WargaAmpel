@@ -618,52 +618,6 @@
       "STATUS_AKTIF": true,
       "URUTAN": 14,
       "CREATED_AT": "2026-01-05T07:00:00.000Z"
-    },
-    {
-      "ID_LAYANAN": "LAY-D01",
-      "KODE_LAYANAN": "ASP-PEMBANGUNAN",
-      "NAMA_LAYANAN": "Usulan pembangunan",
-      "KATEGORI_GRUP": "D. Aspirasi",
-      "DESKRIPSI": "Usulan pembangunan fasilitas umum, irigasi, atau musrenbang desa.",
-      "IKON": "building",
-      "PERSYARATAN_DOKUMEN": "Tidak ada",
-      "ID_PETUGAS_PJ": "PTG-001",
-      "NAMA_PETUGAS_PJ": "Hendra Wijaya",
-      "ALUR_STATUS": [
-        "Laporan diterima",
-        "Sedang ditindaklanjuti",
-        "Sedang dalam proses perbaikan",
-        "Sudah diusulkan ke dinas terkait",
-        "Menunggu tindak lanjut dinas",
-        "Sudah diperbaiki atau ditangani",
-        "Tidak dapat ditindaklanjuti"
-      ],
-      "STATUS_AKTIF": true,
-      "URUTAN": 15,
-      "CREATED_AT": "2026-01-05T07:00:00.000Z"
-    },
-    {
-      "ID_LAYANAN": "LAY-E01",
-      "KODE_LAYANAN": "KNS-UMUM",
-      "NAMA_LAYANAN": "Pertanyaan & konsultasi desa",
-      "KATEGORI_GRUP": "E. Konsultasi",
-      "DESKRIPSI": "Pertanyaan seputar administrasi, bantuan sosial, atau informasi pelayanan desa.",
-      "IKON": "message-circle",
-      "PERSYARATAN_DOKUMEN": "Tidak ada",
-      "ID_PETUGAS_PJ": "PTG-003",
-      "NAMA_PETUGAS_PJ": "Rina Kusuma",
-      "ALUR_STATUS": [
-        "Laporan diterima",
-        "Sedang ditindaklanjuti",
-        "Sedang dalam proses perbaikan",
-        "Sudah diusulkan ke dinas terkait",
-        "Menunggu tindak lanjut dinas",
-        "Sudah diperbaiki atau ditangani",
-        "Tidak dapat ditindaklanjuti"
-      ],
-      "STATUS_AKTIF": true,
-      "URUTAN": 16,
-      "CREATED_AT": "2026-01-05T07:00:00.000Z"
     }
   ],
   "KONFIGURASI_FORM": [
@@ -1054,6 +1008,16 @@
     }
   ],
   "LOG_AKTIVITAS": [
+    {
+      "ID_LOG": "LOG-1795164405727-261",
+      "WAKTU": "2026-11-20T08:46:45.727Z",
+      "ID_USER": "USR-ADMIN-01",
+      "NAMA_PENGGUNA": "Super Admin Desa Ampel",
+      "ROLE": "SUPER_ADMIN",
+      "AKSI": "LOGIN",
+      "ID_TERKAIT": "USR-ADMIN-01",
+      "DETAIL": "Super Admin Desa Ampel berhasil masuk ke WARGA AMPEL."
+    },
     {
       "ID_LOG": "LOG-1795123326207-118",
       "WAKTU": "2026-11-19T21:22:06.207Z",

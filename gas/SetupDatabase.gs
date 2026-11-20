@@ -226,7 +226,7 @@ function setupDatabase() {
     ]);
   }
 
-  // Seed Kategori Layanan Awal (Grup A - E)
+  // Seed Kategori Layanan Awal (Grup A - C) & bersihkan layanan lama D. Aspirasi / E. Konsultasi jika masih ada
   var shLay = ss.getSheetByName('KATEGORI_LAYANAN');
   if (shLay.getLastRow() <= 1) {
     var initialServices = [
@@ -236,9 +236,7 @@ function setupDatabase() {
       ['LAY-A04', 'PGD-DRAINASE', 'Saluran air tersumbat', 'A. Pengaduan', 'Drainase tersumbat atau genangan', 'droplets', 'Foto saluran (opsional)'],
       ['LAY-B01', 'BNT-SOSIAL', 'Bantuan sosial', 'B. Bantuan', 'Permohonan bantuan sosial warga', 'heart', 'Foto KK (opsional)'],
       ['LAY-C01', 'ADM-DOMISILI', 'Surat domisili', 'C. Administrasi', 'Pengurusan surat keterangan domisili', 'file-text', 'Foto KTP/KK'],
-      ['LAY-C02', 'ADM-USAHA', 'Surat keterangan usaha', 'C. Administrasi', 'Pengurusan SKU usaha mikro', 'store', 'Foto usaha (opsional)'],
-      ['LAY-D01', 'ASP-PEMBANGUNAN', 'Usulan pembangunan', 'D. Aspirasi', 'Usulan pembangunan fasilitas desa', 'building', 'Tidak ada'],
-      ['LAY-E01', 'KNS-UMUM', 'Pertanyaan & konsultasi desa', 'E. Konsultasi', 'Konsultasi pelayanan dan bantuan', 'message-circle', 'Tidak ada']
+      ['LAY-C02', 'ADM-USAHA', 'Surat keterangan usaha', 'C. Administrasi', 'Pengurusan SKU usaha mikro', 'store', 'Foto usaha (opsional)']
     ];
     var now = new Date().toISOString();
     initialServices.forEach(function(item, idx) {
@@ -247,6 +245,15 @@ function setupDatabase() {
         'PTG-001', 'Petugas Layanan Desa Ampel', '[]', true, idx + 1, now
       ]);
     });
+  } else {
+    var layVals = shLay.getDataRange().getValues();
+    for (var rLay = layVals.length - 1; rLay >= 1; rLay--) {
+      var idLay = String(layVals[rLay][0] || '');
+      var grupLay = String(layVals[rLay][3] || '');
+      if (grupLay === 'D. Aspirasi' || grupLay === 'E. Konsultasi' || idLay === 'LAY-D01' || idLay === 'LAY-E01') {
+        shLay.deleteRow(rLay + 1);
+      }
+    }
   }
 
   // Seed Struktur Organisasi Awal (jika masih kosong)

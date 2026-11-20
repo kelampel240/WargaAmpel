@@ -1514,9 +1514,14 @@ function mapServicesWithFields_(services, forms) {
   });
 }
 
+function isAllowedServiceGroupGas_(grup) {
+  return grup === 'A. Pengaduan' || grup === 'B. Bantuan' || grup === 'C. Administrasi';
+}
+
 function getActiveServices() {
   var services = sheetToObjects_('KATEGORI_LAYANAN').filter(function(s) {
-    return s.STATUS_AKTIF === true || String(s.STATUS_AKTIF).toUpperCase() === 'TRUE';
+    var active = s.STATUS_AKTIF === true || String(s.STATUS_AKTIF).toUpperCase() === 'TRUE';
+    return active && isAllowedServiceGroupGas_(String(s.KATEGORI_GRUP || '').trim());
   });
   var forms = sheetToObjects_('KONFIGURASI_FORM');
   return mapServicesWithFields_(services, forms);
@@ -1524,18 +1529,25 @@ function getActiveServices() {
 
 function getAdminServices(token) {
   verifyTokenAndRole_(token, ['SUPER_ADMIN', 'OPERATOR']);
+  var services = sheetToObjects_('KATEGORI_LAYANAN').filter(function(s) {
+    return isAllowedServiceGroupGas_(String(s.KATEGORI_GRUP || '').trim());
+  });
   return {
-    services: mapServicesWithFields_(sheetToObjects_('KATEGORI_LAYANAN'), sheetToObjects_('KONFIGURASI_FORM'))
+    services: mapServicesWithFields_(services, sheetToObjects_('KONFIGURASI_FORM'))
   };
 }
 
 function createService(payload, token) {
   var actor = verifyTokenAndRole_(token, ['SUPER_ADMIN', 'OPERATOR']);
+  var grup = String(payload.kategoriGrup || '').trim();
+  if (!isAllowedServiceGroupGas_(grup)) {
+    throw new Error('Kategori grup layanan tidak valid. Gunakan A. Pengaduan, B. Bantuan, atau C. Administrasi.');
+  }
   var idLayanan = 'LAY-' + Date.now();
   var now = new Date().toISOString();
   getSheet_('KATEGORI_LAYANAN').appendRow([
     idLayanan, 'SRV-' + Math.floor(100 + Math.random() * 900),
-    payload.namaLayanan, payload.kategoriGrup, payload.deskripsi || '',
+    payload.namaLayanan, grup, payload.deskripsi || '',
     payload.ikon || 'file-text', payload.persyaratanDokumen || 'Opsional',
     payload.idPetugasPj || 'PTG-001', payload.namaPetugasPj || 'Petugas Desa',
     JSON.stringify(payload.alurStatus || []), true, 99, now
@@ -1558,6 +1570,9 @@ function updateService(payload, token) {
   var actor = verifyTokenAndRole_(token, ['SUPER_ADMIN', 'OPERATOR']);
   var rows = sheetToObjects_('KATEGORI_LAYANAN');
   var sh = getSheet_('KATEGORI_LAYANAN');
+  if (payload.kategoriGrup !== undefined && !isAllowedServiceGroupGas_(String(payload.kategoriGrup || '').trim())) {
+    throw new Error('Kategori grup layanan tidak valid.');
+  }
   for (var i = 0; i < rows.length; i++) {
     if (rows[i].ID_LAYANAN === payload.idLayanan) {
       if (payload.namaLayanan !== undefined) sh.getRange(rows[i]._rowIndex, 3).setValue(payload.namaLayanan);

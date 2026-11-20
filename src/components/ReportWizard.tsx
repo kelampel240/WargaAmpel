@@ -45,17 +45,13 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
   const groupServices = useMemo(() => {
     if (preselectedService) return services;
     if (mode === 'pengaduan') {
-      return services.filter(
-        (s) => s.KATEGORI_GRUP === 'A. Pengaduan' || s.KATEGORI_GRUP === 'D. Aspirasi'
-      );
+      return services.filter((s) => s.KATEGORI_GRUP === 'A. Pengaduan');
     }
     if (mode === 'bantuan') {
       return services.filter((s) => s.KATEGORI_GRUP === 'B. Bantuan');
     }
     if (mode === 'administrasi') {
-      return services.filter(
-        (s) => s.KATEGORI_GRUP === 'C. Administrasi' || s.KATEGORI_GRUP === 'E. Konsultasi'
-      );
+      return services.filter((s) => s.KATEGORI_GRUP === 'C. Administrasi');
     }
     return services;
   }, [mode, preselectedService, services]);
