@@ -103,7 +103,7 @@ function doPost(e) {
       case 'submitReport':
         return jsonResponse(submitReport(payload, token));
       case 'getReportStatus':
-        return jsonResponse(getReportStatus(payload.ticketId, payload.tanggalLahir, payload.last4Hp));
+        return jsonResponse(getReportStatus(payload.ticketId, payload.last4Hp));
       case 'getDriveEvidence':
         return jsonResponse(getDriveEvidence(payload.idBukti, payload.ticketId, token));
 
@@ -836,8 +836,8 @@ function submitReport(payload, token) {
   var uraian = String(payload.uraianMasalah || '').trim();
   var alamat = String(payload.lokasiAlamat || (wargaRow ? wargaRow.ALAMAT : '') || '').trim();
 
-  if (nama.length < 2 || noHpDigits.length < 8 || !/^\d{4}-\d{2}-\d{2}$/.test(dob) || uraian.length < 10 || alamat.length < 3) {
-    throw new Error('Data laporan belum lengkap. Periksa nama, no. HP (min. 8 digit), tanggal lahir, uraian (min. 10 karakter), dan lokasi.');
+  if (nama.length < 2 || noHpDigits.length < 8 || uraian.length < 10 || alamat.length < 3) {
+    throw new Error('Data laporan belum lengkap. Periksa nama, no. HP (min. 8 digit), uraian (min. 10 karakter), dan lokasi.');
   }
 
   var idWarga = payload.idWarga || (wargaRow ? wargaRow.ID_WARGA : '');
@@ -971,7 +971,7 @@ function submitReport(payload, token) {
 }
 
 // --- 4. PELACAKAN WARGA (PRIVASI KETAT) ---
-function getReportStatus(ticketId, tanggalLahir, last4Hp) {
+function getReportStatus(ticketId, last4Hp) {
   if (!ticketId) throw new Error('Nomor tiket wajib diisi.');
   var reports = sheetToObjects_('LAPORAN');
   var found = null;
@@ -985,13 +985,9 @@ function getReportStatus(ticketId, tanggalLahir, last4Hp) {
 
   var hpDigits = String(found.NO_HP_PELAPOR || '').replace(/\D/g, '').slice(-4);
   var inputLast4 = String(last4Hp || '').replace(/\D/g, '').slice(-4);
-  var dobVal = found.TANGGAL_LAHIR_VERIFIKASI instanceof Date
-    ? found.TANGGAL_LAHIR_VERIFIKASI.toISOString().slice(0, 10)
-    : String(found.TANGGAL_LAHIR_VERIFIKASI || '').slice(0, 10);
-  var dobMatch = tanggalLahir && dobVal === String(tanggalLahir).trim();
   var hpMatch = inputLast4.length === 4 && hpDigits === inputLast4;
-  if (!dobMatch && !hpMatch) {
-    throw new Error('Verifikasi identitas gagal. Pastikan tanggal lahir atau 4 digit terakhir no. HP sesuai.');
+  if (!hpMatch) {
+    throw new Error('Verifikasi identitas gagal. Pastikan 4 digit terakhir no. HP sesuai.');
   }
 
   var followUpsRaw = sheetToObjects_('TINDAK_LANJUT').filter(function(f) {

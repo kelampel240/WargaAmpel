@@ -68,7 +68,6 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
   );
   const [namaPelapor, setNamaPelapor] = useState<string>(user?.namaLengkap || '');
   const [noHpPelapor, setNoHpPelapor] = useState<string>(user?.noHp || '');
-  const [tanggalLahir, setTanggalLahir] = useState<string>(user?.tanggalLahir || '');
   const [lokasiAlamat, setLokasiAlamat] = useState<string>(user?.alamat || '');
   const [rtRw, setRtRw] = useState<string>(user?.rtRw || '');
   const [dynamicValues, setDynamicValues] = useState<Record<string, string | string[]>>({});
@@ -115,7 +114,6 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
     if (!user) return;
     setNamaPelapor((prev) => prev || user.namaLengkap || '');
     setNoHpPelapor((prev) => prev || normalizeIndonesianPhone(user.noHp) || user.noHp || '');
-    setTanggalLahir((prev) => prev || user.tanggalLahir || '');
     setLokasiAlamat((prev) => prev || user.alamat || '');
     setRtRw((prev) => prev || user.rtRw || '');
   }, [user]);
@@ -162,10 +160,6 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
         setError('Nomor HP / WhatsApp yang dapat dihubungi wajib diisi.');
         return false;
       }
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(tanggalLahir)) {
-        setError('Tanggal lahir wajib diisi untuk verifikasi saat mengecek laporan nanti.');
-        return false;
-      }
       if (!isGeneral && selectedService) {
         for (const f of selectedService.fields) {
           if (!f.WAJIB) continue;
@@ -208,7 +202,6 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
         uraianMasalah: uraianMasalah.trim(),
         namaPelapor: namaPelapor.trim(),
         noHpPelapor: normalizedHp,
-        tanggalLahir,
         lokasiAlamat: lokasiAlamat.trim(),
         rtRw: rtRw.trim() || 'Desa Ampel',
         dataFormDinamis: dynamicValues,
@@ -621,18 +614,6 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
                   value={noHpPelapor}
                   onChange={(e) => setNoHpPelapor(e.target.value)}
                   placeholder="0812..."
-                  className="w-full px-4 py-3 text-base border border-slate-300 rounded-xl bg-white"
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <label htmlFor="dob-pelapor" className="block text-base font-semibold text-slate-900 mb-1.5">
-                  Tanggal Lahir (untuk keamanan saat cek status laporan) <span className="text-rose-700">*</span>
-                </label>
-                <input
-                  id="dob-pelapor"
-                  type="date"
-                  value={tanggalLahir}
-                  onChange={(e) => setTanggalLahir(e.target.value)}
                   className="w-full px-4 py-3 text-base border border-slate-300 rounded-xl bg-white"
                 />
               </div>

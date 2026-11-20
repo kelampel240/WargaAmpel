@@ -432,9 +432,6 @@ async function startServer() {
     if (noHpPelapor.replace(/\D/g, '').length < 8) {
       return res.status(400).json({ error: 'Nomor HP / WhatsApp yang valid wajib diisi.' });
     }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(tanggalLahir)) {
-      return res.status(400).json({ error: 'Tanggal lahir (YYYY-MM-DD) wajib diisi untuk verifikasi cek laporan.' });
-    }
     if (uraianMasalah.length < 10) {
       return res.status(400).json({ error: 'Ceritakan masalah atau kebutuhan Anda minimal 10 karakter.' });
     }
@@ -611,7 +608,7 @@ async function startServer() {
   });
 
   app.post('/api/reports/track', (req, res) => {
-    const { ticketId, tanggalLahir, last4Hp } = req.body || {};
+    const { ticketId, last4Hp } = req.body || {};
     if (typeof ticketId !== 'string' || !ticketId.trim()) {
       return res.status(400).json({ error: 'Nomor tiket laporan wajib diisi.' });
     }
@@ -622,10 +619,10 @@ async function startServer() {
     if (!report) {
       return res.status(404).json({ error: 'Nomor tiket tidak ditemukan.' });
     }
-    const verified = verifyCitizenTrackingAccess(report, { tanggalLahir, last4Hp });
+    const verified = verifyCitizenTrackingAccess(report, { last4Hp });
     if (!verified) {
       return res.status(403).json({
-        error: 'Verifikasi identitas gagal. Pastikan tanggal lahir atau 4 digit terakhir nomor HP sesuai dengan data pelapor.',
+        error: 'Verifikasi identitas gagal. Pastikan 4 digit terakhir nomor HP sesuai dengan data pelapor.',
       });
     }
     const tracking = sanitizeReportForCitizenTracking(report, db.TINDAK_LANJUT, db.BUKTI_DOKUMEN);

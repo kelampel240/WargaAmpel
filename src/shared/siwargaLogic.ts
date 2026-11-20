@@ -144,19 +144,14 @@ export function validateDynamicFormFields(
 export function verifyCitizenTrackingAccess(
   report: SheetLaporan,
   verificationInput: {
-    tanggalLahir?: string;
     last4Hp?: string;
     kodeVerifikasi?: string;
   }
 ): boolean {
-  const dob = (verificationInput.tanggalLahir || '').trim();
   const last4 = (verificationInput.last4Hp || '').replace(/\D/g, '').slice(-4);
   const reportPhoneDigits = report.NO_HP_PELAPOR.replace(/\D/g, '');
   const reportLast4 = reportPhoneDigits.slice(-4);
 
-  if (dob && report.TANGGAL_LAHIR_VERIFIKASI && dob === report.TANGGAL_LAHIR_VERIFIKASI) {
-    return true;
-  }
   if (last4.length === 4 && reportLast4.length === 4 && last4 === reportLast4) {
     return true;
   }

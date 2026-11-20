@@ -182,9 +182,10 @@ test('sanitizeReportForCitizenTracking hides reporter PII, hides INTERNAL_DESA e
     },
   ];
 
-  assert.equal(verifyCitizenTrackingAccess(report, { tanggalLahir: '1978-05-12' }), true);
   assert.equal(verifyCitizenTrackingAccess(report, { last4Hp: '7890' }), true);
-  assert.equal(verifyCitizenTrackingAccess(report, { tanggalLahir: '1999-01-01', last4Hp: '0000' }), false);
+  assert.equal(verifyCitizenTrackingAccess(report, { last4Hp: '0000' }), false);
+  assert.equal(verifyCitizenTrackingAccess(report, { tanggalLahir: '1978-05-12' } as unknown as { last4Hp?: string }), false);
+  assert.equal(verifyCitizenTrackingAccess(report, {}), false);
 
   const sanitized = sanitizeReportForCitizenTracking(report, followUps, evidences);
   const serialized = JSON.stringify(sanitized);
