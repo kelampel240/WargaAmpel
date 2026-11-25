@@ -571,6 +571,7 @@ export interface SiwargaDatabase {
   BANNER?: SheetBanner[];
   PROGRAM?: SheetProgram[];
   GALERI?: SheetGaleri[];
+  CONTOH_FILE?: SheetContohFile[];
 }
 
 export interface PublicUserSession {
@@ -636,4 +637,23 @@ export interface AdminDashboardStats {
   topCategories: Array<{ label: string; count: number }>;
   statusDistribution: Array<{ label: string; count: number }>;
   completedVsUnfinished: { selesai: number; belumSelesai: number };
+}
+
+export interface SheetContohFile {
+  ID_FILE: string;
+  ID_LAYANAN: string; // 'UMUM' or specific ID_LAYANAN
+  NAMA_LAYANAN: string;
+  JUDUL_FILE: string;
+  KETERANGAN: string;
+  NAMA_FILE_ASLI: string;
+  MIME_TYPE: string;
+  UKURAN_BYTES: number;
+  FILE_URL: string;
+  PREVIEW_URL?: string;
+  DRIVE_FILE_ID?: string;
+  URUTAN: number;
+  AKTIF: boolean;
+  CREATED_AT: string;
+  UPDATED_AT?: string;
+  UPLOADED_BY?: string;
 }

@@ -319,5 +319,31 @@ export function mapRestToGasCall(
     return { action: 'saveBerandaFooter', payload: bodyObj, token: token || undefined };
   }
 
+  // Contoh File & Blangko Layanan
+  if (pathname === '/api/public/template-files' && upperMethod === 'GET') {
+    return { action: 'getPublicTemplateFiles', payload: {} };
+  }
+  if (pathname === '/api/admin/template-files' && upperMethod === 'GET') {
+    return { action: 'getAdminTemplateFiles', payload: {}, token: token || undefined };
+  }
+  if (pathname === '/api/admin/template-files' && upperMethod === 'POST') {
+    return { action: 'saveTemplateFile', payload: bodyObj, token: token || undefined };
+  }
+  const templateFileMatch = pathname.match(/^\/api\/admin\/template-files\/([^/]+)$/);
+  if (templateFileMatch && upperMethod === 'PUT') {
+    return {
+      action: 'saveTemplateFile',
+      payload: { ...bodyObj, idFile: decodeURIComponent(templateFileMatch[1]) },
+      token: token || undefined,
+    };
+  }
+  if (templateFileMatch && upperMethod === 'DELETE') {
+    return {
+      action: 'deleteTemplateFile',
+      payload: { idFile: decodeURIComponent(templateFileMatch[1]) },
+      token: token || undefined,
+    };
+  }
+
   throw new Error(`Endpoint ${upperMethod} ${pathname} belum dipetakan ke Google Apps Script.`);
 }

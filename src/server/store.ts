@@ -26,6 +26,7 @@ export const DRIVE_SUBFOLDERS = [
   '05_DOKUMEN_PENDUKUNG',
   '06_FOTO_ORGANISASI',
   '07_MEDIA_BERANDA',
+  '08_CONTOH_FILE_LAYANAN',
 ] as const;
 
 export const ticketLock = new TicketLockManager();
@@ -770,6 +771,7 @@ function createInitialDatabase(): SiwargaDatabase {
     KONFIGURASI_FORM: forms,
     TINDAK_LANJUT: tindakLanjut,
     BUKTI_DOKUMEN: buktiDokumen,
+    CONTOH_FILE: [],
     NOTIFIKASI: [
       {
         ID_NOTIFIKASI: 'NTF-001',
@@ -1741,6 +1743,10 @@ export function loadDatabase(): SiwargaDatabase {
     parsed.BANNER = parsed.BANNER || berandaSeed.BANNER;
     parsed.PROGRAM = parsed.PROGRAM || berandaSeed.PROGRAM;
     parsed.GALERI = parsed.GALERI || berandaSeed.GALERI;
+    mutated = true;
+  }
+  if (!Array.isArray(parsed.CONTOH_FILE)) {
+    parsed.CONTOH_FILE = [];
     mutated = true;
   }
   const berandaDefaults: Array<[string, string, string]> = [

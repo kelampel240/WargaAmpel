@@ -55,6 +55,9 @@ function doGet(e) {
   if (action === 'getBerandaContent') {
     return jsonResponse(getBerandaContent());
   }
+  if (action === 'getPublicTemplateFiles') {
+    return jsonResponse(getPublicTemplateFiles());
+  }
   if (action === 'getDriveEvidence') {
     return jsonResponse(getDriveEvidence(params.idBukti, params.ticketId, params.token));
   }
@@ -210,6 +213,14 @@ function doPost(e) {
         return jsonResponse(deleteBerandaGaleri(payload.idGaleri, token));
       case 'saveBerandaFooter':
         return jsonResponse(saveBerandaFooter(payload, token));
+      case 'getPublicTemplateFiles':
+        return jsonResponse(getPublicTemplateFiles());
+      case 'getAdminTemplateFiles':
+        return jsonResponse(getAdminTemplateFiles(token));
+      case 'saveTemplateFile':
+        return jsonResponse(saveTemplateFile(payload, token));
+      case 'deleteTemplateFile':
+        return jsonResponse(deleteTemplateFile(payload.idFile, token));
       default:
         return jsonResponse({ error: 'Aksi tidak dikenali: ' + action }, 400);
     }
@@ -2605,5 +2616,170 @@ function saveBerandaFooter(payload, token) {
   }, token);
   return { ok: true, footer: buildBerandaFooterGas_() };
 }
+
+// --- 10. CONTOH FILE & BLANGKO LAYANAN (UPLOAD SUPER ADMIN -> UNDUH WARGA/PUBLIK) ---
+var CONTOH_FILE_HEADERS_ = [
+  'ID_FILE', 'ID_LAYANAN', 'NAMA_LAYANAN', 'JUDUL_FILE', 'KETERANGAN',
+  'NAMA_FILE_ASLI', 'MIME_TYPE', 'UKURAN_BYTES', 'FILE_URL', 'PREVIEW_URL',
+  'DRIVE_FILE_ID', 'URUTAN', 'AKTIF', 'CREATED_AT', 'UPDATED_AT', 'UPLOADED_BY'
+];
+
+function getTemplateFilesDriveFolder_() {
+  var root = getRootDriveFolder_();
+  var subIt = root.getFoldersByName('08_CONTOH_FILE_LAYANAN');
+  var folder = subIt.hasNext() ? subIt.next() : root.createFolder('08_CONTOH_FILE_LAYANAN');
+  try {
+    folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch (ignore) {}
+  return folder;
+}
+
+function saveTemplateFileToDriveGas_(rawInput, fileName, mimeType) {
+  var raw = String(rawInput || '').trim();
+  if (!raw) throw new Error('Berkas contoh atau tautan file belum dipilih.');
+  if (raw.indexOf('data:') !== 0 && /^https?:\/\//i.test(raw)) {
+    return {
+      fileUrl: raw,
+      previewUrl: raw,
+      driveFileId: '',
+      fileName: fileName || 'Tautan Eksternal',
+      mimeType: mimeType || 'application/octet-stream',
+      sizeBytes: 0
+    };
+  }
+  var match = raw.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) throw new Error('Format file base64 tidak valid.');
+  var resolvedMime = match[1] || mimeType || 'application/octet-stream';
+  var bytes = Utilities.base64Decode(match[2]);
+  var safeName = String(fileName || ('contoh_file_' + Date.now())).replace(/[^A-Za-z0-9._-]/g, '_');
+  var blob = Utilities.newBlob(bytes, resolvedMime, safeName);
+  var folder = getTemplateFilesDriveFolder_();
+  var file = folder.createFile(blob);
+  trySetSharing_(file, DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  var fileId = file.getId();
+  return {
+    fileUrl: 'https://drive.google.com/uc?export=download&id=' + fileId,
+    previewUrl: 'https://drive.google.com/file/d/' + fileId + '/view',
+    driveFileId: fileId,
+    fileName: fileName || safeName,
+    mimeType: resolvedMime,
+    sizeBytes: bytes.length
+  };
+}
+
+function getPublicTemplateFiles() {
+  var rows = readBerandaRowsGas_('CONTOH_FILE', CONTOH_FILE_HEADERS_)
+    .filter(function(f) {
+      return String(f.AKTIF) === '' || isTrueFlag_(f.AKTIF);
+    })
+    .sort(function(a, b) {
+      return (Number(a.URUTAN) || 99) - (Number(b.URUTAN) || 99);
+    });
+  return { files: rows };
+}
+
+function getAdminTemplateFiles(token) {
+  verifyTokenAndRole_(token, ['SUPER_ADMIN']);
+  var rows = readBerandaRowsGas_('CONTOH_FILE', CONTOH_FILE_HEADERS_)
+    .sort(function(a, b) {
+      return (Number(a.URUTAN) || 99) - (Number(b.URUTAN) || 99);
+    });
+  return { files: rows };
+}
+
+function saveTemplateFile(payload, token) {
+  var actor = verifyTokenAndRole_(token, ['SUPER_ADMIN']);
+  var sh = ensureBerandaSheetGas_('CONTOH_FILE', CONTOH_FILE_HEADERS_);
+  var rows = sheetToObjects_('CONTOH_FILE');
+  var id = payload.idFile ? String(payload.idFile).trim() : '';
+  var target = null;
+  if (id) {
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].ID_FILE === id) { target = rows[i]; break; }
+    }
+  }
+  var judulFile = String(payload.judulFile !== undefined ? payload.judulFile : (target ? target.JUDUL_FILE : '')).trim();
+  if (judulFile.length < 2) {
+    throw new Error('Judul contoh file wajib diisi.');
+  }
+  var idLayanan = String(payload.idLayanan !== undefined ? payload.idLayanan : (target ? target.ID_LAYANAN : 'UMUM')).trim() || 'UMUM';
+  var namaLayanan = idLayanan === 'UMUM'
+    ? 'Semua Layanan / Umum'
+    : String(payload.namaLayanan !== undefined ? payload.namaLayanan : (target ? target.NAMA_LAYANAN : idLayanan)).trim();
+
+  var fileUrl = String(payload.fileUrl !== undefined ? payload.fileUrl : (target ? target.FILE_URL : '')).trim();
+  var previewUrl = String(payload.previewUrl !== undefined ? payload.previewUrl : (target ? target.PREVIEW_URL : fileUrl)).trim();
+  var driveFileId = String(payload.driveFileId !== undefined ? payload.driveFileId : (target ? target.DRIVE_FILE_ID : '')).trim();
+  var namaFileAsli = String(payload.fileName !== undefined ? payload.fileName : (target ? target.NAMA_FILE_ASLI : judulFile)).trim();
+  var mimeType = String(payload.mimeType !== undefined ? payload.mimeType : (target ? target.MIME_TYPE : 'application/octet-stream')).trim();
+  var ukuranBytes = Number(payload.sizeBytes !== undefined ? payload.sizeBytes : (target ? target.UKURAN_BYTES : 0)) || 0;
+
+  if (payload.fileBase64 && String(payload.fileBase64).trim()) {
+    var saved = saveTemplateFileToDriveGas_(payload.fileBase64, String(payload.fileName || judulFile), String(payload.mimeType || ''));
+    fileUrl = saved.fileUrl;
+    previewUrl = saved.previewUrl;
+    driveFileId = saved.driveFileId;
+    namaFileAsli = saved.fileName;
+    mimeType = saved.mimeType;
+    ukuranBytes = saved.sizeBytes;
+  }
+  if (!fileUrl) {
+    throw new Error('Pilih file untuk diunggah atau isi tautan file.');
+  }
+
+  var now = new Date().toISOString();
+  var finalId = target ? target.ID_FILE : ('FILE-' + Date.now());
+  var rowVals = [
+    finalId,
+    idLayanan,
+    namaLayanan,
+    judulFile,
+    String(payload.keterangan !== undefined ? payload.keterangan : (target ? target.KETERANGAN : '')).trim(),
+    namaFileAsli,
+    mimeType,
+    ukuranBytes,
+    fileUrl,
+    previewUrl || fileUrl,
+    driveFileId,
+    Number(payload.urutan) || (target ? Number(target.URUTAN) : (rows.length + 1)),
+    payload.aktif !== false,
+    target ? target.CREATED_AT : now,
+    now,
+    actor.NAMA_LENGKAP
+  ];
+
+  if (target) {
+    sh.getRange(target._rowIndex, 1, 1, rowVals.length).setValues([rowVals]);
+    logActivity_(actor, 'TEMPLATE_FILE_UPDATE', finalId, 'Memperbarui contoh file: ' + judulFile);
+  } else {
+    sh.appendRow(rowVals);
+    logActivity_(actor, 'TEMPLATE_FILE_CREATE', finalId, 'Mengunggah contoh file: ' + judulFile);
+  }
+  return {
+    ok: true,
+    file: {
+      ID_FILE: rowVals[0], ID_LAYANAN: rowVals[1], NAMA_LAYANAN: rowVals[2],
+      JUDUL_FILE: rowVals[3], KETERANGAN: rowVals[4], NAMA_FILE_ASLI: rowVals[5],
+      MIME_TYPE: rowVals[6], UKURAN_BYTES: rowVals[7], FILE_URL: rowVals[8],
+      PREVIEW_URL: rowVals[9], DRIVE_FILE_ID: rowVals[10], URUTAN: rowVals[11],
+      AKTIF: rowVals[12], CREATED_AT: rowVals[13], UPDATED_AT: rowVals[14], UPLOADED_BY: rowVals[15]
+    }
+  };
+}
+
+function deleteTemplateFile(idFile, token) {
+  var actor = verifyTokenAndRole_(token, ['SUPER_ADMIN']);
+  var sh = ensureBerandaSheetGas_('CONTOH_FILE', CONTOH_FILE_HEADERS_);
+  var rows = sheetToObjects_('CONTOH_FILE');
+  for (var i = 0; i < rows.length; i++) {
+    if (rows[i].ID_FILE === idFile) {
+      sh.deleteRow(rows[i]._rowIndex);
+      logActivity_(actor, 'TEMPLATE_FILE_DELETE', idFile, 'Menghapus contoh file: ' + rows[i].JUDUL_FILE);
+      return { ok: true };
+    }
+  }
+  throw new Error('Contoh file tidak ditemukan.');
+}
+
 
 

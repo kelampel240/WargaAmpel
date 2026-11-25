@@ -3,6 +3,7 @@ import {
   BarChart3,
   CheckSquare,
   ClipboardList,
+  FileDown,
   FileSpreadsheet,
   FileText,
   FolderOpen,
@@ -46,10 +47,12 @@ import {
 } from './AdminModules';
 import { GoogleSheetsWorkspacePanel } from './GoogleSheetsWorkspacePanel';
 import { BerandaAdminManager } from './BerandaAdminManager';
+import { TemplateFilesAdminManager } from './TemplateFilesAdminManager';
 
 export type SidebarModule =
   | 'dashboard'
   | 'kelola-beranda'
+  | 'contoh-file'
   | 'laporan-masuk'
   | 'permohonan-bantuan'
   | 'layanan-administrasi'
@@ -79,6 +82,7 @@ const SIDEBAR_ITEMS: Array<{
 }> = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'kelola-beranda', label: 'Kelola Beranda', icon: Home, superAdminOnly: true },
+  { id: 'contoh-file', label: 'Contoh File Warga', icon: FileDown, superAdminOnly: true },
   { id: 'laporan-masuk', label: 'Laporan Masuk', icon: ClipboardList },
   { id: 'permohonan-bantuan', label: 'Permohonan Bantuan', icon: HandHeart },
   { id: 'layanan-administrasi', label: 'Layanan Administrasi', icon: FileText },
@@ -506,6 +510,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         {activeTab === 'kelola-beranda' && (
           <BerandaAdminManager userRole={user.role} onBerandaChanged={onServicesChanged} />
+        )}
+        {activeTab === 'contoh-file' && (
+          <TemplateFilesAdminManager
+            userRole={user.role}
+            services={services}
+            onFilesChanged={onServicesChanged}
+          />
         )}
         {activeTab === 'struktur-organisasi' && <OrgAdminManager userRole={user.role} />}
         {activeTab === 'data-warga' && <WargaManager />}

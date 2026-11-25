@@ -147,4 +147,34 @@ test('mapRestToGasCall maps public, auth, reporting, and admin routes accurately
   );
   assert.equal(saveFooter.action, 'saveBerandaFooter');
   assert.equal(saveFooter.payload.alamatKantor, 'Balai Desa Ampel');
+
+  // Contoh File Warga (Super Admin upload -> Public/Warga download)
+  const pubTemplateFiles = mapRestToGasCall('/api/public/template-files', 'GET');
+  assert.equal(pubTemplateFiles.action, 'getPublicTemplateFiles');
+
+  const adminTemplateFiles = mapRestToGasCall('/api/admin/template-files', 'GET', {}, 'tok-sa');
+  assert.equal(adminTemplateFiles.action, 'getAdminTemplateFiles');
+  assert.equal(adminTemplateFiles.token, 'tok-sa');
+
+  const uploadTemplate = mapRestToGasCall(
+    '/api/admin/template-files',
+    'POST',
+    { judulFile: 'Contoh F-1.02', idLayanan: 'LAY-01' },
+    'tok-sa'
+  );
+  assert.equal(uploadTemplate.action, 'saveTemplateFile');
+  assert.equal(uploadTemplate.payload.judulFile, 'Contoh F-1.02');
+
+  const updateTemplate = mapRestToGasCall(
+    '/api/admin/template-files/CF-001',
+    'PUT',
+    { judulFile: 'Contoh F-1.02 Revisi' },
+    'tok-sa'
+  );
+  assert.equal(updateTemplate.action, 'saveTemplateFile');
+  assert.equal(updateTemplate.payload.idFile, 'CF-001');
+
+  const deleteTemplate = mapRestToGasCall('/api/admin/template-files/CF-001', 'DELETE', {}, 'tok-sa');
+  assert.equal(deleteTemplate.action, 'deleteTemplateFile');
+  assert.equal(deleteTemplate.payload.idFile, 'CF-001');
 });

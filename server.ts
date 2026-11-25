@@ -35,6 +35,7 @@ import {
   SERVICE_GROUPS,
   SheetBanner,
   SheetBuktiDokumen,
+  SheetContohFile,
   SheetGaleri,
   SheetKategoriLayanan,
   SheetKonfigurasiForm,
@@ -2570,6 +2571,270 @@ async function startServer() {
     );
     saveDatabase(db);
     return res.json({ ok: true, footer: buildBerandaFooter(db) });
+  });
+
+  // ===========================================================================
+  // 10. CONTOH FILE & BLANGKO LAYANAN (UPLOAD SUPER ADMIN -> UNDUH WARGA/PUBLIK)
+  // ===========================================================================
+  const saveTemplateUploadFile = (
+    dataUrlOrBase64: string,
+    rawFileName: string,
+    rawMimeType?: string
+  ): {
+    fileUrl: string;
+    previewUrl: string;
+    driveFileId: string;
+    fileName: string;
+    mimeType: string;
+    sizeBytes: number;
+  } => {
+    const cleanInput = String(dataUrlOrBase64 || '').trim();
+    if (!cleanInput) {
+      throw new Error('File atau URL contoh belum dipilih.');
+    }
+    if (!cleanInput.startsWith('data:') && /^https?:\/\//i.test(cleanInput)) {
+      return {
+        fileUrl: cleanInput,
+        previewUrl: cleanInput,
+        driveFileId: '',
+        fileName: rawFileName || 'Tautan Eksternal',
+        mimeType: rawMimeType || 'application/octet-stream',
+        sizeBytes: 0,
+      };
+    }
+
+    ensureDriveStructure();
+    const targetDir = path.join(DRIVE_ROOT_DIR, '08_CONTOH_FILE_LAYANAN');
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+
+    const mimeMatch = cleanInput.match(/^data:([^;]+);base64,/i);
+    const detectedMime = mimeMatch?.[1] || rawMimeType || 'application/octet-stream';
+    const extFromName = path.extname(String(rawFileName || '')).toLowerCase();
+    const allowedExt = new Set(['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.png', '.jpg', '.jpeg', '.webp', '.txt']);
+    let ext = extFromName;
+    if (!ext || !allowedExt.has(ext)) {
+      if (detectedMime.includes('pdf')) ext = '.pdf';
+      else if (detectedMime.includes('wordprocessingml')) ext = '.docx';
+      else if (detectedMime.includes('msword')) ext = '.doc';
+      else if (detectedMime.includes('spreadsheetml')) ext = '.xlsx';
+      else if (detectedMime.includes('ms-excel')) ext = '.xls';
+      else if (detectedMime.includes('png')) ext = '.png';
+      else if (detectedMime.includes('webp')) ext = '.webp';
+      else if (detectedMime.includes('jpeg') || detectedMime.includes('jpg')) ext = '.jpg';
+      else ext = '.pdf';
+    }
+
+    const safeBase =
+      path
+        .basename(String(rawFileName || 'contoh_file'), path.extname(String(rawFileName || '')))
+        .replace(/[^A-Za-z0-9_-]/g, '_')
+        .slice(0, 50) || 'contoh_file';
+    const storedName = `${safeBase}_${Date.now()}${ext}`;
+    const buf = parseBase64Upload(cleanInput);
+    if (buf.length > 5 * 1024 * 1024) {
+      throw new Error('Ukuran file maksimal 5 MB.');
+    }
+    fs.writeFileSync(path.join(targetDir, storedName), buf);
+    const basePublic = `/api/public/template-files/raw/${encodeURIComponent(storedName)}`;
+    return {
+      fileUrl: `${basePublic}?download=1`,
+      previewUrl: basePublic,
+      driveFileId: `LOCAL-FILE-${Date.now()}`,
+      fileName: rawFileName || storedName,
+      mimeType: detectedMime,
+      sizeBytes: buf.length,
+    };
+  };
+
+  app.get('/api/public/template-files/raw/:fileName', (req, res) => {
+    const safeName = path.basename(String(req.params.fileName || ''));
+    const fullPath = path.join(DRIVE_ROOT_DIR, '08_CONTOH_FILE_LAYANAN', safeName);
+    if (!safeName || !fs.existsSync(fullPath)) {
+      return res.status(404).json({ error: 'Berkas contoh tidak ditemukan.' });
+    }
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    if (req.query.download === '1') {
+      return res.download(fullPath, safeName);
+    }
+    return res.sendFile(fullPath);
+  });
+
+  app.get('/api/public/template-files', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    const db = loadDatabase();
+    const list = (Array.isArray(db.CONTOH_FILE) ? db.CONTOH_FILE : [])
+      .filter((f) => f.AKTIF !== false)
+      .sort((a, b) => (Number(a.URUTAN) || 99) - (Number(b.URUTAN) || 99));
+    return res.json({ files: list });
+  });
+
+  app.get('/api/admin/template-files', requireAuth(['SUPER_ADMIN']), (_req: AuthedRequest, res) => {
+    const db = loadDatabase();
+    const list = (Array.isArray(db.CONTOH_FILE) ? db.CONTOH_FILE : [])
+      .slice()
+      .sort((a, b) => (Number(a.URUTAN) || 99) - (Number(b.URUTAN) || 99));
+    return res.json({ files: list });
+  });
+
+  app.post('/api/admin/template-files', requireAuth(['SUPER_ADMIN']), (req: AuthedRequest, res) => {
+    const body = (req.body || {}) as Record<string, unknown>;
+    const judulFile = String(body.judulFile || '').trim();
+    const idLayanan = String(body.idLayanan || 'UMUM').trim() || 'UMUM';
+    if (judulFile.length < 2) {
+      return res.status(400).json({ error: 'Judul contoh file wajib diisi.' });
+    }
+    const db = loadDatabase();
+    db.CONTOH_FILE = Array.isArray(db.CONTOH_FILE) ? db.CONTOH_FILE : [];
+    const matchedSvc = db.KATEGORI_LAYANAN.find((s) => s.ID_LAYANAN === idLayanan);
+    const namaLayanan =
+      idLayanan === 'UMUM'
+        ? 'Semua Layanan / Umum'
+        : String(body.namaLayanan || matchedSvc?.NAMA_LAYANAN || idLayanan).trim();
+
+    let fileUrl = String(body.fileUrl || '').trim();
+    let previewUrl = String(body.previewUrl || fileUrl).trim();
+    let driveFileId = String(body.driveFileId || '').trim();
+    let namaFileAsli = String(body.fileName || judulFile).trim();
+    let mimeType = String(body.mimeType || 'application/octet-stream').trim();
+    let ukuranBytes = Number(body.sizeBytes) || 0;
+
+    if (typeof body.fileBase64 === 'string' && body.fileBase64.trim()) {
+      try {
+        const saved = saveTemplateUploadFile(
+          body.fileBase64,
+          String(body.fileName || judulFile),
+          String(body.mimeType || '')
+        );
+        fileUrl = saved.fileUrl;
+        previewUrl = saved.previewUrl;
+        driveFileId = saved.driveFileId;
+        namaFileAsli = saved.fileName;
+        mimeType = saved.mimeType;
+        ukuranBytes = saved.sizeBytes;
+      } catch (err) {
+        return res.status(400).json({ error: (err as Error).message });
+      }
+    }
+
+    if (!fileUrl) {
+      return res.status(400).json({ error: 'Pilih file untuk diunggah atau isi tautan file.' });
+    }
+
+    const now = new Date().toISOString();
+    const id = `FILE-${Date.now()}`;
+    const item: SheetContohFile = {
+      ID_FILE: id,
+      ID_LAYANAN: idLayanan,
+      NAMA_LAYANAN: namaLayanan,
+      JUDUL_FILE: judulFile,
+      KETERANGAN: String(body.keterangan || '').trim(),
+      NAMA_FILE_ASLI: namaFileAsli,
+      MIME_TYPE: mimeType,
+      UKURAN_BYTES: ukuranBytes,
+      FILE_URL: fileUrl,
+      PREVIEW_URL: previewUrl || fileUrl,
+      DRIVE_FILE_ID: driveFileId,
+      URUTAN: Number(body.urutan) || db.CONTOH_FILE.length + 1,
+      AKTIF: body.aktif !== false,
+      CREATED_AT: now,
+      UPDATED_AT: now,
+      UPLOADED_BY: req.sessionUser!.namaLengkap,
+    };
+    db.CONTOH_FILE.unshift(item);
+    appendActivityLog(
+      db,
+      { idUser: req.sessionUser!.idUser, nama: req.sessionUser!.namaLengkap, role: req.sessionUser!.role },
+      'TEMPLATE_FILE_CREATE',
+      id,
+      `Mengunggah contoh file "${judulFile}" untuk ${namaLayanan}.`
+    );
+    saveDatabase(db);
+    return res.status(201).json({ ok: true, file: item });
+  });
+
+  app.put('/api/admin/template-files/:id', requireAuth(['SUPER_ADMIN']), (req: AuthedRequest, res) => {
+    const id = String(req.params.id || '');
+    const body = (req.body || {}) as Record<string, unknown>;
+    const db = loadDatabase();
+    db.CONTOH_FILE = Array.isArray(db.CONTOH_FILE) ? db.CONTOH_FILE : [];
+    const target = db.CONTOH_FILE.find((f) => f.ID_FILE === id);
+    if (!target) {
+      return res.status(404).json({ error: 'Contoh file tidak ditemukan.' });
+    }
+
+    const judulFile = String(body.judulFile ?? target.JUDUL_FILE).trim();
+    if (judulFile.length < 2) {
+      return res.status(400).json({ error: 'Judul contoh file wajib diisi.' });
+    }
+
+    const idLayanan = String(body.idLayanan ?? target.ID_LAYANAN).trim() || 'UMUM';
+    const matchedSvc = db.KATEGORI_LAYANAN.find((s) => s.ID_LAYANAN === idLayanan);
+    const namaLayanan =
+      idLayanan === 'UMUM'
+        ? 'Semua Layanan / Umum'
+        : String(body.namaLayanan ?? matchedSvc?.NAMA_LAYANAN ?? target.NAMA_LAYANAN).trim();
+
+    if (typeof body.fileBase64 === 'string' && body.fileBase64.trim()) {
+      try {
+        const saved = saveTemplateUploadFile(
+          body.fileBase64,
+          String(body.fileName || target.NAMA_FILE_ASLI || judulFile),
+          String(body.mimeType || '')
+        );
+        target.FILE_URL = saved.fileUrl;
+        target.PREVIEW_URL = saved.previewUrl;
+        target.DRIVE_FILE_ID = saved.driveFileId;
+        target.NAMA_FILE_ASLI = saved.fileName;
+        target.MIME_TYPE = saved.mimeType;
+        target.UKURAN_BYTES = saved.sizeBytes;
+      } catch (err) {
+        return res.status(400).json({ error: (err as Error).message });
+      }
+    } else if (typeof body.fileUrl === 'string' && body.fileUrl.trim()) {
+      target.FILE_URL = body.fileUrl.trim();
+      target.PREVIEW_URL = String(body.previewUrl || body.fileUrl).trim();
+    }
+
+    target.ID_LAYANAN = idLayanan;
+    target.NAMA_LAYANAN = namaLayanan;
+    target.JUDUL_FILE = judulFile;
+    target.KETERANGAN = String(body.keterangan ?? target.KETERANGAN).trim();
+    target.URUTAN = Number(body.urutan) || target.URUTAN;
+    target.AKTIF = body.aktif !== undefined ? body.aktif !== false : target.AKTIF;
+    target.UPDATED_AT = new Date().toISOString();
+
+    appendActivityLog(
+      db,
+      { idUser: req.sessionUser!.idUser, nama: req.sessionUser!.namaLengkap, role: req.sessionUser!.role },
+      'TEMPLATE_FILE_UPDATE',
+      id,
+      `Memperbarui contoh file "${target.JUDUL_FILE}".`
+    );
+    saveDatabase(db);
+    return res.json({ ok: true, file: target });
+  });
+
+  app.delete('/api/admin/template-files/:id', requireAuth(['SUPER_ADMIN']), (req: AuthedRequest, res) => {
+    const id = String(req.params.id || '');
+    const db = loadDatabase();
+    db.CONTOH_FILE = Array.isArray(db.CONTOH_FILE) ? db.CONTOH_FILE : [];
+    const idx = db.CONTOH_FILE.findIndex((f) => f.ID_FILE === id);
+    if (idx === -1) {
+      return res.status(404).json({ error: 'Contoh file tidak ditemukan.' });
+    }
+    const deletedTitle = db.CONTOH_FILE[idx].JUDUL_FILE;
+    db.CONTOH_FILE.splice(idx, 1);
+    appendActivityLog(
+      db,
+      { idUser: req.sessionUser!.idUser, nama: req.sessionUser!.namaLengkap, role: req.sessionUser!.role },
+      'TEMPLATE_FILE_DELETE',
+      id,
+      `Menghapus contoh file "${deletedTitle}".`
+    );
+    saveDatabase(db);
+    return res.json({ ok: true });
   });
 
   // ===========================================================================

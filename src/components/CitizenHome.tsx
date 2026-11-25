@@ -8,6 +8,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Download,
+  ExternalLink,
+  FileDown,
   FileText,
   HandHeart,
   HelpCircle,
@@ -22,11 +25,13 @@ import {
   PublicBerandaResponse,
   ServiceGroup,
   ServiceWithForm,
+  SheetContohFile,
   SheetGaleri,
   SheetPengumuman,
   SheetProgram,
 } from '../shared/types';
 import { formatTanggalIndo } from '../lib/api';
+import { ServiceFormDownloadView } from './ServiceFormDownloadView';
 
 import heroFallbackImg from '../assets/images/hero_desa_ampel_1795122998295.jpg';
 import kerjaBaktiFallbackImg from '../assets/images/program_kerja_bakti_1795123000265.jpg';
@@ -52,6 +57,7 @@ export type WizardEntryMode = 'pengaduan' | 'bantuan' | 'administrasi' | 'tidak-
 interface CitizenHomeProps {
   services: ServiceWithForm[];
   announcements: SheetPengumuman[];
+  templateFiles?: SheetContohFile[];
   beranda?: PublicBerandaResponse | null;
   berandaLoading?: boolean;
   loading?: boolean;
@@ -63,6 +69,7 @@ interface CitizenHomeProps {
   onGoAllServices?: () => void;
   onGoStruktur?: () => void;
   activeSection?: 'home' | 'services' | 'announcements';
+  servicesResetNonce?: number;
 }
 
 const BerandaImageFrame: React.FC<{
@@ -103,6 +110,7 @@ const BerandaImageFrame: React.FC<{
 export const CitizenHome: React.FC<CitizenHomeProps> = ({
   services = [],
   announcements = [],
+  templateFiles = [],
   beranda = null,
   berandaLoading = false,
   loading = false,
@@ -114,10 +122,18 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
   onGoAllServices,
   onGoStruktur,
   activeSection = 'home',
+  servicesResetNonce = 0,
 }) => {
   const [selectedGroup, setSelectedGroup] = useState<ServiceGroup | 'ALL'>('ALL');
+  const [selectedServiceForForms, setSelectedServiceForForms] = useState<ServiceWithForm | null>(
+    null
+  );
   const [programFilter, setProgramFilter] = useState<ProgramStatus | 'SEMUA'>('SEMUA');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    setSelectedServiceForForms(null);
+  }, [activeSection, servicesResetNonce]);
 
   const safeServices = Array.isArray(services) ? services : [];
   const safeAnnouncements = Array.isArray(announcements) ? announcements : [];
@@ -166,9 +182,23 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
   }, [lightboxIndex, galeriList.length]);
 
   // --------------------------------------------------------------------------
-  // PRESERVED VIEW: DAFTAR LAYANAN (/services)
+  // PRESERVED VIEW: DAFTAR LAYANAN (/services) -> FORM DOWNLOAD & KANTOR VIEW
   // --------------------------------------------------------------------------
   if (activeSection === 'services') {
+    if (selectedServiceForForms) {
+      return (
+        <ServiceFormDownloadView
+          service={selectedServiceForForms}
+          footer={beranda?.footer}
+          templateFiles={templateFiles}
+          onBack={() => {
+            setSelectedServiceForForms(null);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
+      );
+    }
+
     return (
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="mb-8">
@@ -176,7 +206,7 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
             Layanan Kelurahan Ampel
           </h1>
           <p className="mt-2 text-base sm:text-lg text-slate-700 max-w-2xl">
-            Pilih layanan yang Anda butuhkan. Jika ragu memilih kategori, Anda tetap bisa menekan tombol bantuan umum.
+            Pilih layanan yang Anda butuhkan untuk melihat persyaratan serta mengunduh formulir yang diajukan di Kantor Kelurahan Ampel.
           </p>
         </div>
 
@@ -231,12 +261,8 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  const mode: WizardEntryMode = svc.KATEGORI_GRUP.startsWith('B.')
-                    ? 'bantuan'
-                    : svc.KATEGORI_GRUP.startsWith('C.')
-                    ? 'administrasi'
-                    : 'pengaduan';
-                  onStartWizard(mode, svc);
+                  setSelectedServiceForForms(svc);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className="w-full py-3 px-4 bg-[#0B6E4F] text-white text-base font-semibold rounded-lg hover:bg-[#08553d] transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
@@ -246,6 +272,99 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
             </div>
           ))}
         </div>
+
+        {/* Public Contoh File Download Center for Akun Warga & Akun Orang Awam */}
+        <section
+          aria-labelledby="contoh-file-publik-heading"
+          className="mt-12 bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-5"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold text-[#0B6E4F]">
+                Terbuka untuk Akun Warga &amp; Masyarakat Umum (Tanpa Login)
+              </p>
+              <h2
+                id="contoh-file-publik-heading"
+                className="mt-1 font-display text-2xl font-bold text-[#0F2942] flex items-center gap-2.5"
+              >
+                <FileDown className="w-6 h-6 text-[#0B6E4F]" aria-hidden="true" />
+                <span>Contoh File &amp; Blangko Resmi Kelurahan Ampel</span>
+              </h2>
+              <p className="mt-1 text-sm sm:text-base text-slate-600 max-w-2xl">
+                Unduh contoh pengisian surat, blangko PDF, Word, atau dokumen panduan yang disediakan resmi oleh pengelola Kelurahan Ampel.
+              </p>
+            </div>
+          </div>
+
+          {templateFiles.filter((f) => f.AKTIF !== false).length === 0 ? (
+            <div className="p-6 border border-dashed border-slate-300 rounded-xl bg-slate-50 text-sm text-slate-600">
+              Belum ada contoh file tambahan yang diterbitkan pengelola kelurahan. Anda tetap dapat mengunduh formulir bawaan masing-masing layanan dengan menekan tombol{' '}
+              <span className="font-semibold text-[#0F2942]">Ajukan Layanan Ini</span> di atas.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {templateFiles
+                .filter((f) => f.AKTIF !== false)
+                .map((file) => {
+                  const kb =
+                    Number(file.UKURAN_BYTES) > 0
+                      ? Number(file.UKURAN_BYTES) >= 1024 * 1024
+                        ? `${(Number(file.UKURAN_BYTES) / (1024 * 1024)).toFixed(2)} MB`
+                        : `${Math.max(1, Math.round(Number(file.UKURAN_BYTES) / 1024))} KB`
+                      : 'Tautan';
+                  return (
+                    <article
+                      key={file.ID_FILE}
+                      className="border border-slate-200 rounded-xl p-5 flex flex-col justify-between gap-4 hover:border-[#0B6E4F] transition-colors"
+                    >
+                      <div>
+                        <p className="font-mono text-xs font-semibold text-[#0B6E4F]">
+                          {file.NAMA_LAYANAN || 'Semua Layanan / Umum'} · {kb}
+                        </p>
+                        <h3 className="mt-1 font-display text-lg font-bold text-[#0F2942]">
+                          {file.JUDUL_FILE}
+                        </h3>
+                        {file.KETERANGAN && (
+                          <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                            {file.KETERANGAN}
+                          </p>
+                        )}
+                        {file.NAMA_FILE_ASLI && (
+                          <p className="mt-2 font-mono text-xs text-slate-500 truncate">
+                            {file.NAMA_FILE_ASLI}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+                        <a
+                          href={file.FILE_URL}
+                          download={file.NAMA_FILE_ASLI || undefined}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-4 py-2 bg-[#0B6E4F] hover:bg-[#08553d] text-white text-sm font-semibold rounded-lg inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                        >
+                          <Download className="w-4 h-4" aria-hidden="true" />
+                          <span>Unduh Contoh File</span>
+                        </a>
+                        {file.PREVIEW_URL && file.PREVIEW_URL !== file.FILE_URL && (
+                          <a
+                            href={file.PREVIEW_URL}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-[#0F2942] text-sm font-semibold rounded-lg inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                          >
+                            <ExternalLink className="w-4 h-4" aria-hidden="true" />
+                            <span>Pratinjau</span>
+                          </a>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
+            </div>
+          )}
+        </section>
       </main>
     );
   }

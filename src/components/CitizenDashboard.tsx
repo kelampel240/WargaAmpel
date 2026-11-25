@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Bell, CheckCircle2, FilePlus2, Landmark, Megaphone } from 'lucide-react';
+import { Bell, CheckCircle2, Download, FileDown, FilePlus2, Landmark, Megaphone } from 'lucide-react';
 import {
   CitizenTrackingResponse,
   PublicUserSession,
+  SheetContohFile,
   SheetNotifikasi,
   SheetPengumuman,
 } from '../shared/types';
@@ -10,10 +11,17 @@ import { apiFetch, formatTanggalIndo, getStatusVisual } from '../lib/api';
 
 interface CitizenDashboardProps {
   user: PublicUserSession;
+  templateFiles?: SheetContohFile[];
   onNewReport: () => void;
+  onGoServices?: () => void;
 }
 
-export const CitizenDashboard: React.FC<CitizenDashboardProps> = ({ user, onNewReport }) => {
+export const CitizenDashboard: React.FC<CitizenDashboardProps> = ({
+  user,
+  templateFiles = [],
+  onNewReport,
+  onGoServices,
+}) => {
   const [myReports, setMyReports] = useState<CitizenTrackingResponse[]>([]);
   const [notifications, setNotifications] = useState<SheetNotifikasi[]>([]);
   const [announcements, setAnnouncements] = useState<SheetPengumuman[]>([]);
@@ -229,6 +237,63 @@ export const CitizenDashboard: React.FC<CitizenDashboardProps> = ({ user, onNewR
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-2xl p-6">
+            <div className="flex items-center justify-between gap-2 mb-4">
+              <h2 className="font-display text-lg font-bold text-[#0F2942] flex items-center gap-2">
+                <FileDown className="w-5 h-5 text-[#0B6E4F]" aria-hidden="true" />
+                <span>Contoh File &amp; Blangko</span>
+              </h2>
+              {onGoServices && (
+                <button
+                  type="button"
+                  onClick={onGoServices}
+                  className="text-xs font-bold text-[#0B6E4F] hover:underline whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  Semua Layanan
+                </button>
+              )}
+            </div>
+            {templateFiles.filter((f) => f.AKTIF !== false).length === 0 ? (
+              <p className="text-sm text-slate-600">
+                Belum ada contoh file terunggah. Anda tetap bisa mengunduh formulir layanan dari halaman Layanan Kelurahan.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {templateFiles
+                  .filter((f) => f.AKTIF !== false)
+                  .slice(0, 6)
+                  .map((file) => (
+                    <div
+                      key={file.ID_FILE}
+                      className="p-3 border border-slate-200 rounded-xl flex items-start justify-between gap-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-[#0B6E4F]">
+                          {file.NAMA_LAYANAN || 'Semua Layanan'}
+                        </p>
+                        <p className="font-semibold text-sm text-slate-900 truncate">
+                          {file.JUDUL_FILE}
+                        </p>
+                        {file.KETERANGAN && (
+                          <p className="mt-0.5 text-xs text-slate-600 line-clamp-2">{file.KETERANGAN}</p>
+                        )}
+                      </div>
+                      <a
+                        href={file.FILE_URL}
+                        download={file.NAMA_FILE_ASLI || undefined}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-1.5 bg-[#0B6E4F] hover:bg-[#08553d] text-white text-xs font-semibold rounded-lg inline-flex items-center gap-1 whitespace-nowrap shrink-0"
+                      >
+                        <Download className="w-3.5 h-3.5" aria-hidden="true" />
+                        <span>Unduh</span>
+                      </a>
+                    </div>
+                  ))}
               </div>
             )}
           </div>

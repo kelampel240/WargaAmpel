@@ -259,6 +259,7 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
       'getPublicOrgStructure',
       'getPublicRoleAccounts',
       'getBerandaContent',
+      'getPublicTemplateFiles',
     ]);
 
     const { status, ok, rawText, data } = await executeGasAction(
@@ -313,6 +314,13 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
           }
         }
 
+        if (spec.action === 'getPublicTemplateFiles') {
+          return { files: [], gasOutdated: true } as unknown as T;
+        }
+        if (spec.action === 'getAdminTemplateFiles') {
+          return { files: [], gasOutdated: true } as unknown as T;
+        }
+
         const berandaActions = [
           'getBerandaContent',
           'getAdminBeranda',
@@ -323,6 +331,8 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
           'saveBerandaGaleri',
           'deleteBerandaGaleri',
           'saveBerandaFooter',
+          'saveTemplateFile',
+          'deleteTemplateFile',
         ];
         if (berandaActions.some((a) => errMsg.includes(a))) {
           throw new Error(BERANDA_OUTDATED_GAS_GUIDE);

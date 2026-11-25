@@ -1009,6 +1009,36 @@
   ],
   "LOG_AKTIVITAS": [
     {
+      "ID_LOG": "LOG-1795571574122-515",
+      "WAKTU": "2026-11-25T01:52:54.122Z",
+      "ID_USER": "USR-ADMIN-01",
+      "NAMA_PENGGUNA": "Super Admin Desa Ampel",
+      "ROLE": "SUPER_ADMIN",
+      "AKSI": "TEMPLATE_FILE_DELETE",
+      "ID_TERKAIT": "FILE-1795571574102",
+      "DETAIL": "Menghapus contoh file \"Contoh Pengisian F-1.02\"."
+    },
+    {
+      "ID_LOG": "LOG-1795571574102-523",
+      "WAKTU": "2026-11-25T01:52:54.102Z",
+      "ID_USER": "USR-ADMIN-01",
+      "NAMA_PENGGUNA": "Super Admin Desa Ampel",
+      "ROLE": "SUPER_ADMIN",
+      "AKSI": "TEMPLATE_FILE_CREATE",
+      "ID_TERKAIT": "FILE-1795571574102",
+      "DETAIL": "Mengunggah contoh file \"Contoh Pengisian F-1.02\" untuk Semua Layanan / Umum."
+    },
+    {
+      "ID_LOG": "LOG-1795571574095-629",
+      "WAKTU": "2026-11-25T01:52:54.095Z",
+      "ID_USER": "USR-ADMIN-01",
+      "NAMA_PENGGUNA": "Super Admin Desa Ampel",
+      "ROLE": "SUPER_ADMIN",
+      "AKSI": "LOGIN",
+      "ID_TERKAIT": "USR-ADMIN-01",
+      "DETAIL": "Super Admin Desa Ampel berhasil masuk ke WARGA AMPEL."
+    },
+    {
       "ID_LOG": "LOG-1795164405727-261",
       "WAKTU": "2026-11-20T08:46:45.727Z",
       "ID_USER": "USR-ADMIN-01",
@@ -2164,5 +2194,6 @@
       "AKTIF": true,
       "CREATED_AT": "2026-11-01T08:00:00.000Z"
     }
-  ]
+  ],
+  "CONTOH_FILE": []
 }

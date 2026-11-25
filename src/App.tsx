@@ -4,6 +4,7 @@ import {
   PublicBerandaResponse,
   PublicUserSession,
   ServiceWithForm,
+  SheetContohFile,
   SheetPengumuman,
 } from './shared/types';
 import { apiFetch, clearAuth, getStoredToken, getStoredUser, persistAuth } from './lib/api';
@@ -68,10 +69,12 @@ export default function App() {
   const [trackPrefill, setTrackPrefill] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [adminInitialTab, setAdminInitialTab] = useState<SidebarModule>('dashboard');
+  const [servicesResetNonce, setServicesResetNonce] = useState(0);
 
   const [user, setUser] = useState<PublicUserSession | null>(() => getStoredUser());
   const [services, setServices] = useState<ServiceWithForm[]>([]);
   const [announcements, setAnnouncements] = useState<SheetPengumuman[]>([]);
+  const [templateFiles, setTemplateFiles] = useState<SheetContohFile[]>([]);
   const [beranda, setBeranda] = useState<PublicBerandaResponse | null>(null);
   const [berandaLoading, setBerandaLoading] = useState(true);
   const [publicLoading, setPublicLoading] = useState(true);
@@ -82,13 +85,15 @@ export default function App() {
     setBerandaLoading(true);
     setPublicError('');
     try {
-      const [svcRes, annRes, berandaRes] = await Promise.all([
+      const [svcRes, annRes, berandaRes, filesRes] = await Promise.all([
         apiFetch<{ services: ServiceWithForm[] }>('/api/public/services'),
         apiFetch<{ announcements: SheetPengumuman[] }>('/api/public/announcements'),
         apiFetch<PublicBerandaResponse>('/api/public/beranda').catch(() => null),
+        apiFetch<{ files: SheetContohFile[] }>('/api/public/template-files').catch(() => ({ files: [] })),
       ]);
       setServices(Array.isArray(svcRes?.services) ? svcRes.services : []);
       setAnnouncements(Array.isArray(annRes?.announcements) ? annRes.announcements : []);
+      setTemplateFiles(Array.isArray(filesRes?.files) ? filesRes.files : []);
       if (berandaRes) setBeranda(berandaRes);
     } catch (err) {
       const msg = (err as Error).message || 'Gagal memuat data layanan dan pengumuman.';
@@ -126,6 +131,9 @@ export default function App() {
     }
     if (nextRoute === 'admin') {
       setAdminInitialTab('dashboard');
+    }
+    if (nextRoute === 'services') {
+      setServicesResetNonce((n) => n + 1);
     }
     setRoute(nextRoute);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -185,7 +193,9 @@ export default function App() {
           ) : route === 'citizen-dashboard' && user ? (
             <CitizenDashboard
               user={user}
+              templateFiles={templateFiles}
               onNewReport={() => handleStartWizard('pengaduan')}
+              onGoServices={() => handleNavigate('services')}
             />
           ) : route === 'admin' && user && user.role !== 'WARGA' ? (
             <AdminDashboard
@@ -197,6 +207,7 @@ export default function App() {
             <CitizenHome
               services={services}
               announcements={announcements}
+              templateFiles={templateFiles}
               beranda={beranda}
               berandaLoading={berandaLoading}
               loading={publicLoading}
@@ -214,12 +225,13 @@ export default function App() {
               onGoAllAnnouncements={() => handleNavigate('announcements')}
               onGoAllServices={() => handleNavigate('services')}
               onGoStruktur={() => handleNavigate('struktur')}
+              servicesResetNonce={servicesResetNonce}
             />
           )}
         </div>
 
         {/* 7. FOOTER KONTAK KANTOR DESA & JAM LAYANAN */}
-        <footer className="bg-white border-t border-slate-200 py-8 mt-12">
+        <footer className="no-print bg-white border-t border-slate-200 py-8 mt-12">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-12 gap-6 text-sm text-slate-600">
             <div className="md:col-span-5 space-y-1.5">
               <p className="font-display font-bold text-base text-[#0F2942]">
