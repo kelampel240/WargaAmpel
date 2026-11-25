@@ -624,9 +624,9 @@ export function getServicesTemplateSheets(): ExcelSheetSpec[] {
         {
           'Nama Layanan': 'Surat Keterangan Domisili',
           'Kategori Grup': 'C. Administrasi',
-          Deskripsi: 'Pengajuan surat keterangan tempat tinggal untuk warga Desa Ampel',
+          Deskripsi: 'Pengajuan surat keterangan tempat tinggal untuk warga Kelurahan Ampel',
           'Persyaratan Dokumen': 'Fotokopi KTP-el, Fotokopi KK, Pengantar RT/RW',
-          'Nama Petugas PJ': 'Petugas Layanan Desa Ampel',
+          'Nama Petugas PJ': 'Petugas Layanan Kelurahan Ampel',
           Ikon: 'file-text',
           'Status Aktif': 'Ya',
           'Pertanyaan Dinamis': 'Alamat Domisili Saat Ini|textarea|Wajib; Keperluan Surat|text|Wajib',
@@ -636,7 +636,7 @@ export function getServicesTemplateSheets(): ExcelSheetSpec[] {
           'Kategori Grup': 'A. Pengaduan',
           Deskripsi: 'Laporan penyumbatan selokan atau drainase lingkungan warga',
           'Persyaratan Dokumen': 'Foto kondisi lokasi (opsional)',
-          'Nama Petugas PJ': 'Petugas Layanan Desa Ampel',
+          'Nama Petugas PJ': 'Petugas Layanan Kelurahan Ampel',
           Ikon: 'road',
           'Status Aktif': 'Ya',
           'Pertanyaan Dinamis': 'Lokasi / Patokan Jalan|text|Wajib; Kondisi Genangan|dropdown|Wajib',
@@ -646,7 +646,7 @@ export function getServicesTemplateSheets(): ExcelSheetSpec[] {
           'Kategori Grup': 'B. Bantuan',
           Deskripsi: 'Usulan bantuan perlengkapan sekolah bagi keluarga kurang mampu',
           'Persyaratan Dokumen': 'Fotokopi KK, KTP Orang Tua, Surat Keterangan Sekolah',
-          'Nama Petugas PJ': 'Petugas Layanan Desa Ampel',
+          'Nama Petugas PJ': 'Petugas Layanan Kelurahan Ampel',
           Ikon: 'heart',
           'Status Aktif': 'Ya',
           'Pertanyaan Dinamis': 'Nama Sekolah|text|Wajib; Kelas / Jenjang|text|Wajib',
@@ -683,7 +683,7 @@ export function getServicesTemplateSheets(): ExcelSheetSpec[] {
         {
           Kolom: 'Nama Petugas PJ',
           Wajib: 'Opsional',
-          Contoh: 'Petugas Layanan Desa Ampel',
+          Contoh: 'Petugas Layanan Kelurahan Ampel',
           Keterangan: 'Nama petugas penanggung jawab (kosongkan untuk petugas default).',
         },
         {

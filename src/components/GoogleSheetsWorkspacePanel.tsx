@@ -284,7 +284,7 @@ export const GoogleSheetsWorkspacePanel: React.FC<GoogleSheetsWorkspacePanelProp
       open: true,
       title: 'Buat Spreadsheet DATABASE_SIWARGA Baru?',
       description:
-        'Sistem akan membuat Google Spreadsheet baru bernama "DATABASE_SIWARGA — WARGA AMPEL" lengkap dengan 9 tab data desa, lalu menyimpan ID Spreadsheet ke pengaturan aplikasi.',
+        'Sistem akan membuat Google Spreadsheet baru bernama "DATABASE_SIWARGA — WARGA AMPEL" lengkap dengan tab data kelurahan, lalu menyimpan ID Spreadsheet ke pengaturan aplikasi.',
       confirmLabel: 'Buat & Hubungkan',
       onConfirm: async () => {
         const created = await createSiwargaSpreadsheet();
@@ -308,7 +308,7 @@ export const GoogleSheetsWorkspacePanel: React.FC<GoogleSheetsWorkspacePanelProp
     }
     setConfirmState({
       open: true,
-      title: 'Sinkronkan Semua Data Desa ke Google Sheets?',
+      title: 'Sinkronkan Semua Data Kelurahan ke Google Sheets?',
       description:
         'Tindakan ini akan memperbarui dan menimpa isi tab LAPORAN, TINDAK_LANJUT, KATEGORI_LAYANAN, WARGA, PETUGAS, BUKTI_DOKUMEN, PENGUMUMAN, PENGATURAN, dan LOG_AKTIVITAS di Google Spreadsheet yang terhubung.',
       affectedItems: [meta?.title ? `${meta.title} (${activeSpreadsheetId})` : activeSpreadsheetId],
@@ -434,7 +434,7 @@ export const GoogleSheetsWorkspacePanel: React.FC<GoogleSheetsWorkspacePanelProp
             <p className="text-sm text-slate-600 mt-0.5">
               {gasMode || !canUseFirebaseOAuth
                 ? `Terhubung ${gasConnected ? 'aktif' : ''} ke DATABASE_SIWARGA melalui Google Apps Script · ID: ${effectiveSheetId}`
-                : 'Masuk dengan akun Google untuk membaca, membuat, dan menyinkronkan database desa langsung ke Google Sheets.'}
+                : 'Masuk dengan akun Google untuk membaca, membuat, dan menyinkronkan database kelurahan langsung ke Google Sheets.'}
             </p>
           ) : (
             <p className="text-sm text-slate-700 mt-0.5">

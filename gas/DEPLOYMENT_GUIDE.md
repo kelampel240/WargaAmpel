@@ -28,7 +28,7 @@ Folder Google Drive Anda sudah terdaftar pada konfigurasi default:
      ROOT_FOLDER_ID: '1gT7JFuHwe2LYhJp2BlZeQ9j5tgLC2IJx',
      DEPLOYMENT_ID: 'AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ',
      WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ/exec',
-     NAMA_DESA: 'Desa Ampel',
+     NAMA_DESA: 'Kelurahan Ampel',
      ...
    };
    ```
@@ -41,7 +41,7 @@ Folder Google Drive Anda sudah terdaftar pada konfigurasi default:
 
 Pastikan saat **Deploy → Manage deployments → Edit (atau New deployment)**:
 1. Pilih jenis **Web app**.
-2. **Execute as:** pilih **`Me`** *(akun pemilik database)* agar akses Sheets & Drive selalu berjalan aman di bawah otoritas desa.
+2. **Execute as:** pilih **`Me`** *(akun pemilik database)* agar akses Sheets & Drive selalu berjalan aman di bawah otoritas kelurahan.
 3. **Who has access:** pilih **`Anyone`** *(wajib, bukan "Only myself")* agar aplikasi web GitHub Pages & warga di lokasi/email berbeda tidak terkena HTTP 403.
 
 ## 5. Publikasi Link Warga via GitHub Pages (`github.io`)

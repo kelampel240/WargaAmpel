@@ -94,7 +94,7 @@ export const ServiceFormDownloadView: React.FC<ServiceFormDownloadViewProps> = (
 
   const kantorNama = footer?.namaKantor || 'Kantor Kelurahan Ampel';
   const kantorAlamat =
-    footer?.alamat || 'Jl. Raya Desa Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember';
+    footer?.alamat || 'Jl. Raya Kelurahan Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember';
   const kantorJam =
     footer?.jamLayanan || 'Senin–Jumat, 08.00–14.30 WIB (Portal online aktif 24 jam)';
   const kantorTelp = footer?.telepon || '(0336) 621-104 / 0811-0000-0003';

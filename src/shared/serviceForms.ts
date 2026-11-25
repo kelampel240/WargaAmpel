@@ -161,7 +161,7 @@ export function extractDownloadableForms(service: ServiceWithForm): Downloadable
             { label: 'Nama Kepala Keluarga Asal' },
             { label: 'NIK Pemohon' },
             { label: 'Nama Lengkap Pemohon' },
-            { label: 'Alamat Asal Lengkap (Desa/Kelurahan, Kecamatan, Kab/Kota)' },
+            { label: 'Alamat Asal Lengkap (Kelurahan/Desa, Kecamatan, Kab/Kota)' },
           ],
         },
         {
@@ -171,7 +171,7 @@ export function extractDownloadableForms(service: ServiceWithForm): Downloadable
               label: 'Alasan Kepindahan',
               hint: '[ ] Pekerjaan   [ ] Pendidikan   [ ] Keamanan   [ ] Kesehatan   [ ] Perumahan   [ ] Keluarga',
             },
-            { label: 'Alamat Tujuan di Kelurahan/Desa Ampel (Jalan/Dusun, RT/RW)' },
+            { label: 'Alamat Tujuan di Kelurahan Ampel (Jalan/Lingkungan, RT/RW)' },
             {
               label: 'Jenis Kepindahan',
               hint: '[ ] Kepala Keluarga   [ ] Kepala Keluarga & Seluruh Anggota   [ ] Anggota Keluarga',
@@ -181,7 +181,7 @@ export function extractDownloadableForms(service: ServiceWithForm): Downloadable
         },
       ],
       catatanPengisian: [
-        'Sertakan SKPWNI asli dari daerah asal apabila mengurus pindah datang ke Desa Ampel.',
+        'Sertakan SKPWNI asli dari daerah asal apabila mengurus pindah datang ke Kelurahan Ampel.',
       ],
     });
   }
@@ -436,8 +436,8 @@ export function buildSingleFormPrintMarkup(
 ): string {
   const kantorNama = footer?.namaKantor || 'Pemerintah Kelurahan Ampel';
   const kantorAlamat =
-    footer?.alamat || 'Jl. Raya Desa Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember';
-  const kantorKontak = `${footer?.telepon || '(0336) 621-104'} · ${footer?.email || 'pelayanan@ampel.desa.id'}`;
+    footer?.alamat || 'Jl. Raya Kelurahan Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember';
+  const kantorKontak = `${footer?.telepon || '(0336) 621-104'} · ${footer?.email || 'pelayanan@ampel.kelurahan.id'}`;
   const checklist = extractRequirementsChecklist(service);
 
   const sectionsHtml = form.sections

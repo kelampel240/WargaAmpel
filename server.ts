@@ -164,7 +164,7 @@ async function startServer() {
 
   // Healthcheck
   app.get('/api/health', (_req, res) => {
-    res.json({ ok: true, service: 'SIWARGA Desa Ampel' });
+    res.json({ ok: true, service: 'SIWARGA Kelurahan Ampel' });
   });
 
   // ===========================================================================
@@ -189,7 +189,7 @@ async function startServer() {
       return res.status(401).json({ error: 'Username/No. HP atau kata sandi salah.' });
     }
     if (user.STATUS_AKUN === 'NONAKTIF') {
-      return res.status(403).json({ error: 'Akun ini dinonaktifkan. Hubungi Operator Desa.' });
+      return res.status(403).json({ error: 'Akun ini dinonaktifkan. Hubungi Operator Kelurahan.' });
     }
     const sessionUser = buildPublicSessionUser(db, user);
     const token = signSessionToken(sessionUser);
@@ -261,7 +261,7 @@ async function startServer() {
       NIK_HASH: nikHash,
       KK_MASKED: kkDigits.length >= 10 ? maskKk(kkDigits) : '******',
       TANGGAL_LAHIR: tanggalLahir,
-      ALAMAT: typeof alamat === 'string' ? alamat.trim() : 'Desa Ampel',
+      ALAMAT: typeof alamat === 'string' ? alamat.trim() : 'Kelurahan Ampel',
       RT_RW: typeof rtRw === 'string' && rtRw.trim() ? rtRw.trim() : 'RT 01 / RW 01',
       NO_HP: noHp.trim(),
       STATUS_VERIFIKASI: 'MENUNGGU_VERIFIKASI',
@@ -485,7 +485,7 @@ async function startServer() {
     const judulLaporan =
       String(body.judulLaporan || '').trim() ||
       (isGeneralInquiry
-        ? `Laporan Umum Warga (${rtRw || 'Desa Ampel'})`
+        ? `Laporan Umum Warga (${rtRw || 'Kelurahan Ampel'})`
         : `${masalahUtama} — ${rtRw || lokasiAlamat.slice(0, 28)}`);
 
     const newReport: SheetLaporan = {
@@ -503,7 +503,7 @@ async function startServer() {
       MASALAH_UTAMA: masalahUtama,
       URAIAN_MASALAH: uraianMasalah,
       LOKASI_ALAMAT: lokasiAlamat,
-      RT_RW: rtRw || 'Desa Ampel',
+      RT_RW: rtRw || 'Kelurahan Ampel',
       DATA_FORM_DINAMIS: dynamicValues,
       STATUS_TERBARU: 'Laporan diterima',
       ID_PETUGAS_TUGAS: service?.ID_PETUGAS_PJ,
@@ -511,9 +511,9 @@ async function startServer() {
         db.PETUGAS.find((p) => p.ID_PETUGAS === service?.ID_PETUGAS_PJ)?.NAMA_PETUGAS ||
         service?.NAMA_PETUGAS_PJ ||
         db.USERS.find((u) => u.ROLE === 'OPERATOR')?.NAMA_LENGKAP ||
-        'Operator Desa',
+        'Operator Kelurahan',
       DRIVE_FOLDER_NAME: folderName,
-      DRIVE_FOLDER_URL: `SIWARGA_DESA/${subPath}`,
+      DRIVE_FOLDER_URL: `${subPath}`,
       CREATED_AT: now,
       UPDATED_AT: now,
     };
@@ -526,8 +526,8 @@ async function startServer() {
       TANGGAL_UPDATE: now.slice(0, 10),
       STATUS: 'Laporan diterima',
       KETERANGAN: isGeneralInquiry
-        ? 'Laporan umum diterima. Operator desa akan mengarahkan laporan ke layanan yang sesuai.'
-        : 'Laporan telah diterima dan dicatat ke sistem pelayanan desa.',
+        ? 'Laporan umum diterima. Operator kelurahan akan mengarahkan laporan ke layanan yang sesuai.'
+        : 'Laporan telah diterima dan dicatat ke sistem pelayanan kelurahan.',
       DINAS_TUJUAN: '',
       NOMOR_SURAT: '',
       PETUGAS: 'Sistem WARGA AMPEL',
@@ -645,7 +645,7 @@ async function startServer() {
     const isOwner = Boolean(req.sessionUser && report?.ID_USER_PELAPOR === req.sessionUser.idUser);
 
     if (doc.VISIBILITAS !== 'PUBLIK_WARGA' && !isStaff) {
-      return res.status(403).json({ error: 'Bukti ini bersifat internal desa dan tidak dapat diakses publik.' });
+      return res.status(403).json({ error: 'Bukti ini bersifat internal kelurahan dan tidak dapat diakses publik.' });
     }
     if (!isStaff && !isOwner && ticketParam !== doc.ID_LAPORAN.toUpperCase()) {
       return res.status(403).json({ error: 'Akses bukti memerlukan verifikasi tiket atau sesi login.' });
@@ -1170,7 +1170,7 @@ async function startServer() {
             ? raw.persyaratanDokumen.trim()
             : 'Opsional',
         ID_PETUGAS_PJ: officer?.ID_PETUGAS || 'PTG-001',
-        NAMA_PETUGAS_PJ: officer?.NAMA_PETUGAS || requestedPjName || 'Petugas Layanan Desa Ampel',
+        NAMA_PETUGAS_PJ: officer?.NAMA_PETUGAS || requestedPjName || 'Petugas Layanan Kelurahan Ampel',
         ALUR_STATUS: [...REPORT_STATUSES],
         STATUS_AKTIF: raw?.statusAktif !== false,
         URUTAN: db.KATEGORI_LAYANAN.length + 1,
@@ -1281,7 +1281,7 @@ async function startServer() {
       ID_USER: idUser,
       USERNAME: uname,
       NAMA_LENGKAP: namaPetugas.trim(),
-      EMAIL: `${uname}@ampel.desa.id`,
+      EMAIL: `${uname}@ampel.kelurahan.id`,
       NO_HP: cleanHp,
       PASSWORD_HASH: hashPassword(typeof password === 'string' && password.length >= 6 ? password : 'PetugasAmpel2026!'),
       ROLE: 'PETUGAS',
@@ -1333,7 +1333,7 @@ async function startServer() {
         ID_USER: idUser,
         USERNAME: uname,
         NAMA_LENGKAP: namaPetugas,
-        EMAIL: `${uname}@ampel.desa.id`,
+        EMAIL: `${uname}@ampel.kelurahan.id`,
         NO_HP: noHp,
         PASSWORD_HASH: hashPassword('PetugasAmpel2026!'),
         ROLE: 'PETUGAS',
@@ -1426,7 +1426,7 @@ async function startServer() {
       JUDUL: judul.trim(),
       RINGKASAN: typeof ringkasan === 'string' && ringkasan.trim() ? ringkasan.trim() : isi.trim().slice(0, 120),
       ISI: isi.trim(),
-      KATEGORI: (kategori || 'Pelayanan') as 'Pelayanan' | 'Pembangunan' | 'Bantuan' | 'Jadwal Desa',
+      KATEGORI: (kategori || 'Pelayanan') as 'Pelayanan' | 'Pembangunan' | 'Bantuan' | 'Jadwal Kelurahan' | 'Jadwal Desa',
       TANGGAL_TERBIT: new Date().toISOString().slice(0, 10),
       PENULIS: req.sessionUser!.namaLengkap,
       AKTIF: true,
@@ -2263,14 +2263,14 @@ async function startServer() {
   // BERANDA WARGA AMPEL (PUBLIK & KELOLA KONTEN KHUSUS SUPER_ADMIN)
   // ===========================================================================
   const buildBerandaFooter = (db: SiwargaDatabase): BerandaFooterInfo => ({
-    namaKantor: getSettingValue(db, 'FOOTER_NAMA_KANTOR', 'Balai Desa Ampel'),
+    namaKantor: getSettingValue(db, 'FOOTER_NAMA_KANTOR', 'Balai Kelurahan Ampel'),
     alamat: getSettingValue(
       db,
       'FOOTER_ALAMAT',
-      'Jl. Raya Desa Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember'
+      'Jl. Raya Kelurahan Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember'
     ),
     telepon: getSettingValue(db, 'FOOTER_TELEPON', '(0336) 621-104 / 0811-0000-0003'),
-    email: getSettingValue(db, 'FOOTER_EMAIL', 'pelayanan@ampel.desa.id'),
+    email: getSettingValue(db, 'FOOTER_EMAIL', 'pelayanan@ampel.kelurahan.id'),
     jamLayanan: getSettingValue(
       db,
       'FOOTER_JAM_LAYANAN',
@@ -2420,7 +2420,7 @@ async function startServer() {
       KALIMAT_SAMBUTAN: String(
         body.kalimatSambutan ||
           existing?.KALIMAT_SAMBUTAN ||
-          'Ikuti program kegiatan kelurahan, cek kabar terbaru desa, atau sampaikan kebutuhan layanan Anda secara mudah.'
+          'Ikuti program kegiatan kelurahan, cek kabar terbaru kelurahan, atau sampaikan kebutuhan layanan Anda secara mudah.'
       ).trim(),
       GAMBAR_URL: gambarUrl || existing?.GAMBAR_URL || '',
       DRIVE_FILE_ID: driveFileId || existing?.DRIVE_FILE_ID || '',
@@ -2952,7 +2952,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`SIWARGA Desa Ampel running at http://localhost:${PORT}`);
+    console.log(`SIWARGA Kelurahan Ampel running at http://localhost:${PORT}`);
   });
 }
 

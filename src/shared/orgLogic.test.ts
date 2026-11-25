@@ -178,7 +178,7 @@ function makeMinimalDb(): SiwargaDatabase {
         ID_BALAI: 'BLR-1',
         ID_RW: 'RW-01',
         NAMA_BALAI: 'Balai RW 01 Ampel',
-        ALAMAT: 'Jl. Balai Desa No. 4, RW 01',
+        ALAMAT: 'Jl. Balai Kelurahan No. 4, RW 01',
         JAM_LAYANAN: 'Senin-Sabtu 08.00-15.00 WIB',
         NO_HP: '081234560002',
         TAMPILKAN_HP: false,

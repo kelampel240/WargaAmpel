@@ -185,7 +185,7 @@ test('parseOrgImportExcel resolves Sekolah, Guru, and Balai RW references', () =
           Urutan: 1,
           RW: 'RW 01',
           'Nama Balai RW': 'Balai RW 01 Kelurahan Ampel',
-          'Alamat Balai RW': 'Jl. Balai Desa No. 4, RW 01',
+          'Alamat Balai RW': 'Jl. Balai Kelurahan No. 4, RW 01',
           'Jam Layanan / Fasilitas': 'Senin-Sabtu 08.00-15.00 WIB',
         },
       ],

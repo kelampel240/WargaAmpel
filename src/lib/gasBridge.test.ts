@@ -8,7 +8,7 @@ test('isValidGasWebAppUrl validates standard and Workspace GAS Web App URLs', ()
     true
   );
   assert.equal(
-    isValidGasWebAppUrl('https://script.google.com/a/ampel.desa.id/macros/s/AKfycbx123456/exec'),
+    isValidGasWebAppUrl('https://script.google.com/a/ampel.kelurahan.id/macros/s/AKfycbx123456/exec'),
     true
   );
   assert.equal(
@@ -142,11 +142,11 @@ test('mapRestToGasCall maps public, auth, reporting, and admin routes accurately
   const saveFooter = mapRestToGasCall(
     '/api/admin/beranda/footer',
     'PUT',
-    { alamatKantor: 'Balai Desa Ampel', jamLayanan: 'Senin - Jumat, 08.00 - 15.00 WIB' },
+    { alamatKantor: 'Balai Kelurahan Ampel', jamLayanan: 'Senin - Jumat, 08.00 - 15.00 WIB' },
     'tok-sa'
   );
   assert.equal(saveFooter.action, 'saveBerandaFooter');
-  assert.equal(saveFooter.payload.alamatKantor, 'Balai Desa Ampel');
+  assert.equal(saveFooter.payload.alamatKantor, 'Balai Kelurahan Ampel');
 
   // Contoh File Warga (Super Admin upload -> Public/Warga download)
   const pubTemplateFiles = mapRestToGasCall('/api/public/template-files', 'GET');

@@ -97,10 +97,10 @@ export const BerandaAdminManager: React.FC<BerandaAdminManagerProps> = ({
 
   // Footer state
   const [footerForm, setFooterForm] = useState<BerandaFooterInfo>({
-    namaKantor: 'Balai Desa Ampel',
-    alamat: 'Jl. Raya Desa Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember',
+    namaKantor: 'Balai Kelurahan Ampel',
+    alamat: 'Jl. Raya Kelurahan Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember',
     telepon: '(0336) 621-104 / 0811-0000-0003',
-    email: 'pelayanan@ampel.desa.id',
+    email: 'pelayanan@ampel.kelurahan.id',
     jamLayanan: 'Senin–Jumat, 08.00–14.30 WIB (Portal online aktif 24 jam)',
   });
   const [savingFooter, setSavingFooter] = useState(false);
@@ -497,7 +497,7 @@ export const BerandaAdminManager: React.FC<BerandaAdminManagerProps> = ({
                   required
                   value={bannerSambutan}
                   onChange={(e) => setBannerSambutan(e.target.value)}
-                  placeholder="Ikuti program kegiatan kelurahan, cek kabar terbaru desa, atau sampaikan kebutuhan layanan Anda secara mudah."
+                  placeholder="Ikuti program kegiatan kelurahan, cek kabar terbaru kelurahan, atau sampaikan kebutuhan layanan Anda secara mudah."
                   className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-lg"
                 />
               </div>
@@ -559,7 +559,7 @@ export const BerandaAdminManager: React.FC<BerandaAdminManagerProps> = ({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-xs text-slate-500">Belum ada URL gambar custom (memakai foto default desa)</span>
+                  <span className="text-xs text-slate-500">Belum ada URL gambar custom (memakai foto default kelurahan)</span>
                 )}
               </div>
             </div>
@@ -904,11 +904,11 @@ export const BerandaAdminManager: React.FC<BerandaAdminManagerProps> = ({
       ) : (
         <form onSubmit={handleSaveFooter} className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4">
           <h3 className="font-display text-lg font-bold text-[#0F2942]">
-            Kontak Kantor Desa &amp; Jam Layanan (Footer Beranda)
+            Kontak Kantor Kelurahan &amp; Jam Layanan (Footer Beranda)
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Nama Kantor / Balai Desa</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Nama Kantor / Balai Kelurahan</label>
               <input
                 type="text"
                 required
@@ -928,7 +928,7 @@ export const BerandaAdminManager: React.FC<BerandaAdminManagerProps> = ({
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Alamat Kantor Desa</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Alamat Kantor Kelurahan</label>
               <input
                 type="text"
                 required

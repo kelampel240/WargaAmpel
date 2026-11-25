@@ -204,7 +204,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Desktop Sidebar (15 Modules) */}
       <aside className="hidden lg:flex lg:w-64 lg:flex-col bg-white border-r border-slate-200 shrink-0">
         <div className="p-5 border-b border-slate-200">
-          <p className="text-xs font-semibold text-[#0B6E4F]">{String(user.role || '').replace('_', ' ')}</p>
+          <p className="text-xs font-semibold text-[#0B6E4F]">
+            {user.role === 'KEPALA_DESA' ? 'KEPALA KELURAHAN' : String(user.role || '').replace('_', ' ')}
+          </p>
           <p className="font-display font-bold text-base text-[#0F2942] truncate">{user.namaLengkap}</p>
         </div>
         <nav aria-label="Menu Dashboard Admin" className="p-3 space-y-1 flex-1 overflow-y-auto">
@@ -281,7 +283,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </button>
             <div>
               <p className="text-xs font-semibold text-slate-500">
-                Panel Pengelola Desa Ampel · Google Sheets &amp; Drive Sync
+                Panel Pengelola Kelurahan Ampel · Google Sheets &amp; Drive Sync
               </p>
               <h1 className="font-display text-2xl font-extrabold text-[#0F2942]">
                 {SIDEBAR_ITEMS.find((i) => i.id === activeTab)?.label || 'Dashboard'}

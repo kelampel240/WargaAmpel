@@ -142,12 +142,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onClose, onSuccess }) => {
 
         <h2 id="auth-modal-title" className="font-display text-2xl font-extrabold text-[#0F2942]">
           {tab === 'login' && 'Masuk ke WARGA AMPEL'}
-          {tab === 'register' && 'Daftar Akun Warga Desa'}
+          {tab === 'register' && 'Daftar Akun Warga Kelurahan'}
           {tab === 'verify' && 'Verifikasi Identitas Warga'}
           {tab === 'reset' && 'Atur Ulang Kata Sandi'}
         </h2>
         <p className="mt-1 text-sm text-slate-600">
-          {tab === 'login' && 'Gunakan akun Warga, Petugas, Operator, Kepala Desa, atau Super Admin.'}
+          {tab === 'login' && 'Gunakan akun Warga, Petugas, Operator, Kepala Kelurahan, atau Super Admin.'}
           {tab === 'register' && 'NIK dan nomor KK disimpan dalam bentuk ter-mask untuk keamanan data Anda.'}
           {tab === 'verify' && 'Masukkan kode verifikasi yang telah dikirim untuk mengaktifkan akun.'}
           {tab === 'reset' && 'Cocokkan username/No. HP dan tanggal lahir terdaftar.'}

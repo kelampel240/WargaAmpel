@@ -10,9 +10,9 @@ import {
 } from './cryptoUtils';
 
 test('hashPassword and verifyPassword never store plaintext and verify accurately', () => {
-  const hash = hashPassword('AmpelDesa2026!');
-  assert.equal(hash.includes('AmpelDesa2026!'), false);
-  assert.equal(verifyPassword('AmpelDesa2026!', hash), true);
+  const hash = hashPassword('AmpelKelurahan2026!');
+  assert.equal(hash.includes('AmpelKelurahan2026!'), false);
+  assert.equal(verifyPassword('AmpelKelurahan2026!', hash), true);
   assert.equal(verifyPassword('WrongPassword', hash), false);
 });
 
@@ -21,7 +21,7 @@ test('signSessionToken and verifySessionToken enforce integrity and expiration',
     {
       idUser: 'USR-1',
       username: 'admin',
-      namaLengkap: 'Admin Desa',
+      namaLengkap: 'Admin Kelurahan',
       role: 'SUPER_ADMIN',
       noHp: '08123456789',
       statusAkun: 'AKTIF',
@@ -39,7 +39,7 @@ test('signSessionToken and verifySessionToken enforce integrity and expiration',
     {
       idUser: 'USR-1',
       username: 'admin',
-      namaLengkap: 'Admin Desa',
+      namaLengkap: 'Admin Kelurahan',
       role: 'SUPER_ADMIN',
       noHp: '08123456789',
       statusAkun: 'AKTIF',

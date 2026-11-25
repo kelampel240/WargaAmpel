@@ -49,7 +49,7 @@ test('validateFollowUpUpdate enforces mandatory reason for Tidak dapat ditindakl
 
   const validReject = validateFollowUpUpdate({
     status: 'Tidak dapat ditindaklanjuti',
-    keterangan: 'Lokasi berada di luar kewenangan wilayah administratif Desa Ampel.',
+    keterangan: 'Lokasi berada di luar kewenangan wilayah administratif Kelurahan Ampel.',
   });
   assert.equal(validReject.valid, true);
 
@@ -133,7 +133,7 @@ test('sanitizeReportForCitizenTracking hides reporter PII, hides INTERNAL_DESA e
       KETERANGAN: 'Laporan masuk dan diverifikasi.',
       DINAS_TUJUAN: '',
       NOMOR_SURAT: '',
-      PETUGAS: 'Operator Desa',
+      PETUGAS: 'Operator Kelurahan',
       CREATED_AT: '2026-11-01T08:00:00.000Z',
     },
     {
@@ -211,7 +211,7 @@ test('computeDashboardStats and buildCsvExport compute accurate totals', () => {
       JUDUL_LAPORAN: 'Laporan 1',
       MASALAH_UTAMA: 'Jalan rusak',
       URAIAN_MASALAH: 'Rusak',
-      LOKASI_ALAMAT: 'Desa',
+      LOKASI_ALAMAT: 'Kelurahan',
       RT_RW: 'RT 01/01',
       DATA_FORM_DINAMIS: {},
       STATUS_TERBARU: 'Sudah diperbaiki atau ditangani',
@@ -231,7 +231,7 @@ test('computeDashboardStats and buildCsvExport compute accurate totals', () => {
       JUDUL_LAPORAN: 'Laporan 2',
       MASALAH_UTAMA: 'Belum diklasifikasi',
       URAIAN_MASALAH: 'Bingung pilih menu',
-      LOKASI_ALAMAT: 'Desa',
+      LOKASI_ALAMAT: 'Kelurahan',
       RT_RW: 'RT 02/01',
       DATA_FORM_DINAMIS: {},
       STATUS_TERBARU: 'Laporan diterima',

@@ -53,7 +53,7 @@ export const WargaManager: React.FC = () => {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-2xl font-bold text-[#0F2942]">Data Warga Desa Ampel</h2>
+          <h2 className="font-display text-2xl font-bold text-[#0F2942]">Data Warga Kelurahan Ampel</h2>
           <p className="text-sm text-slate-600">
             NIK dan nomor KK tersimpan dan ditampilkan dalam bentuk ter-mask sesuai kebijakan privasi.
           </p>
@@ -178,8 +178,8 @@ export const PetugasManager: React.FC<{ userRole?: UserRole; onUpdated: () => vo
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-2xl font-bold text-[#0F2942]">Data Petugas Desa</h2>
-          <p className="text-sm text-slate-600">Daftar perangkat desa dan petugas penanggung jawab layanan.</p>
+          <h2 className="font-display text-2xl font-bold text-[#0F2942]">Data Petugas Kelurahan</h2>
+          <p className="text-sm text-slate-600">Daftar perangkat kelurahan dan petugas penanggung jawab layanan.</p>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           <button
@@ -299,7 +299,7 @@ export const PetugasManager: React.FC<{ userRole?: UserRole; onUpdated: () => vo
       {showImport && (
         <ExcelImportModal
           title="Import Excel — Data Petugas"
-          subtitle="Unggah file Excel (.xlsx/.xls) atau CSV berisi daftar petugas desa untuk ditambahkan sekaligus."
+          subtitle="Unggah file Excel (.xlsx/.xls) atau CSV berisi daftar petugas kelurahan untuk ditambahkan sekaligus."
           onClose={() => setShowImport(false)}
           onDownloadTemplate={downloadPetugasTemplate}
           onParseFile={(buf) => parsePetugasImportExcel(buf)}
@@ -338,7 +338,7 @@ export const BuktiDriveExplorer: React.FC = () => {
     <div className="space-y-6">
       <div>
         <h2 className="font-display text-2xl font-bold text-[#0F2942]">
-          Bukti Penanganan &amp; Struktur Google Drive ({tree?.rootFolder || 'SIWARGA_DESA'})
+          Bukti Penanganan &amp; Struktur Google Drive
         </h2>
         <p className="text-sm text-slate-600">
           Seluruh folder bersifat privat dan terorganisasi otomatis berdasarkan nomor tiket dan jenis dokumen.
@@ -519,7 +519,7 @@ export const StatistikExporter: React.FC<{ stats: AdminDashboardStats | null }> 
 export const AnnouncementsManager: React.FC = () => {
   const [items, setItems] = useState<SheetPengumuman[]>([]);
   const [judul, setJudul] = useState('');
-  const [kategori, setKategori] = useState<'Pelayanan' | 'Pembangunan' | 'Bantuan' | 'Jadwal Desa'>('Pelayanan');
+  const [kategori, setKategori] = useState<'Pelayanan' | 'Pembangunan' | 'Bantuan' | 'Jadwal Kelurahan'>('Pelayanan');
   const [isi, setIsi] = useState('');
 
   const load = async () => {
@@ -549,7 +549,7 @@ export const AnnouncementsManager: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="font-display text-2xl font-bold text-[#0F2942]">Kelola Pengumuman Desa</h2>
+      <h2 className="font-display text-2xl font-bold text-[#0F2942]">Kelola Pengumuman Kelurahan</h2>
 
       <form onSubmit={handleCreate} className="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -569,13 +569,13 @@ export const AnnouncementsManager: React.FC = () => {
             <option value="Pelayanan">Pelayanan</option>
             <option value="Bantuan">Bantuan</option>
             <option value="Pembangunan">Pembangunan</option>
-            <option value="Jadwal Desa">Jadwal Desa</option>
+            <option value="Jadwal Kelurahan">Jadwal Kelurahan</option>
           </select>
         </div>
         <textarea
           rows={3}
           required
-          placeholder="Isi pengumuman untuk warga Desa Ampel..."
+          placeholder="Isi pengumuman untuk warga Kelurahan Ampel..."
           value={isi}
           onChange={(e) => setIsi(e.target.value)}
           className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-lg"

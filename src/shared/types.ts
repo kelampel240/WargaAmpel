@@ -187,7 +187,7 @@ export interface SheetPengumuman {
   JUDUL: string;
   RINGKASAN: string;
   ISI: string;
-  KATEGORI: 'Pelayanan' | 'Pembangunan' | 'Bantuan' | 'Jadwal Desa';
+  KATEGORI: 'Pelayanan' | 'Pembangunan' | 'Bantuan' | 'Jadwal Kelurahan' | 'Jadwal Desa';
   TANGGAL_TERBIT: string;
   PENULIS: string;
   AKTIF: boolean;

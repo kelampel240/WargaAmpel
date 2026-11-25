@@ -89,7 +89,7 @@ function buildSeedServices(): {
       KODE_LAYANAN: 'PGD-JALAN',
       NAMA_LAYANAN: 'Jalan rusak',
       KATEGORI_GRUP: 'A. Pengaduan',
-      DESKRIPSI: 'Laporan jalan berlubang, aspal terkelupas, atau jembatan desa rusak.',
+      DESKRIPSI: 'Laporan jalan berlubang, aspal terkelupas, atau jembatan kelurahan rusak.',
       IKON: 'road',
       PERSYARATAN_DOKUMEN: 'Foto kondisi lokasi (opsional)',
       ID_PETUGAS_PJ: 'PTG-001',
@@ -180,7 +180,7 @@ function buildSeedServices(): {
       KODE_LAYANAN: 'BNT-SOSIAL',
       NAMA_LAYANAN: 'Bantuan sosial',
       KATEGORI_GRUP: 'B. Bantuan',
-      DESKRIPSI: 'Permohonan bantuan pangan, PKH/BLT desa, atau dukungan lansia kurang mampu.',
+      DESKRIPSI: 'Permohonan bantuan pangan, PKH/BLT kelurahan, atau dukungan lansia kurang mampu.',
       IKON: 'heart',
       PERSYARATAN_DOKUMEN: 'Foto KK / kondisi rumah (opsional)',
       ID_PETUGAS_PJ: 'PTG-002',
@@ -195,7 +195,7 @@ function buildSeedServices(): {
       KODE_LAYANAN: 'BNT-PENDIDIKAN',
       NAMA_LAYANAN: 'Pendidikan',
       KATEGORI_GRUP: 'B. Bantuan',
-      DESKRIPSI: 'Rekomendasi beasiswa desa atau bantuan perlengkapan sekolah.',
+      DESKRIPSI: 'Rekomendasi beasiswa kelurahan atau bantuan perlengkapan sekolah.',
       IKON: 'graduation',
       PERSYARATAN_DOKUMEN: 'Surat keterangan sekolah (PDF/JPG opsional)',
       ID_PETUGAS_PJ: 'PTG-002',
@@ -210,7 +210,7 @@ function buildSeedServices(): {
       KODE_LAYANAN: 'BNT-KESEHATAN',
       NAMA_LAYANAN: 'Kesehatan',
       KATEGORI_GRUP: 'B. Bantuan',
-      DESKRIPSI: 'Bantuan rujukan BPJS, ambulans desa, atau pendampingan pasien.',
+      DESKRIPSI: 'Bantuan rujukan BPJS, ambulans kelurahan, atau pendampingan pasien.',
       IKON: 'heart-pulse',
       PERSYARATAN_DOKUMEN: 'Surat rujukan atau keterangan medis (opsional)',
       ID_PETUGAS_PJ: 'PTG-002',
@@ -241,7 +241,7 @@ function buildSeedServices(): {
       KODE_LAYANAN: 'ADM-DOMISILI',
       NAMA_LAYANAN: 'Surat domisili',
       KATEGORI_GRUP: 'C. Administrasi',
-      DESKRIPSI: 'Pengurusan surat keterangan domisili tempat tinggal warga Desa Ampel.',
+      DESKRIPSI: 'Pengurusan surat keterangan domisili tempat tinggal warga Kelurahan Ampel.',
       IKON: 'file-text',
       PERSYARATAN_DOKUMEN: 'Foto KTP & KK (opsional)',
       ID_PETUGAS_PJ: 'PTG-003',
@@ -352,8 +352,8 @@ function createInitialDatabase(): SiwargaDatabase {
     {
       ID_USER: 'USR-ADMIN-01',
       USERNAME: 'admin',
-      NAMA_LENGKAP: 'Super Admin Desa Ampel',
-      EMAIL: 'admin@ampel.desa.id',
+      NAMA_LENGKAP: 'Super Admin Kelurahan Ampel',
+      EMAIL: 'admin@ampel.kelurahan.id',
       NO_HP: '081100000001',
       PASSWORD_HASH: hashPassword('AdminAmpel2026!'),
       ROLE: 'SUPER_ADMIN',
@@ -363,8 +363,8 @@ function createInitialDatabase(): SiwargaDatabase {
     {
       ID_USER: 'USR-KADES-01',
       USERNAME: 'kades',
-      NAMA_LENGKAP: 'H. Sutrisno (Kepala Desa)',
-      EMAIL: 'kades@ampel.desa.id',
+      NAMA_LENGKAP: 'H. Sutrisno (Kepala Kelurahan)',
+      EMAIL: 'lurah@ampel.kelurahan.id',
       NO_HP: '081100000002',
       PASSWORD_HASH: hashPassword('KadesAmpel2026!'),
       ROLE: 'KEPALA_DESA',
@@ -375,7 +375,7 @@ function createInitialDatabase(): SiwargaDatabase {
       ID_USER: 'USR-OP-01',
       USERNAME: 'operator',
       NAMA_LENGKAP: 'Rina Kusuma (Operator)',
-      EMAIL: 'operator@ampel.desa.id',
+      EMAIL: 'operator@ampel.kelurahan.id',
       NO_HP: '081100000003',
       PASSWORD_HASH: hashPassword('OperatorAmpel2026!'),
       ROLE: 'OPERATOR',
@@ -386,7 +386,7 @@ function createInitialDatabase(): SiwargaDatabase {
       ID_USER: 'USR-PTG-01',
       USERNAME: 'petugas',
       NAMA_LENGKAP: 'Hendra Wijaya (Petugas Lapangan)',
-      EMAIL: 'hendra@ampel.desa.id',
+      EMAIL: 'hendra@ampel.kelurahan.id',
       NO_HP: '081100000004',
       PASSWORD_HASH: hashPassword('PetugasAmpel2026!'),
       ROLE: 'PETUGAS',
@@ -528,14 +528,14 @@ function createInitialDatabase(): SiwargaDatabase {
       JUDUL_LAPORAN: 'Jalan Berlubang dan Tergenang di Dusun Krajan Timur',
       MASALAH_UTAMA: 'Jalan rusak',
       URAIAN_MASALAH: 'Aspal jalan di depan mushola Dusun Krajan Timur berlubang cukup dalam dan tergenang air saat hujan sehingga membahayakan pengendara motor dan anak sekolah.',
-      LOKASI_ALAMAT: 'Jl. Balai Desa Dusun Krajan Timur',
+      LOKASI_ALAMAT: 'Jl. Balai Kelurahan Dusun Krajan Timur',
       RT_RW: 'RT 02 / RW 01',
       DATA_FORM_DINAMIS: { 'FLD-001': 'Rusak berat / membahayakan' },
       STATUS_TERBARU: 'Sudah diperbaiki atau ditangani',
       ID_PETUGAS_TUGAS: 'PTG-001',
       NAMA_PETUGAS_TUGAS: 'Hendra Wijaya',
       DRIVE_FOLDER_NAME: 'SW-2026-000001',
-      DRIVE_FOLDER_URL: 'SIWARGA_DESA/01_LAPORAN_WARGA/SW-2026-000001',
+      DRIVE_FOLDER_URL: '01_LAPORAN_WARGA/SW-2026-000001',
       CREATED_AT: '2026-09-14T08:15:00.000Z',
       UPDATED_AT: '2026-09-25T15:30:00.000Z',
     },
@@ -560,7 +560,7 @@ function createInitialDatabase(): SiwargaDatabase {
       ID_PETUGAS_TUGAS: 'PTG-001',
       NAMA_PETUGAS_TUGAS: 'Hendra Wijaya',
       DRIVE_FOLDER_NAME: 'SW-2026-000002',
-      DRIVE_FOLDER_URL: 'SIWARGA_DESA/01_LAPORAN_WARGA/SW-2026-000002',
+      DRIVE_FOLDER_URL: '01_LAPORAN_WARGA/SW-2026-000002',
       CREATED_AT: '2026-10-18T09:20:00.000Z',
       UPDATED_AT: '2026-10-28T11:00:00.000Z',
     },
@@ -585,7 +585,7 @@ function createInitialDatabase(): SiwargaDatabase {
       ID_PETUGAS_TUGAS: 'PTG-003',
       NAMA_PETUGAS_TUGAS: 'Rina Kusuma',
       DRIVE_FOLDER_NAME: 'SW-2026-000003',
-      DRIVE_FOLDER_URL: 'SIWARGA_DESA/01_LAPORAN_WARGA/SW-2026-000003',
+      DRIVE_FOLDER_URL: '01_LAPORAN_WARGA/SW-2026-000003',
       CREATED_AT: '2026-11-04T08:45:00.000Z',
       UPDATED_AT: '2026-11-05T10:15:00.000Z',
     },
@@ -610,7 +610,7 @@ function createInitialDatabase(): SiwargaDatabase {
       ID_PETUGAS_TUGAS: 'PTG-002',
       NAMA_PETUGAS_TUGAS: 'Siti Aminah',
       DRIVE_FOLDER_NAME: 'SW-2026-000004',
-      DRIVE_FOLDER_URL: 'SIWARGA_DESA/01_LAPORAN_WARGA/SW-2026-000004',
+      DRIVE_FOLDER_URL: '01_LAPORAN_WARGA/SW-2026-000004',
       CREATED_AT: '2026-11-09T11:10:00.000Z',
       UPDATED_AT: '2026-11-11T09:00:00.000Z',
     },
@@ -632,7 +632,7 @@ function createInitialDatabase(): SiwargaDatabase {
       DATA_FORM_DINAMIS: {},
       STATUS_TERBARU: 'Laporan diterima',
       DRIVE_FOLDER_NAME: 'SW-2026-000005',
-      DRIVE_FOLDER_URL: 'SIWARGA_DESA/01_LAPORAN_WARGA/SW-2026-000005',
+      DRIVE_FOLDER_URL: '01_LAPORAN_WARGA/SW-2026-000005',
       CREATED_AT: '2026-11-14T07:30:00.000Z',
       UPDATED_AT: '2026-11-14T07:30:00.000Z',
     },
@@ -655,7 +655,7 @@ function createInitialDatabase(): SiwargaDatabase {
       ID_LAPORAN: 'SW-2026-000001',
       TANGGAL_UPDATE: '2026-09-16',
       STATUS: 'Sedang dalam proses perbaikan',
-      KETERANGAN: 'Tim teknis desa telah melakukan pengecekan lubang jalan dan penambalan aspal sepanjang 35 meter beserta pembersihan bahu jalan.',
+      KETERANGAN: 'Tim teknis kelurahan telah melakukan pengecekan lubang jalan dan penambalan aspal sepanjang 35 meter beserta pembersihan bahu jalan.',
       DINAS_TUJUAN: '',
       NOMOR_SURAT: '',
       PETUGAS: 'Hendra Wijaya',
@@ -688,7 +688,7 @@ function createInitialDatabase(): SiwargaDatabase {
       ID_LAPORAN: 'SW-2026-000002',
       TANGGAL_UPDATE: '2026-10-28',
       STATUS: 'Sudah diusulkan ke dinas terkait',
-      KETERANGAN: 'Karena gorong-gorong berada pada jalur jalan kabupaten, Kepala Desa telah mengirimkan surat usulan pengerukan dan rehabilitasi.',
+      KETERANGAN: 'Karena gorong-gorong berada pada jalur jalan kabupaten, Kepala Kelurahan telah mengirimkan surat usulan pengerukan dan rehabilitasi.',
       DINAS_TUJUAN: 'Dinas Pekerjaan Umum dan Penataan Ruang (PUPR) Kabupaten',
       NOMOR_SURAT: '600/142/DS-AMP/X/2026',
       PETUGAS: 'Hendra Wijaya',
@@ -699,7 +699,7 @@ function createInitialDatabase(): SiwargaDatabase {
       ID_LAPORAN: 'SW-2026-000003',
       TANGGAL_UPDATE: '2026-11-05',
       STATUS: 'Sedang ditindaklanjuti',
-      KETERANGAN: 'Berkas pengajuan SKU sedang diverifikasi dan disiapkan untuk tanda tangan Kepala Desa.',
+      KETERANGAN: 'Berkas pengajuan SKU sedang diverifikasi dan disiapkan untuk tanda tangan Kepala Kelurahan.',
       DINAS_TUJUAN: '',
       NOMOR_SURAT: '470/051/DS-AMP/XI/2026',
       PETUGAS: 'Rina Kusuma',
@@ -710,7 +710,7 @@ function createInitialDatabase(): SiwargaDatabase {
       ID_LAPORAN: 'SW-2026-000004',
       TANGGAL_UPDATE: '2026-11-11',
       STATUS: 'Sedang dalam proses perbaikan',
-      KETERANGAN: 'Tim verifikasi bansos desa sedang melakukan kunjungan lapangan untuk pencocokan DTKS.',
+      KETERANGAN: 'Tim verifikasi bansos kelurahan sedang melakukan kunjungan lapangan untuk pencocokan DTKS.',
       DINAS_TUJUAN: '',
       NOMOR_SURAT: '',
       PETUGAS: 'Siti Aminah',
@@ -721,7 +721,7 @@ function createInitialDatabase(): SiwargaDatabase {
       ID_LAPORAN: 'SW-2026-000005',
       TANGGAL_UPDATE: '2026-11-14',
       STATUS: 'Laporan diterima',
-      KETERANGAN: 'Laporan umum diterima. Menunggu klasifikasi layanan oleh Operator Desa.',
+      KETERANGAN: 'Laporan umum diterima. Menunggu klasifikasi layanan oleh Operator Kelurahan.',
       DINAS_TUJUAN: '',
       NOMOR_SURAT: '',
       PETUGAS: 'Sistem WARGA AMPEL',
@@ -807,42 +807,42 @@ function createInitialDatabase(): SiwargaDatabase {
     PENGUMUMAN: [
       {
         ID_PENGUMUMAN: 'PGM-001',
-        JUDUL: 'Jadwal Pelayanan Administrasi Balai Desa Ampel',
+        JUDUL: 'Jadwal Pelayanan Administrasi Balai Kelurahan Ampel',
         RINGKASAN: 'Pelayanan tatap muka buka Senin–Jumat pukul 08.00–14.30 WIB. Pengajuan online WARGA AMPEL aktif 24 jam.',
-        ISI: 'Pemerintah Desa Ampel membuka layanan administrasi kependudukan, surat pengantar, dan konsultasi warga secara tatap muka setiap Senin hingga Jumat pukul 08.00–14.30 WIB. Warga tetap dapat mengirim laporan dan permohonan kapan saja melalui portal WARGA AMPEL.',
-        KATEGORI: 'Jadwal Desa',
+        ISI: 'Pemerintah Kelurahan Ampel membuka layanan administrasi kependudukan, surat pengantar, dan konsultasi warga secara tatap muka setiap Senin hingga Jumat pukul 08.00–14.30 WIB. Warga tetap dapat mengirim laporan dan permohonan kapan saja melalui portal WARGA AMPEL.',
+        KATEGORI: 'Jadwal Kelurahan',
         TANGGAL_TERBIT: '2026-11-01',
-        PENULIS: 'Sekretariat Desa Ampel',
+        PENULIS: 'Sekretariat Kelurahan Ampel',
         AKTIF: true,
       },
       {
         ID_PENGUMUMAN: 'PGM-002',
         JUDUL: 'Penyaluran Bantuan Pangan Beras Tahap IV Tahun 2026',
-        RINGKASAN: 'Pengambilan bantuan dilaksanakan di Pendopo Balai Desa mulai pukul 08.30 WIB dengan membawa KTP dan KK asli.',
-        ISI: 'Berdasarkan verifikasi data warga Desa Ampel, penyaluran Bantuan Pangan Tahap IV dilaksanakan bagi KPM terdaftar pada hari Kamis pekan ini di Pendopo Balai Desa Ampel. Warga lansia yang berhalangan hadir akan diantar oleh petugas dusun.',
+        RINGKASAN: 'Pengambilan bantuan dilaksanakan di Pendopo Balai Kelurahan mulai pukul 08.30 WIB dengan membawa KTP dan KK asli.',
+        ISI: 'Berdasarkan verifikasi data warga Kelurahan Ampel, penyaluran Bantuan Pangan Tahap IV dilaksanakan bagi KPM terdaftar pada hari Kamis pekan ini di Pendopo Balai Kelurahan Ampel. Warga lansia yang berhalangan hadir akan diantar oleh petugas lingkungan.',
         KATEGORI: 'Bantuan',
         TANGGAL_TERBIT: '2026-11-10',
-        PENULIS: 'Kaur Sosial Desa Ampel',
+        PENULIS: 'Kaur Sosial Kelurahan Ampel',
         AKTIF: true,
       },
       {
         ID_PENGUMUMAN: 'PGM-003',
         JUDUL: 'Kerja Bakti Pembersihan Saluran Drainase Menjelang Musim Hujan',
         RINGKASAN: 'Dihimbau kepada seluruh Ketua RT/RW mengoordinasikan kerja bakti lingkungan pada Minggu pagi.',
-        ISI: 'Untuk mencegah genangan di pemukiman warga, Pemerintah Desa Ampel mengajak seluruh warga bergotong royong membersihkan selokan dan saluran pembuangan air lingkungan pada hari Minggu pukul 07.00 WIB.',
+        ISI: 'Untuk mencegah genangan di pemukiman warga, Pemerintah Kelurahan Ampel mengajak seluruh warga bergotong royong membersihkan selokan dan saluran pembuangan air lingkungan pada hari Minggu pukul 07.00 WIB.',
         KATEGORI: 'Pembangunan',
         TANGGAL_TERBIT: '2026-11-12',
-        PENULIS: 'Kasi Infrastruktur Desa Ampel',
+        PENULIS: 'Kasi Infrastruktur Kelurahan Ampel',
         AKTIF: true,
       },
     ],
     PENGATURAN: [
-      { KUNCI: 'NAMA_DESA', NILAI: 'Desa Ampel', KETERANGAN: 'Nama desa yang tampil di portal warga' },
+      { KUNCI: 'NAMA_DESA', NILAI: 'Kelurahan Ampel', KETERANGAN: 'Nama kelurahan yang tampil di portal warga' },
       { KUNCI: 'TAHUN_TIKET', NILAI: '2026', KETERANGAN: 'Tahun aktif penomoran tiket SW-TAHUN-NOMOR' },
       { KUNCI: 'TICKET_COUNTER', NILAI: '5', KETERANGAN: 'Counter berurutan nomor tiket terakhir (dilindungi Lock)' },
       { KUNCI: 'MAX_FILE_MB', NILAI: '5', KETERANGAN: 'Batas maksimal ukuran file unggahan (MB)' },
       { KUNCI: 'SPREADSHEET_ID', NILAI: '1yGeHQ_rWh24fhTrK9NP19hO3L0TwoKXOVboczMAPhkY', KETERANGAN: 'ID Google Spreadsheet DATABASE_SIWARGA' },
-      { KUNCI: 'DRIVE_ROOT_FOLDER_ID', NILAI: '1gT7JFuHwe2LYhJp2BlZeQ9j5tgLC2IJx', KETERANGAN: 'ID Folder Induk Google Drive SIWARGA_DESA (Foto & Dokumen)' },
+      { KUNCI: 'DRIVE_ROOT_FOLDER_ID', NILAI: '1gT7JFuHwe2LYhJp2BlZeQ9j5tgLC2IJx', KETERANGAN: 'ID Folder Induk Google Drive Arsip Kelurahan (Foto & Dokumen)' },
       { KUNCI: 'GAS_WEB_APP_URL', NILAI: 'https://script.google.com/macros/s/AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ/exec', KETERANGAN: 'URL Web App Google Apps Script (/exec)' },
       { KUNCI: 'GAS_DEPLOYMENT_ID', NILAI: 'AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ', KETERANGAN: 'ID Penerapan Google Apps Script Web App' },
       { KUNCI: 'GAS_SYNC_ENABLED', NILAI: 'false', KETERANGAN: 'Aktifkan sinkronisasi langsung ke Google Apps Script Web App' },
@@ -868,13 +868,13 @@ function createInitialDatabase(): SiwargaDatabase {
       },
       {
         KUNCI: 'FOOTER_NAMA_KANTOR',
-        NILAI: 'Balai Desa Ampel',
+        NILAI: 'Balai Kelurahan Ampel',
         KETERANGAN: 'Nama kantor pelayanan pada Footer Beranda',
       },
       {
         KUNCI: 'FOOTER_ALAMAT',
-        NILAI: 'Jl. Raya Desa Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember',
-        KETERANGAN: 'Alamat kantor desa pada Footer Beranda',
+        NILAI: 'Jl. Raya Kelurahan Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember',
+        KETERANGAN: 'Alamat kantor kelurahan pada Footer Beranda',
       },
       {
         KUNCI: 'FOOTER_TELEPON',
@@ -883,13 +883,13 @@ function createInitialDatabase(): SiwargaDatabase {
       },
       {
         KUNCI: 'FOOTER_EMAIL',
-        NILAI: 'pelayanan@ampel.desa.id',
+        NILAI: 'pelayanan@ampel.kelurahan.id',
         KETERANGAN: 'Email resmi pelayanan pada Footer Beranda',
       },
       {
         KUNCI: 'FOOTER_JAM_LAYANAN',
         NILAI: 'Senin–Jumat, 08.00–14.30 WIB (Portal online aktif 24 jam)',
-        KETERANGAN: 'Jam layanan kantor desa pada Footer Beranda',
+        KETERANGAN: 'Jam layanan kantor kelurahan pada Footer Beranda',
       },
     ],
     LOG_AKTIVITAS: [
@@ -927,11 +927,11 @@ function createInitialBerandaSeed(): Pick<SiwargaDatabase, 'BANNER' | 'PROGRAM' 
         ID_BANNER: 'BNR-001',
         JUDUL: 'WARGA AMPEL',
         KALIMAT_SAMBUTAN:
-          'Ikuti program kegiatan kelurahan, cek kabar terbaru desa, atau sampaikan kebutuhan layanan Anda secara mudah.',
+          'Ikuti program kegiatan kelurahan, cek kabar terbaru kelurahan, atau sampaikan kebutuhan layanan Anda secara mudah.',
         GAMBAR_URL: '/src/assets/images/hero_desa_ampel_1795122998295.jpg',
         AKTIF: true,
         UPDATED_AT: now,
-        UPDATED_BY: 'Super Admin Desa Ampel',
+        UPDATED_BY: 'Super Admin Kelurahan Ampel',
       },
     ],
     PROGRAM: [
@@ -940,7 +940,7 @@ function createInitialBerandaSeed(): Pick<SiwargaDatabase, 'BANNER' | 'PROGRAM' 
         JUDUL: 'Posyandu Balita & Lansia Terpadu',
         TANGGAL: '2026-11-24',
         RINGKASAN:
-          'Pemeriksaan kesehatan rutin, imunisasi balita, dan senam kebugaran lansia bersama kader PKK di Pendopo Balai Desa.',
+          'Pemeriksaan kesehatan rutin, imunisasi balita, dan senam kebugaran lansia bersama kader PKK di Pendopo Balai Kelurahan.',
         STATUS: 'Akan Datang',
         FOTO_URL: '/src/assets/images/program_posyandu_sehat_1795123000134.jpg',
         URUTAN: 1,
@@ -963,7 +963,7 @@ function createInitialBerandaSeed(): Pick<SiwargaDatabase, 'BANNER' | 'PROGRAM' 
       },
       {
         ID_PROGRAM: 'PRG-003',
-        JUDUL: 'Pelatihan Kemasan & Pemasaran UMKM Desa',
+        JUDUL: 'Pelatihan Kemasan & Pemasaran UMKM Kelurahan',
         TANGGAL: '2026-10-28',
         RINGKASAN:
           'Pendampingan pelaku usaha warga dan TP PKK dalam pengemasan produk pangan lokal dan pemasaran digital.',
@@ -978,8 +978,8 @@ function createInitialBerandaSeed(): Pick<SiwargaDatabase, 'BANNER' | 'PROGRAM' 
     GALERI: [
       {
         ID_GALERI: 'GLR-001',
-        JUDUL: 'Suasana Pelayanan Pagi di Balai Desa Ampel',
-        KETERANGAN: 'Warga dan perangkat desa berinteraksi hangat di halaman Balai Desa Ampel.',
+        JUDUL: 'Suasana Pelayanan Pagi di Balai Kelurahan Ampel',
+        KETERANGAN: 'Warga dan perangkat kelurahan berinteraksi hangat di halaman Balai Kelurahan Ampel.',
         TANGGAL: '2026-11-12',
         FOTO_URL: '/src/assets/images/hero_desa_ampel_1795122998295.jpg',
         URUTAN: 1,
@@ -989,7 +989,7 @@ function createInitialBerandaSeed(): Pick<SiwargaDatabase, 'BANNER' | 'PROGRAM' 
       {
         ID_GALERI: 'GLR-002',
         JUDUL: 'Gotong Royong Penghijauan Dusun Krajan',
-        KETERANGAN: 'Warga bersama kader menanam bibit tanaman di tepi jalan lingkungan desa.',
+        KETERANGAN: 'Warga bersama kader menanam bibit tanaman di tepi jalan lingkungan kelurahan.',
         TANGGAL: '2026-11-10',
         FOTO_URL: '/src/assets/images/program_kerja_bakti_1795123000265.jpg',
         URUTAN: 2,
@@ -1038,9 +1038,9 @@ function createInitialOrgSeed(): Pick<
       {
         ID_KELURAHAN: 'KEL-001',
         NAMA: 'H. Ahmad Fauzi, S.Sos.',
-        JABATAN: 'Lurah / Kepala Desa Ampel',
+        JABATAN: 'Lurah / Kepala Kelurahan Ampel',
         TINGKAT: 'LURAH',
-        WILAYAH_TUGAS: 'Wilayah Desa / Kelurahan Ampel',
+        WILAYAH_TUGAS: 'Wilayah Kelurahan Ampel',
         NO_HP: '081234500101',
         TAMPILKAN_HP: false,
         TAMPILKAN_PUBLIK: true,
@@ -1357,7 +1357,7 @@ function createInitialOrgSeed(): Pick<
         NOMOR_RT: 'RT 02',
         NAMA_KETUA: 'Tri Wahyudi',
         JABATAN: 'Ketua RT 02 / RW 02',
-        WILAYAH_TUGAS: 'Blok Lapangan Desa',
+        WILAYAH_TUGAS: 'Blok Lapangan Kelurahan',
         NO_HP: '081234500404',
         TAMPILKAN_HP: false,
         TAMPILKAN_PUBLIK: true,
@@ -1440,7 +1440,7 @@ function createInitialOrgSeed(): Pick<
         NAMA_SEKOLAH: 'TK Dharma Wanita Ampel',
         JENJANG: 'PAUD / TK',
         KEPALA_SEKOLAH: 'Dra. Hj. Umi Kulsum',
-        ALAMAT: 'Jl. Balai Desa No. 04, RW 01, Kelurahan Ampel',
+        ALAMAT: 'Jl. Balai Kelurahan No. 04, RW 01, Kelurahan Ampel',
         NO_HP: '081234500601',
         TAMPILKAN_HP: false,
         TAMPILKAN_PUBLIK: true,
@@ -1643,7 +1643,7 @@ function createInitialOrgSeed(): Pick<
         ID_BALAI: 'BLI-002',
         ID_RW: 'RW-02',
         NAMA_BALAI: 'Balai RW 02 Dusun Krajan Selatan',
-        ALAMAT: 'Jl. Lapangan Desa No. 07, RT 02 / RW 02, Kelurahan Ampel',
+        ALAMAT: 'Jl. Lapangan Kelurahan No. 07, RT 02 / RW 02, Kelurahan Ampel',
         JAM_LAYANAN: 'Senin–Jumat, 08.30–15.30 WIB (Pendataan & Rapat Warga)',
         NO_HP: '081234500302',
         TAMPILKAN_HP: false,
@@ -1734,8 +1734,12 @@ export function loadDatabase(): SiwargaDatabase {
     mutated = true;
   }
   const seedAdmin = parsed.USERS?.find((u) => u.ID_USER === 'USR-ADMIN-01');
-  if (seedAdmin && seedAdmin.NAMA_LENGKAP === 'Arif Rahman (Super Admin)') {
-    seedAdmin.NAMA_LENGKAP = 'Super Admin Desa Ampel';
+  if (
+    seedAdmin &&
+    (seedAdmin.NAMA_LENGKAP === 'Arif Rahman (Super Admin)' ||
+      seedAdmin.NAMA_LENGKAP === 'Super Admin Desa Ampel')
+  ) {
+    seedAdmin.NAMA_LENGKAP = 'Super Admin Kelurahan Ampel';
     mutated = true;
   }
   if (!parsed.BANNER || !parsed.PROGRAM || !parsed.GALERI) {
@@ -1751,11 +1755,11 @@ export function loadDatabase(): SiwargaDatabase {
   }
   const berandaDefaults: Array<[string, string, string]> = [
     ['BERANDA_DRIVE_FOLDER_ID', '1wR1Kt5shcFFll0OiM3-Jxtv8MauBOkFv', 'ID Folder Google Drive khusus foto Beranda'],
-    ['FOOTER_NAMA_KANTOR', 'Balai Desa Ampel', 'Nama kantor pelayanan pada Footer Beranda'],
-    ['FOOTER_ALAMAT', 'Jl. Raya Desa Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember', 'Alamat kantor desa pada Footer Beranda'],
+    ['FOOTER_NAMA_KANTOR', 'Balai Kelurahan Ampel', 'Nama kantor pelayanan pada Footer Beranda'],
+    ['FOOTER_ALAMAT', 'Jl. Raya Kelurahan Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember', 'Alamat kantor kelurahan pada Footer Beranda'],
     ['FOOTER_TELEPON', '(0336) 621-104 / 0811-0000-0003', 'Nomor telepon/WhatsApp layanan pada Footer Beranda'],
-    ['FOOTER_EMAIL', 'pelayanan@ampel.desa.id', 'Email resmi pelayanan pada Footer Beranda'],
-    ['FOOTER_JAM_LAYANAN', 'Senin–Jumat, 08.00–14.30 WIB (Portal online aktif 24 jam)', 'Jam layanan kantor desa pada Footer Beranda'],
+    ['FOOTER_EMAIL', 'pelayanan@ampel.kelurahan.id', 'Email resmi pelayanan pada Footer Beranda'],
+    ['FOOTER_JAM_LAYANAN', 'Senin–Jumat, 08.00–14.30 WIB (Portal online aktif 24 jam)', 'Jam layanan kantor kelurahan pada Footer Beranda'],
   ];
   if (parsed.PENGATURAN) {
     berandaDefaults.forEach(([k, v, desc]) => {
@@ -1818,6 +1822,76 @@ export function loadDatabase(): SiwargaDatabase {
       mutated = true;
     }
   }
+  // Idempotent migration: upgrade old seeded "Desa" terminology in persisted JSON to "Kelurahan"
+  const upgradeDesaText = (val: unknown): { next: string; changed: boolean } => {
+    if (typeof val !== 'string' || !val) return { next: '', changed: false };
+    let s = val;
+    const replacements: Array<[RegExp, string]> = [
+      [/@ampel\.desa\.id/gi, '@ampel.kelurahan.id'],
+      [/SIWARGA_DESA\//g, ''],
+      [/Balai Desa Ampel/g, 'Balai Kelurahan Ampel'],
+      [/Pendopo Balai Desa/g, 'Pendopo Balai Kelurahan'],
+      [/Jl\. Raya Desa Ampel/g, 'Jl. Raya Kelurahan Ampel'],
+      [/Jl\. Balai Desa/g, 'Jl. Balai Kelurahan'],
+      [/Jl\. Lapangan Desa/g, 'Jl. Lapangan Kelurahan'],
+      [/Blok Lapangan Desa/g, 'Blok Lapangan Kelurahan'],
+      [/Pemerintah Desa Ampel/g, 'Pemerintah Kelurahan Ampel'],
+      [/Super Admin Desa Ampel/g, 'Super Admin Kelurahan Ampel'],
+      [/Sekretariat Desa Ampel/g, 'Sekretariat Kelurahan Ampel'],
+      [/Kaur Sosial Desa Ampel/g, 'Kaur Sosial Kelurahan Ampel'],
+      [/Kasi Infrastruktur Desa Ampel/g, 'Kasi Infrastruktur Kelurahan Ampel'],
+      [/Petugas Layanan Desa Ampel/g, 'Petugas Layanan Kelurahan Ampel'],
+      [/Lurah \/ Kepala Desa Ampel/g, 'Lurah / Kepala Kelurahan Ampel'],
+      [/Wilayah Desa \/ Kelurahan Ampel/g, 'Wilayah Kelurahan Ampel'],
+      [/\(Kepala Desa\)/g, '(Kepala Kelurahan)'],
+      [/Kepala Desa/g, 'Kepala Kelurahan'],
+      [/Operator Desa/g, 'Operator Kelurahan'],
+      [/Jadwal Desa/g, 'Jadwal Kelurahan'],
+      [/UMKM Desa/g, 'UMKM Kelurahan'],
+      [/Desa Ampel/g, 'Kelurahan Ampel'],
+      [/jembatan desa/g, 'jembatan kelurahan'],
+      [/PKH\/BLT desa/g, 'PKH/BLT kelurahan'],
+      [/beasiswa desa/g, 'beasiswa kelurahan'],
+      [/ambulans desa/g, 'ambulans kelurahan'],
+      [/Tim teknis desa/g, 'Tim teknis kelurahan'],
+      [/bansos desa/g, 'bansos kelurahan'],
+      [/kabar terbaru desa/g, 'kabar terbaru kelurahan'],
+      [/perangkat desa/g, 'perangkat kelurahan'],
+      [/lingkungan desa/g, 'lingkungan kelurahan'],
+      [/Nama desa yang tampil/g, 'Nama kelurahan yang tampil'],
+      [/kantor desa pada/g, 'kantor kelurahan pada'],
+    ];
+    for (const [pattern, replacement] of replacements) {
+      s = s.replace(pattern, replacement);
+    }
+    return { next: s, changed: s !== val };
+  };
+  const migrateFields = <T extends object>(rows: T[] | undefined, keys: (keyof T)[]) => {
+    if (!Array.isArray(rows)) return;
+    for (const row of rows) {
+      for (const key of keys) {
+        const res = upgradeDesaText(row[key]);
+        if (res.changed) {
+          (row as Record<string, unknown>)[key as string] = res.next;
+          mutated = true;
+        }
+      }
+    }
+  };
+  migrateFields(parsed.USERS, ['NAMA_LENGKAP', 'EMAIL']);
+  migrateFields(parsed.KATEGORI_LAYANAN, ['DESKRIPSI', 'NAMA_PETUGAS_PJ']);
+  migrateFields(parsed.LAPORAN, ['LOKASI_ALAMAT', 'RT_RW', 'NAMA_PETUGAS_TUGAS', 'DRIVE_FOLDER_URL']);
+  migrateFields(parsed.TINDAK_LANJUT, ['KETERANGAN', 'PETUGAS']);
+  migrateFields(parsed.PENGUMUMAN, ['JUDUL', 'RINGKASAN', 'ISI', 'KATEGORI', 'PENULIS']);
+  migrateFields(parsed.PENGATURAN, ['NILAI', 'KETERANGAN']);
+  migrateFields(parsed.BANNER, ['KALIMAT_SAMBUTAN', 'UPDATED_BY']);
+  migrateFields(parsed.PROGRAM, ['JUDUL', 'RINGKASAN']);
+  migrateFields(parsed.GALERI, ['JUDUL', 'KETERANGAN']);
+  migrateFields(parsed.ORG_KELURAHAN, ['JABATAN', 'WILAYAH_TUGAS']);
+  migrateFields(parsed.ORG_RT, ['WILAYAH_TUGAS']);
+  migrateFields(parsed.ORG_SEKOLAH, ['ALAMAT']);
+  migrateFields(parsed.ORG_BALAI_RW, ['ALAMAT']);
+
   if (mutated) {
     fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), 'utf8');
   }

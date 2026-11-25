@@ -13,7 +13,7 @@ import {
 } from './types';
 
 export const DINAS_PROPOSAL_MESSAGE =
-  'Usulan telah disampaikan kepada dinas terkait. Saat ini pemerintah desa sedang menunggu tindak lanjut.';
+  'Usulan telah disampaikan kepada dinas terkait. Saat ini pemerintah kelurahan sedang menunggu tindak lanjut.';
 
 export const ALLOWED_EVIDENCE_MIMES = [
   'image/jpeg',
@@ -197,8 +197,8 @@ export function sanitizeReportForCitizenTracking(
           null
         : null,
     tanggalLaporan: report.CREATED_AT,
-    lokasiRingkas: report.RT_RW ? `Wilayah ${report.RT_RW}, Desa Ampel` : 'Desa Ampel',
-    petugasPenanggungJawab: report.NAMA_PETUGAS_TUGAS || 'Tim Pelayanan Desa Ampel',
+    lokasiRingkas: report.RT_RW ? `Wilayah ${report.RT_RW}, Kelurahan Ampel` : 'Kelurahan Ampel',
+    petugasPenanggungJawab: report.NAMA_PETUGAS_TUGAS || 'Tim Pelayanan Kelurahan Ampel',
     riwayatTindakLanjut: reportFollowUps.map((f) => ({
       idUpdate: f.ID_UPDATE,
       tanggalUpdate: f.TANGGAL_UPDATE,

@@ -203,7 +203,7 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
         namaPelapor: namaPelapor.trim(),
         noHpPelapor: normalizedHp,
         lokasiAlamat: lokasiAlamat.trim(),
-        rtRw: rtRw.trim() || 'Desa Ampel',
+        rtRw: rtRw.trim() || 'Kelurahan Ampel',
         dataFormDinamis: dynamicValues,
         attachment,
       };
@@ -234,7 +234,7 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
         namaLayanan:
           res.report?.namaLayanan ||
           payload.namaLayanan ||
-          'Pelayanan Warga Desa Ampel',
+          'Pelayanan Warga Kelurahan Ampel',
         statusTerbaru: res.report?.statusTerbaru || res.status || 'Laporan diterima',
         driveFolder: res.report?.driveFolder || res.driveFolderUrl || '01_LAPORAN_WARGA',
       });
@@ -256,7 +256,7 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
             </h1>
           </div>
           <p className="mt-3 text-base sm:text-lg text-slate-700">
-            Simpan nomor tiket di bawah ini untuk memantau perkembangan penanganan dari Pemerintah Desa Ampel.
+            Simpan nomor tiket di bawah ini untuk memantau perkembangan penanganan dari Pemerintah Kelurahan Ampel.
           </p>
 
           <div className="mt-6 p-6 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
@@ -333,8 +333,8 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
               : mode === 'bantuan'
               ? 'Permohonan Bantuan Warga'
               : mode === 'administrasi'
-              ? 'Pengurusan Surat & Administrasi Desa'
-              : 'Pelaporan Masalah Desa'}
+              ? 'Pengurusan Surat & Administrasi Kelurahan'
+              : 'Pelaporan Masalah Kelurahan'}
           </h1>
           <div className="mt-4 grid grid-cols-5 gap-2" aria-hidden="true">
             {[1, 2, 3, 4, 5].map((num) => (
@@ -431,7 +431,7 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
               </h2>
               <p className="mt-1 text-base text-slate-700">
                 {isGeneral
-                  ? 'Tuliskan dengan bahasa sehari-hari. Petugas desa akan membantu mengarahkan ke layanan yang tepat.'
+                  ? 'Tuliskan dengan bahasa sehari-hari. Petugas kelurahan akan membantu mengarahkan ke layanan yang tepat.'
                   : 'Jelaskan secara singkat agar petugas mudah memahami kondisi di lapangan.'}
               </p>
             </div>
@@ -722,7 +722,7 @@ export const ReportWizard: React.FC<ReportWizardProps> = ({
               </div>
               <div className="py-3 flex flex-col sm:flex-row sm:justify-between gap-1">
                 <dt className="text-slate-600">Lokasi</dt>
-                <dd className="font-semibold text-slate-900">{lokasiAlamat} ({rtRw || 'Desa Ampel'})</dd>
+                <dd className="font-semibold text-slate-900">{lokasiAlamat} ({rtRw || 'Kelurahan Ampel'})</dd>
               </div>
               <div className="py-3">
                 <dt className="text-slate-600 mb-1">Cerita / Uraian Masalah</dt>

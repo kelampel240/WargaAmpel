@@ -227,7 +227,7 @@ export const AdminCharts: React.FC<AdminChartsProps> = ({ stats }) => {
       />
       <ChartBox
         title="Perbandingan Selesai dan Belum Selesai"
-        subtitle="Kinerja penyelesaian laporan warga Desa Ampel"
+        subtitle="Kinerja penyelesaian laporan warga Kelurahan Ampel"
         config={comparisonConfig}
       />
     </div>

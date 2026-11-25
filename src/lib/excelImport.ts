@@ -563,7 +563,7 @@ export function parseServicesImportExcel(
         persyaratanDokumen,
         idPetugasPj: matchedPetugas?.ID_PETUGAS || petugasList[0]?.ID_PETUGAS || 'PTG-001',
         namaPetugasPj:
-          matchedPetugas?.NAMA_PETUGAS || pjInput || petugasList[0]?.NAMA_PETUGAS || 'Petugas Desa',
+          matchedPetugas?.NAMA_PETUGAS || pjInput || petugasList[0]?.NAMA_PETUGAS || 'Petugas Kelurahan',
         statusAktif,
         fields,
       },

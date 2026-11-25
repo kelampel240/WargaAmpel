@@ -1,6 +1,6 @@
 {
   "name": "WARGA AMPEL",
-  "description": "Sistem Informasi Pelayanan Warga Desa Ampel — Portal Pengaduan, Bantuan, Administrasi Surat, dan Dashboard Tindak Lanjut Berbasis Google Sheets & Google Drive",
+  "description": "Sistem Informasi Pelayanan Warga Kelurahan Ampel — Portal Pengaduan, Bantuan, Administrasi Surat, dan Dashboard Tindak Lanjut Berbasis Google Sheets & Google Drive",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

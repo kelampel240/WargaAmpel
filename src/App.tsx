@@ -230,17 +230,17 @@ export default function App() {
           )}
         </div>
 
-        {/* 7. FOOTER KONTAK KANTOR DESA & JAM LAYANAN */}
+        {/* 7. FOOTER KONTAK KANTOR KELURAHAN & JAM LAYANAN */}
         <footer className="no-print bg-white border-t border-slate-200 py-8 mt-12">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-12 gap-6 text-sm text-slate-600">
             <div className="md:col-span-5 space-y-1.5">
               <p className="font-display font-bold text-base text-[#0F2942]">
-                {beranda?.footer?.namaKantor || 'Balai Desa Ampel'}
+                {beranda?.footer?.namaKantor || 'Balai Kelurahan Ampel'}
               </p>
               <p className="text-slate-600 flex items-start gap-2">
                 <MapPin className="w-4 h-4 text-[#0B6E4F] shrink-0 mt-0.5" aria-hidden="true" />
                 <span>
-                  {beranda?.footer?.alamat || 'Jl. Raya Desa Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember'}
+                  {beranda?.footer?.alamat || 'Jl. Raya Kelurahan Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember'}
                 </span>
               </p>
             </div>
@@ -261,12 +261,12 @@ export default function App() {
               </p>
               <p className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-[#0B6E4F] shrink-0" aria-hidden="true" />
-                <span>{beranda?.footer?.email || 'pelayanan@ampel.desa.id'}</span>
+                <span>{beranda?.footer?.email || 'pelayanan@ampel.kelurahan.id'}</span>
               </p>
             </div>
           </div>
           <div className="max-w-6xl mx-auto px-4 sm:px-6 mt-6 pt-5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-            <p>WARGA AMPEL — Sistem Informasi Pelayanan &amp; Kegiatan Warga Desa Ampel</p>
+            <p>WARGA AMPEL — Sistem Informasi Pelayanan &amp; Kegiatan Warga Kelurahan Ampel</p>
             <div className="flex flex-wrap items-center gap-4">
               <button type="button" onClick={() => handleNavigate('services')} className="hover:text-[#0B6E4F] cursor-pointer">
                 Layanan

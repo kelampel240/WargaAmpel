@@ -377,10 +377,10 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="mb-8">
           <h1 className="font-display text-3xl sm:text-4xl font-bold text-[#0F2942] text-balance">
-            Informasi &amp; Pengumuman Desa Ampel
+            Informasi &amp; Pengumuman Kelurahan Ampel
           </h1>
           <p className="mt-2 text-base sm:text-lg text-slate-700">
-            Kabar resmi pelayanan, jadwal bantuan sosial, dan kegiatan masyarakat dari Pemerintah Desa Ampel.
+            Kabar resmi pelayanan, jadwal bantuan sosial, dan kegiatan masyarakat dari Pemerintah Kelurahan Ampel.
           </p>
         </div>
 
@@ -416,7 +416,7 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
   const heroTitle = beranda?.banner?.JUDUL || 'WARGA AMPEL';
   const heroSambutan =
     beranda?.banner?.KALIMAT_SAMBUTAN ||
-    'Ikuti program kegiatan kelurahan, cek kabar terbaru desa, atau sampaikan kebutuhan layanan Anda secara mudah.';
+    'Ikuti program kegiatan kelurahan, cek kabar terbaru kelurahan, atau sampaikan kebutuhan layanan Anda secara mudah.';
   const heroImgSrc = resolveBerandaImageUrl(beranda?.banner?.GAMBAR_URL, heroFallbackImg);
 
   const isLoadingHome = (berandaLoading || loading) && !beranda;
@@ -456,7 +456,7 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
             <div className="absolute inset-0">
               <BerandaImageFrame
                 src={heroImgSrc}
-                alt="Suasana Balai Desa Ampel dan kegiatan masyarakat"
+                alt="Suasana Balai Kelurahan Ampel dan kegiatan masyarakat"
                 fallbackTitle={heroTitle}
                 className="w-full h-full"
                 imgClassName="w-full h-full object-cover"
@@ -469,7 +469,7 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
 
             <div className="relative z-10 w-full p-6 sm:p-10 lg:p-12 max-w-3xl text-white">
               <p className="text-xs sm:text-sm font-semibold text-emerald-200 tracking-wide">
-                Portal Warga &amp; Informasi Kelurahan · Desa Ampel
+                Portal Warga &amp; Informasi Kelurahan Ampel
               </p>
               <h1
                 id="hero-heading"
@@ -515,7 +515,7 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 id="layanan-warga-heading" className="font-display text-2xl sm:text-3xl font-bold text-[#0F2942] text-balance">
-              Layanan Warga Desa Ampel
+              Layanan Warga Kelurahan Ampel
             </h2>
             <p className="mt-1 text-base text-slate-600">
               Sampaikan laporan, ajukan bantuan atau surat keterangan, dan pantau progresnya kapan saja.
@@ -576,7 +576,7 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
             <div>
               <h3 className="font-display text-lg font-bold text-[#0F2942]">Surat</h3>
               <p className="mt-1 text-sm text-slate-600 leading-relaxed">
-                Urus surat domisili, keterangan usaha, surat tidak mampu, atau pengantar desa.
+                Urus surat domisili, keterangan usaha, surat tidak mampu, atau pengantar kelurahan.
               </p>
             </div>
           </button>
@@ -624,7 +624,7 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
               Program Kelurahan Ampel
             </h2>
             <p className="mt-1 text-base text-slate-600">
-              Agenda kegiatan warga, pemberdayaan masyarakat, dan pembangunan desa yang terbuka untuk diikuti bersama.
+              Agenda kegiatan warga, pemberdayaan masyarakat, dan pembangunan kelurahan yang terbuka untuk diikuti bersama.
             </p>
           </div>
 
@@ -674,7 +674,7 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
               Belum ada program pada kategori ini
             </p>
             <p className="mt-1 text-sm text-slate-600">
-              Program kelurahan terbaru akan muncul di sini setelah diterbitkan oleh pengelola desa.
+              Program kelurahan terbaru akan muncul di sini setelah diterbitkan oleh pengelola kelurahan.
             </p>
           </div>
         ) : (
@@ -800,7 +800,7 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
           <div className="flex items-center gap-3">
             <Megaphone className="w-6 h-6 text-[#0B6E4F]" aria-hidden="true" />
             <h2 id="pengumuman-heading" className="font-display text-2xl font-bold text-[#0F2942]">
-              Pengumuman Terbaru Desa
+              Pengumuman Terbaru Kelurahan
             </h2>
           </div>
           <button
@@ -877,10 +877,10 @@ export const CitizenHome: React.FC<CitizenHomeProps> = ({
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div>
               <h2 id="statistik-heading" className="font-display text-xl sm:text-2xl font-bold">
-                Ringkasan Kinerja &amp; Kegiatan Desa
+                Ringkasan Kinerja &amp; Kegiatan Kelurahan
               </h2>
               <p className="mt-1 text-sm text-emerald-100">
-                Dihitung langsung dari catatan program kelurahan dan laporan warga di database desa.
+                Dihitung langsung dari catatan program kelurahan dan laporan warga di database kelurahan.
               </p>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-8">

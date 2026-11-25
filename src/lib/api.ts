@@ -27,7 +27,7 @@ export async function fetchGasConnectionStatus(): Promise<{
       connected: false,
       rootFolderId: DEFAULT_DRIVE_FOLDER_ID,
       spreadsheetId: DEFAULT_SPREADSHEET_ID,
-      desa: 'Desa Ampel',
+      desa: 'Kelurahan Ampel',
     };
   }
   try {
@@ -43,14 +43,14 @@ export async function fetchGasConnectionStatus(): Promise<{
       connected: Boolean(data?.ok),
       rootFolderId: String(data?.rootFolderId || DEFAULT_DRIVE_FOLDER_ID),
       spreadsheetId: String(data?.spreadsheetId || DEFAULT_SPREADSHEET_ID),
-      desa: String(data?.desa || 'Desa Ampel'),
+      desa: String(data?.desa || 'Kelurahan Ampel'),
     };
   } catch {
     return {
       connected: false,
       rootFolderId: DEFAULT_DRIVE_FOLDER_ID,
       spreadsheetId: DEFAULT_SPREADSHEET_ID,
-      desa: 'Desa Ampel',
+      desa: 'Kelurahan Ampel',
     };
   }
 }
@@ -221,10 +221,10 @@ function extractFooterFromSettings(settingsArr: unknown): {
     }
   }
   return {
-    namaKantor: map.FOOTER_NAMA_KANTOR || 'Balai Desa Ampel',
-    alamat: map.FOOTER_ALAMAT || 'Jl. Raya Desa Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember',
+    namaKantor: map.FOOTER_NAMA_KANTOR || 'Balai Kelurahan Ampel',
+    alamat: map.FOOTER_ALAMAT || 'Jl. Raya Kelurahan Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember',
     telepon: map.FOOTER_TELEPON || '(0336) 621-104 / 0811-0000-0003',
-    email: map.FOOTER_EMAIL || 'pelayanan@ampel.desa.id',
+    email: map.FOOTER_EMAIL || 'pelayanan@ampel.kelurahan.id',
     jamLayanan: map.FOOTER_JAM_LAYANAN || 'Senin–Jumat, 08.00–14.30 WIB (Portal online aktif 24 jam)',
   };
 }
@@ -277,7 +277,7 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
       if (errMsg.includes('Aksi tidak dikenali')) {
         if (spec.action === 'saveBerandaFooter') {
           const footerSettings = [
-            { KUNCI: 'FOOTER_NAMA_KANTOR', NILAI: String(parsedBody.namaKantor || 'Balai Desa Ampel').trim() },
+            { KUNCI: 'FOOTER_NAMA_KANTOR', NILAI: String(parsedBody.namaKantor || 'Balai Kelurahan Ampel').trim() },
             { KUNCI: 'FOOTER_ALAMAT', NILAI: String(parsedBody.alamat || '').trim() },
             { KUNCI: 'FOOTER_TELEPON', NILAI: String(parsedBody.telepon || '').trim() },
             { KUNCI: 'FOOTER_EMAIL', NILAI: String(parsedBody.email || '').trim() },

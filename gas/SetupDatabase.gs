@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * SIWARGA DESA AMPEL - SKRIP PEMBUATAN DATABASE GOOGLE SHEETS (SetupDatabase.gs)
+ * SIWARGA KELURAHAN AMPEL - SKRIP PEMBUATAN DATABASE GOOGLE SHEETS (SetupDatabase.gs)
  * ============================================================================
  * Jalankan fungsi setupDatabase() satu kali pada Google Apps Script Editor
  * setelah mengisi SPREADSHEET_ID pada file Code.gs.
@@ -142,17 +142,17 @@ function setupDatabase() {
   // Seed pengaturan dasar
   var shPengaturan = ss.getSheetByName('PENGATURAN');
   if (shPengaturan.getLastRow() <= 1) {
-    shPengaturan.appendRow(['NAMA_DESA', CONFIG.NAMA_DESA, 'Nama desa']);
+    shPengaturan.appendRow(['NAMA_DESA', CONFIG.NAMA_DESA, 'Nama kelurahan']);
     shPengaturan.appendRow(['TAHUN_TIKET', String(new Date().getFullYear()), 'Tahun penomoran tiket']);
     shPengaturan.appendRow(['TICKET_COUNTER', '0', 'Counter nomor tiket berurutan']);
     shPengaturan.appendRow(['MAX_FILE_MB', '5', 'Batas ukuran file unggahan']);
-    shPengaturan.appendRow(['DRIVE_ROOT_FOLDER_ID', CONFIG.ROOT_FOLDER_ID, 'ID Folder Google Drive SIWARGA_DESA']);
+    shPengaturan.appendRow(['DRIVE_ROOT_FOLDER_ID', CONFIG.ROOT_FOLDER_ID, 'ID Folder Google Drive Arsip Kelurahan']);
     shPengaturan.appendRow(['BERANDA_DRIVE_FOLDER_ID', CONFIG.BERANDA_DRIVE_FOLDER_ID || '1wR1Kt5shcFFll0OiM3-Jxtv8MauBOkFv', 'ID Folder Google Drive Foto Beranda']);
-    shPengaturan.appendRow(['FOOTER_NAMA_KANTOR', 'Balai Desa Ampel', 'Nama kantor pelayanan pada Footer Beranda']);
-    shPengaturan.appendRow(['FOOTER_ALAMAT', 'Jl. Raya Desa Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember', 'Alamat kantor desa pada Footer Beranda']);
+    shPengaturan.appendRow(['FOOTER_NAMA_KANTOR', 'Balai Kelurahan Ampel', 'Nama kantor pelayanan pada Footer Beranda']);
+    shPengaturan.appendRow(['FOOTER_ALAMAT', 'Jl. Raya Kelurahan Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember', 'Alamat kantor kelurahan pada Footer Beranda']);
     shPengaturan.appendRow(['FOOTER_TELEPON', '(0336) 621-104 / 0811-0000-0003', 'Nomor telepon/WhatsApp layanan pada Footer Beranda']);
-    shPengaturan.appendRow(['FOOTER_EMAIL', 'pelayanan@ampel.desa.id', 'Email resmi pelayanan pada Footer Beranda']);
-    shPengaturan.appendRow(['FOOTER_JAM_LAYANAN', 'Senin–Jumat, 08.00–14.30 WIB (Portal online aktif 24 jam)', 'Jam layanan kantor desa pada Footer Beranda']);
+    shPengaturan.appendRow(['FOOTER_EMAIL', 'pelayanan@ampel.kelurahan.id', 'Email resmi pelayanan pada Footer Beranda']);
+    shPengaturan.appendRow(['FOOTER_JAM_LAYANAN', 'Senin–Jumat, 08.00–14.30 WIB (Portal online aktif 24 jam)', 'Jam layanan kantor kelurahan pada Footer Beranda']);
   }
 
   // Seed Semua Akun Bawaan (Super Admin, Kades, Operator, Petugas, dan Contoh Warga)
@@ -165,10 +165,10 @@ function setupDatabase() {
   var salt = 'siwarga2026';
   var nowIso = new Date().toISOString();
   var defaultUsers = [
-    ['USR-ADMIN-01', 'admin', 'Super Admin Desa Ampel', 'admin@ampel.desa.id', "'081100000001", 'AdminAmpel2026!', 'SUPER_ADMIN', ''],
-    ['USR-KADES-01', 'kades', 'H. Sutrisno (Kepala Desa)', 'kades@ampel.desa.id', "'081100000002", 'KadesAmpel2026!', 'KEPALA_DESA', ''],
-    ['USR-OP-01', 'operator', 'Rina Kusuma (Operator)', 'operator@ampel.desa.id', "'081100000003", 'OperatorAmpel2026!', 'OPERATOR', ''],
-    ['USR-PTG-01', 'petugas', 'Hendra Wijaya (Petugas Lapangan)', 'hendra@ampel.desa.id', "'081100000004", 'PetugasAmpel2026!', 'PETUGAS', ''],
+    ['USR-ADMIN-01', 'admin', 'Super Admin Kelurahan Ampel', 'admin@ampel.kelurahan.id', "'081100000001", 'AdminAmpel2026!', 'SUPER_ADMIN', ''],
+    ['USR-KADES-01', 'kades', 'H. Sutrisno (Kepala Kelurahan)', 'lurah@ampel.kelurahan.id', "'081100000002", 'KadesAmpel2026!', 'KEPALA_DESA', ''],
+    ['USR-OP-01', 'operator', 'Rina Kusuma (Operator)', 'operator@ampel.kelurahan.id', "'081100000003", 'OperatorAmpel2026!', 'OPERATOR', ''],
+    ['USR-PTG-01', 'petugas', 'Hendra Wijaya (Petugas Lapangan)', 'hendra@ampel.kelurahan.id', "'081100000004", 'PetugasAmpel2026!', 'PETUGAS', ''],
     ['USR-WRG-01', 'sriwahyuni', 'Ibu Sri Wahyuni', 'sri.wahyuni@warga.ampel.id', "'081234567801", 'WargaAmpel2026!', 'WARGA', 'AMP-4821'],
     ['USR-WRG-02', 'pakslamet', 'Bapak Slamet Riyadi', 'slamet@warga.ampel.id', "'081398765402", 'WargaAmpel2026!', 'WARGA', 'AMP-7712']
   ];
@@ -210,7 +210,7 @@ function setupDatabase() {
       'Administrasi Surat & Bantuan Sosial', "'081100000003", 'AKTIF', nowIso
     ]);
     shPetugas.appendRow([
-      'PTG-003', 'USR-ADMIN-01', 'Super Admin Desa Ampel', 'Koordinator Layanan Desa',
+      'PTG-003', 'USR-ADMIN-01', 'Super Admin Kelurahan Ampel', 'Koordinator Layanan Kelurahan',
       'Pengawasan Layanan & Eskalasi Dinas', "'081100000001", 'AKTIF', nowIso
     ]);
   }
@@ -222,11 +222,11 @@ function setupDatabase() {
     shPengumuman.appendRow([
       'PGM-001',
       'Portal Resmi Pelayanan WARGA AMPEL Aktif 24 Jam',
-      'Warga Desa Ampel dapat menyampaikan pengaduan, permohonan bantuan, dan pengajuan surat secara online.',
-      'Pemerintah Desa Ampel menyediakan layanan online WARGA AMPEL 24 jam penuh. Warga cukup mengisi formulir bertahap dan mencatat nomor tiket untuk memantau perkembangan penanganan.',
+      'Warga Kelurahan Ampel dapat menyampaikan pengaduan, permohonan bantuan, dan pengajuan surat secara online.',
+      'Pemerintah Kelurahan Ampel menyediakan layanan online WARGA AMPEL 24 jam penuh. Warga cukup mengisi formulir bertahap dan mencatat nomor tiket untuk memantau perkembangan penanganan.',
       'Pelayanan',
       todayStr,
-      'Pemerintah Desa Ampel',
+      'Pemerintah Kelurahan Ampel',
       true
     ]);
   }
@@ -247,7 +247,7 @@ function setupDatabase() {
     initialServices.forEach(function(item, idx) {
       shLay.appendRow([
         item[0], item[1], item[2], item[3], item[4], item[5], item[6],
-        'PTG-001', 'Petugas Layanan Desa Ampel', '[]', true, idx + 1, now
+        'PTG-001', 'Petugas Layanan Kelurahan Ampel', '[]', true, idx + 1, now
       ]);
     });
   } else {
@@ -265,7 +265,7 @@ function setupDatabase() {
   var nowOrg = new Date().toISOString();
   var shKel = ss.getSheetByName('ORG_KELURAHAN');
   if (shKel && shKel.getLastRow() <= 1) {
-    shKel.appendRow(['KEL-001', 'H. Ahmad Fauzi, S.Sos.', 'Lurah / Kepala Desa Ampel', 'LURAH', 'Wilayah Desa Ampel', '', '081234500101', false, true, true, 1, nowOrg, nowOrg]);
+    shKel.appendRow(['KEL-001', 'H. Ahmad Fauzi, S.Sos.', 'Lurah / Kepala Kelurahan Ampel', 'LURAH', 'Wilayah Kelurahan Ampel', '', '081234500101', false, true, true, 1, nowOrg, nowOrg]);
     shKel.appendRow(['KEL-002', 'Siti Nurhayati, S.AP.', 'Kasi Pemerintahan & Pelayanan Umum', 'KASI', 'Pelayanan Administrasi', '', '081234500102', true, true, true, 2, nowOrg, nowOrg]);
     shKel.appendRow(['KEL-003', 'Dewi Kartika Sari', 'Staf Administrasi & Pelayanan Warga', 'STAF', 'Loket Surat & Pengaduan', '', '081234500104', false, true, true, 3, nowOrg, nowOrg]);
   }
@@ -316,12 +316,12 @@ function setupDatabase() {
     shBanner.appendRow([
       'BNR-001',
       'WARGA AMPEL',
-      'Ikuti program kegiatan kelurahan, cek kabar terbaru desa, atau sampaikan kebutuhan layanan Anda secara mudah.',
+      'Ikuti program kegiatan kelurahan, cek kabar terbaru kelurahan, atau sampaikan kebutuhan layanan Anda secara mudah.',
       '',
       '',
       true,
       nowOrg,
-      'Super Admin Desa Ampel'
+      'Super Admin Kelurahan Ampel'
     ]);
   }
   var shProgram = ss.getSheetByName('PROGRAM');
@@ -330,7 +330,7 @@ function setupDatabase() {
       'PRG-001',
       'Posyandu Balita & Lansia Terpadu',
       '2026-11-24',
-      'Pemeriksaan kesehatan rutin, imunisasi balita, dan senam kebugaran lansia bersama kader PKK di Pendopo Balai Desa.',
+      'Pemeriksaan kesehatan rutin, imunisasi balita, dan senam kebugaran lansia bersama kader PKK di Pendopo Balai Kelurahan.',
       'Akan Datang',
       '',
       '',
@@ -354,7 +354,7 @@ function setupDatabase() {
     ]);
     shProgram.appendRow([
       'PRG-003',
-      'Pelatihan Kemasan & Pemasaran UMKM Desa',
+      'Pelatihan Kemasan & Pemasaran UMKM Kelurahan',
       '2026-10-28',
       'Pendampingan pelaku usaha warga dan TP PKK dalam pengemasan produk pangan lokal dan pemasaran digital.',
       'Selesai',

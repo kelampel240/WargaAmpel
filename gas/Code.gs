@@ -1,26 +1,26 @@
 /**
  * ============================================================================
- * WARGA AMPEL (DESA AMPEL) - BACKEND GOOGLE APPS SCRIPT (Code.gs)
+ * WARGA AMPEL (KELURAHAN AMPEL) - BACKEND GOOGLE APPS SCRIPT (Code.gs)
  * ============================================================================
  * Penghubung tunggal antara Frontend Web App (GitHub Pages / HtmlService),
- * Google Sheets (DATABASE_SIWARGA), dan Google Drive (SIWARGA_DESA).
+ * Google Sheets (DATABASE_SIWARGA), dan Google Drive (Arsip Kelurahan).
  */
 
-// --- BLOK KONFIGURASI TUNGGAL (UBAH SESUAI ID MILIK DESA ANDA) ---
+// --- BLOK KONFIGURASI TUNGGAL (UBAH SESUAI ID MILIK KELURAHAN ANDA) ---
 var CONFIG = {
   SPREADSHEET_ID: '1yGeHQ_rWh24fhTrK9NP19hO3L0TwoKXOVboczMAPhkY',
   ROOT_FOLDER_ID: '1gT7JFuHwe2LYhJp2BlZeQ9j5tgLC2IJx',
   BERANDA_DRIVE_FOLDER_ID: '1wR1Kt5shcFFll0OiM3-Jxtv8MauBOkFv',
   DEPLOYMENT_ID: 'AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ',
   WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbynL1cGsXjMkFrOuJBRq97Dgd8N3zhNV2iG3jtTD9JOB1xbIugOMcptY-2aJbVbnWajoQ/exec',
-  NAMA_DESA: 'Desa Ampel',
+  NAMA_DESA: 'Kelurahan Ampel',
   SESSION_TTL_HOURS: 12,
   MAX_FILE_SIZE_BYTES: 5 * 1024 * 1024, // 5 MB
   ALLOWED_MIMES: ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf']
 };
 
 var DINAS_PROPOSAL_MESSAGE =
-  'Usulan telah disampaikan kepada dinas terkait. Saat ini pemerintah desa sedang menunggu tindak lanjut.';
+  'Usulan telah disampaikan kepada dinas terkait. Saat ini pemerintah kelurahan sedang menunggu tindak lanjut.';
 
 // --- ROUTING ENTRYPOINTS ---
 function doGet(e) {
@@ -128,7 +128,7 @@ function doPost(e) {
       case 'markNotificationRead':
         return jsonResponse(markNotificationRead(payload.idNotifikasi, token));
 
-      // Admin, Operator, Petugas & Kepala Desa
+      // Admin, Operator, Petugas & Kepala Kelurahan
       case 'getAdminDashboard':
         return jsonResponse(getAdminDashboard(token));
       case 'getAllReports':
@@ -470,10 +470,10 @@ function ensureDefaultSeedAccounts_() {
   var salt = 'siwarga2026';
   var nowIso = new Date().toISOString();
   var defaults = [
-    ['USR-ADMIN-01', 'admin', 'Super Admin Desa Ampel', 'admin@ampel.desa.id', "'081100000001", 'AdminAmpel2026!', 'SUPER_ADMIN', ''],
-    ['USR-KADES-01', 'kades', 'H. Sutrisno (Kepala Desa)', 'kades@ampel.desa.id', "'081100000002", 'KadesAmpel2026!', 'KEPALA_DESA', ''],
-    ['USR-OP-01', 'operator', 'Rina Kusuma (Operator)', 'operator@ampel.desa.id', "'081100000003", 'OperatorAmpel2026!', 'OPERATOR', ''],
-    ['USR-PTG-01', 'petugas', 'Hendra Wijaya (Petugas Lapangan)', 'hendra@ampel.desa.id', "'081100000004", 'PetugasAmpel2026!', 'PETUGAS', ''],
+    ['USR-ADMIN-01', 'admin', 'Super Admin Kelurahan Ampel', 'admin@ampel.kelurahan.id', "'081100000001", 'AdminAmpel2026!', 'SUPER_ADMIN', ''],
+    ['USR-KADES-01', 'kades', 'H. Sutrisno (Kepala Kelurahan)', 'lurah@ampel.kelurahan.id', "'081100000002", 'KadesAmpel2026!', 'KEPALA_DESA', ''],
+    ['USR-OP-01', 'operator', 'Rina Kusuma (Operator)', 'operator@ampel.kelurahan.id', "'081100000003", 'OperatorAmpel2026!', 'OPERATOR', ''],
+    ['USR-PTG-01', 'petugas', 'Hendra Wijaya (Petugas Lapangan)', 'hendra@ampel.kelurahan.id', "'081100000004", 'PetugasAmpel2026!', 'PETUGAS', ''],
     ['USR-WRG-01', 'sriwahyuni', 'Ibu Sri Wahyuni', 'sri.wahyuni@warga.ampel.id', "'081234567801", 'WargaAmpel2026!', 'WARGA', 'AMP-4821'],
     ['USR-WRG-02', 'pakslamet', 'Bapak Slamet Riyadi', 'slamet@warga.ampel.id', "'081398765402", 'WargaAmpel2026!', 'WARGA', 'AMP-7712']
   ];
@@ -631,7 +631,7 @@ function verifyTokenAndRole_(token, allowedRoles) {
   } catch (ignore) {}
 
   if (liveUser && liveUser.STATUS_AKUN === 'NONAKTIF') {
-    throw new Error('Akun Anda dinonaktifkan. Hubungi pengelola desa.');
+    throw new Error('Akun Anda dinonaktifkan. Hubungi pengelola kelurahan.');
   }
 
   var effectiveRole = liveUser ? liveUser.ROLE : payload.role;
@@ -702,7 +702,7 @@ function registerCitizen(payload) {
 
   getSheet_('WARGA').appendRow([
     idWarga, idUser, nama, maskNik_(nik), hashSha256_(nik, 'NIK'),
-    kk.length === 16 ? maskKk_(kk) : '-', dob, alamat, rtRw || 'Desa Ampel', noHp, 'BELUM_TERVERIFIKASI', now
+    kk.length === 16 ? maskKk_(kk) : '-', dob, alamat, rtRw || 'Kelurahan Ampel', noHp, 'BELUM_TERVERIFIKASI', now
   ]);
 
   logActivity_({ ID_USER: idUser, NAMA_LENGKAP: nama, ROLE: 'WARGA' }, 'REGISTER_WARGA', idUser, 'Pendaftaran akun warga baru.');
@@ -893,7 +893,7 @@ function submitReport(payload, token) {
       }
     }
   } catch (ignore) {}
-  if (!petugasNama) petugasNama = 'Operator Desa Ampel';
+  if (!petugasNama) petugasNama = 'Operator Kelurahan Ampel';
 
   var ticketId = generateTicketNumber();
   var now = new Date().toISOString();
@@ -947,7 +947,7 @@ function submitReport(payload, token) {
   var updId = 'UPD-' + Date.now();
   getSheet_('TINDAK_LANJUT').appendRow([
     updId, ticketId, now.slice(0, 10), 'Laporan diterima',
-    isGeneral ? 'Laporan umum diterima. Menunggu klasifikasi operator desa.' : 'Laporan telah diterima dan dicatat.',
+    isGeneral ? 'Laporan umum diterima. Menunggu klasifikasi operator kelurahan.' : 'Laporan telah diterima dan dicatat.',
     '', '', 'Sistem WARGA AMPEL', now
   ]);
 
@@ -1051,7 +1051,7 @@ function getReportStatus(ticketId, last4Hp) {
       pesanKhususDinas: showDinas ? DINAS_PROPOSAL_MESSAGE : undefined,
       alasanPenolakan: rejection || undefined,
       tanggalLaporan: String(found.CREATED_AT),
-      lokasiRingkas: (found.RT_RW || 'Desa') + ', ' + CONFIG.NAMA_DESA,
+      lokasiRingkas: (found.RT_RW || 'Kelurahan') + ', ' + CONFIG.NAMA_DESA,
       riwayatTindakLanjut: followUps,
       buktiPublik: buktiPublik
     }
@@ -1097,8 +1097,8 @@ function buildCitizenTrackingItem_(found, allFollowUps, allDocs) {
     pesanKhususDinas: showDinas ? DINAS_PROPOSAL_MESSAGE : null,
     alasanPenolakan: found.STATUS_TERBARU === 'Tidak dapat ditindaklanjuti' ? (found.ALASAN_TIDAK_DITINDAKLANJUTI || null) : null,
     tanggalLaporan: String(found.CREATED_AT),
-    lokasiRingkas: (found.RT_RW || 'Desa') + ', ' + CONFIG.NAMA_DESA,
-    petugasPenanggungJawab: found.NAMA_PETUGAS_TUGAS || 'Petugas Desa Ampel',
+    lokasiRingkas: (found.RT_RW || 'Kelurahan') + ', ' + CONFIG.NAMA_DESA,
+    petugasPenanggungJawab: found.NAMA_PETUGAS_TUGAS || 'Petugas Kelurahan Ampel',
     riwayatTindakLanjut: followUps,
     buktiPublik: buktiPublik
   };
@@ -1367,7 +1367,7 @@ function classifyReport(payload, token) {
     if (p.ID_PETUGAS) petugasMap[String(p.ID_PETUGAS)] = String(p.NAMA_PETUGAS || '');
   });
   var assignedPetugasId = svc.ID_PETUGAS_PJ || 'PTG-001';
-  var assignedPetugasName = petugasMap[String(assignedPetugasId)] || svc.NAMA_PETUGAS_PJ || 'Petugas Desa';
+  var assignedPetugasName = petugasMap[String(assignedPetugasId)] || svc.NAMA_PETUGAS_PJ || 'Petugas Kelurahan';
 
   var headers = shLap.getRange(1, 1, 1, shLap.getLastColumn()).getValues()[0];
   var now = new Date().toISOString();
@@ -1513,7 +1513,7 @@ function mapServicesWithFields_(services, forms) {
       IKON: s.IKON || 'file-text',
       PERSYARATAN_DOKUMEN: s.PERSYARATAN_DOKUMEN || '',
       ID_PETUGAS_PJ: pjId,
-      NAMA_PETUGAS_PJ: officerMap[pjId] || s.NAMA_PETUGAS_PJ || 'Petugas Desa',
+      NAMA_PETUGAS_PJ: officerMap[pjId] || s.NAMA_PETUGAS_PJ || 'Petugas Kelurahan',
       ALUR_STATUS: parseJsonSafe_(s.ALUR_STATUS, []),
       STATUS_AKTIF: s.STATUS_AKTIF === true || String(s.STATUS_AKTIF).toUpperCase() === 'TRUE',
       URUTAN: Number(s.URUTAN) || 1,
@@ -1558,7 +1558,7 @@ function createService(payload, token) {
     idLayanan, 'SRV-' + Math.floor(100 + Math.random() * 900),
     payload.namaLayanan, grup, payload.deskripsi || '',
     payload.ikon || 'file-text', payload.persyaratanDokumen || 'Opsional',
-    payload.idPetugasPj || 'PTG-001', payload.namaPetugasPj || 'Petugas Desa',
+    payload.idPetugasPj || 'PTG-001', payload.namaPetugasPj || 'Petugas Kelurahan',
     JSON.stringify(payload.alurStatus || []), true, 99, now
   ]);
   if (Array.isArray(payload.fields)) {
@@ -1650,7 +1650,7 @@ function importServicesBatch(payload, token) {
       String(item.ikon || 'file-text').trim(),
       String(item.persyaratanDokumen || 'Opsional').trim(),
       String(item.idPetugasPj || 'PTG-001').trim(),
-      String(item.namaPetugasPj || 'Petugas Layanan Desa Ampel').trim(),
+      String(item.namaPetugasPj || 'Petugas Layanan Kelurahan Ampel').trim(),
       JSON.stringify(item.alurStatus || []),
       statusAktif,
       100 + i,
@@ -1718,7 +1718,7 @@ function createPetugas(payload, token) {
   var idPetugas = 'PTG-' + Date.now();
   var now = new Date().toISOString();
   getSheet_('PETUGAS').appendRow([
-    idPetugas, '', payload.namaPetugas, payload.jabatan || 'Petugas Desa',
+    idPetugas, '', payload.namaPetugas, payload.jabatan || 'Petugas Kelurahan',
     payload.bidangTugas || 'Pelayanan Umum', formatPhoneForSheet_(payload.noHp), 'AKTIF', now
   ]);
   logActivity_(actor, 'CREATE_PETUGAS', idPetugas, 'Menambah petugas ' + payload.namaPetugas);
@@ -2415,10 +2415,10 @@ function buildBerandaFooterGas_() {
     });
   } catch (ignore) {}
   return {
-    namaKantor: map.FOOTER_NAMA_KANTOR || 'Balai Desa Ampel',
-    alamat: map.FOOTER_ALAMAT || 'Jl. Raya Desa Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember',
+    namaKantor: map.FOOTER_NAMA_KANTOR || 'Balai Kelurahan Ampel',
+    alamat: map.FOOTER_ALAMAT || 'Jl. Raya Kelurahan Ampel No. 01, Kecamatan Wuluhan, Kabupaten Jember',
     telepon: map.FOOTER_TELEPON || '(0336) 621-104 / 0811-0000-0003',
-    email: map.FOOTER_EMAIL || 'pelayanan@ampel.desa.id',
+    email: map.FOOTER_EMAIL || 'pelayanan@ampel.kelurahan.id',
     jamLayanan: map.FOOTER_JAM_LAYANAN || 'Senin–Jumat, 08.00–14.30 WIB (Portal online aktif 24 jam)'
   };
 }
@@ -2688,7 +2688,7 @@ function saveBerandaFooter(payload, token) {
   verifyTokenAndRole_(token, ['SUPER_ADMIN']);
   saveSettings({
     settings: [
-      { KUNCI: 'FOOTER_NAMA_KANTOR', NILAI: String(payload.namaKantor || 'Balai Desa Ampel').trim() },
+      { KUNCI: 'FOOTER_NAMA_KANTOR', NILAI: String(payload.namaKantor || 'Balai Kelurahan Ampel').trim() },
       { KUNCI: 'FOOTER_ALAMAT', NILAI: String(payload.alamat || '').trim() },
       { KUNCI: 'FOOTER_TELEPON', NILAI: String(payload.telepon || '').trim() },
       { KUNCI: 'FOOTER_EMAIL', NILAI: String(payload.email || '').trim() },

@@ -93,7 +93,7 @@ export const CitizenDashboard: React.FC<CitizenDashboardProps> = ({
             Selamat datang, {user.namaLengkap}
           </h1>
           <p className="mt-1 text-base text-slate-700">
-            {user.alamat || 'Desa Ampel'} · {user.rtRw || 'Wilayah Desa Ampel'}
+            {user.alamat || 'Kelurahan Ampel'} · {user.rtRw || 'Wilayah Kelurahan Ampel'}
           </p>
         </div>
         <button
@@ -301,7 +301,7 @@ export const CitizenDashboard: React.FC<CitizenDashboardProps> = ({
           <div className="bg-white border border-slate-200 rounded-2xl p-6">
             <h2 className="font-display text-lg font-bold text-[#0F2942] flex items-center gap-2 mb-4">
               <Megaphone className="w-5 h-5 text-[#0F2942]" aria-hidden="true" />
-              <span>Pengumuman Desa</span>
+              <span>Pengumuman Kelurahan</span>
             </h2>
             <div className="space-y-3">
               {announcements.slice(0, 3).map((a) => (

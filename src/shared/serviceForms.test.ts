@@ -18,7 +18,7 @@ function makeService(overrides: Partial<ServiceWithForm>): ServiceWithForm {
     IKON: 'file-text',
     PERSYARATAN_DOKUMEN: 'Foto KTP & KK',
     ID_PETUGAS_PJ: 'PTG-003',
-    NAMA_PETUGAS_PJ: 'Petugas Layanan Desa Ampel',
+    NAMA_PETUGAS_PJ: 'Petugas Layanan Kelurahan Ampel',
     ALUR_STATUS: [...REPORT_STATUSES],
     STATUS_AKTIF: true,
     URUTAN: 1,
@@ -91,10 +91,10 @@ test('extractDownloadableForms always includes custom dynamic fields and generat
   assert.equal(forms.length >= 1, true);
   const markup = buildSingleFormPrintMarkup(forms[0], customService, {
     namaKantor: 'Kelurahan Ampel',
-    alamat: 'Jl. Raya Desa Ampel No. 01',
+    alamat: 'Jl. Raya Kelurahan Ampel No. 01',
     jamLayanan: 'Senin-Jumat 08.00-14.30 WIB',
     telepon: '0336-621104',
-    email: 'pelayanan@ampel.desa.id',
+    email: 'pelayanan@ampel.kelurahan.id',
   });
   assert.ok(markup.includes('Kelurahan Ampel'));
   assert.ok(markup.includes('Nama Almarhum / Pewaris'));

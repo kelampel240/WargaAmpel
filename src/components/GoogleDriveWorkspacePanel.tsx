@@ -304,13 +304,13 @@ export const GoogleDriveWorkspacePanel: React.FC<GoogleDriveWorkspacePanelProps>
         { id: rootFolder.id, name: rootFolder.name },
       ]);
       setNotice(
-        `Struktur folder "${rootFolder.name}" (beserta 6 subfolder arsip desa) siap di Google Drive.`
+        `Struktur folder "${rootFolder.name}" (beserta subfolder arsip kelurahan) siap di Google Drive.`
       );
 
       // Ask confirmation before saving DRIVE_ROOT_FOLDER_ID to system settings
       setConfirmState({
         open: true,
-        title: 'Simpan ID Folder Root ke Pengaturan Desa?',
+        title: 'Simpan ID Folder Root ke Pengaturan Kelurahan?',
         description: `Folder "${rootFolder.name}" telah dibuat/ditemukan di Google Drive. Apakah Anda ingin menyimpan ID folder ini (${rootFolder.id}) ke pengaturan DRIVE_ROOT_FOLDER_ID sistem WARGA AMPEL?`,
         confirmLabel: 'Simpan ke Pengaturan',
         onConfirm: async () => {
@@ -392,7 +392,7 @@ export const GoogleDriveWorkspacePanel: React.FC<GoogleDriveWorkspacePanelProps>
     setConfirmState({
       open: true,
       title: 'Unggah Bukti Penanganan ke Google Drive?',
-      description: `Berkas "${doc.NAMA_FILE}" untuk tiket ${doc.ID_LAPORAN} akan diunggah ke folder SIWARGA_DESA/${doc.DRIVE_FOLDER_SUB} di Google Drive dan tautan Drive-nya akan diperbarui.`,
+      description: `Berkas "${doc.NAMA_FILE}" untuk tiket ${doc.ID_LAPORAN} akan diunggah ke folder arsip Google Drive (${doc.DRIVE_FOLDER_SUB}) dan tautan Drive-nya akan diperbarui.`,
       affectedItems: [`${doc.ID_LAPORAN} · ${doc.NAMA_FILE}`],
       confirmLabel: 'Unggah ke Drive',
       onConfirm: async () => {
@@ -505,7 +505,7 @@ export const GoogleDriveWorkspacePanel: React.FC<GoogleDriveWorkspacePanelProps>
       <div className="bg-white border border-slate-200 rounded-xl p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h3 className="font-display text-lg font-bold text-[#0F2942]">
-            Integrasi Google Drive (SIWARGA_DESA)
+            Integrasi Google Drive (Arsip Kelurahan)
           </h3>
           {needsAuth ? (
             <p className="text-sm text-slate-600 mt-0.5">
@@ -561,7 +561,7 @@ export const GoogleDriveWorkspacePanel: React.FC<GoogleDriveWorkspacePanelProps>
                 disabled={busyAction}
                 className="px-3.5 py-2 text-xs sm:text-sm font-bold bg-[#0B6E4F] text-white rounded-lg hover:bg-[#08553d] disabled:opacity-50 whitespace-nowrap cursor-pointer"
               >
-                Inisialisasi SIWARGA_DESA
+                Inisialisasi Folder Drive
               </button>
               <button
                 type="button"
@@ -764,7 +764,7 @@ export const GoogleDriveWorkspacePanel: React.FC<GoogleDriveWorkspacePanelProps>
                 }}
                 className="ml-auto text-xs font-semibold text-[#0B6E4F] hover:underline cursor-pointer"
               >
-                Lompat ke Root SIWARGA_DESA
+                Lompat ke Folder Utama
               </button>
             )}
           </nav>
