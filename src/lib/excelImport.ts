@@ -6,7 +6,16 @@ import {
   OrgEntityType,
   validateOrgInput,
 } from '../shared/orgLogic';
-import { AdminOrgStructureResponse, OrgKelurahanLevel, SchoolJenjang } from '../shared/types';
+import {
+  AdminOrgStructureResponse,
+  FORM_FIELD_TYPES,
+  FormFieldType,
+  OrgKelurahanLevel,
+  SchoolJenjang,
+  SERVICE_GROUPS,
+  ServiceGroup,
+  SheetPetugas,
+} from '../shared/types';
 
 export interface ParsedImportRow {
   rowNumber: number;
@@ -405,6 +414,158 @@ export function parsePetugasImportExcel(buffer: ArrayBuffer | Uint8Array): Parse
         jabatan,
         bidangTugas,
         noHp,
+      },
+      error,
+    };
+  });
+}
+
+function normalizeServiceGroupInput(raw: string): ServiceGroup | '' {
+  const clean = raw.trim();
+  if (!clean) return '';
+  const exact = SERVICE_GROUPS.find((g) => g.toLowerCase() === clean.toLowerCase());
+  if (exact) return exact;
+  const lower = clean.toLowerCase();
+  if (lower.includes('pengaduan') || lower.startsWith('a.') || lower === 'a') return 'A. Pengaduan';
+  if (lower.includes('bantuan') || lower.startsWith('b.') || lower === 'b') return 'B. Bantuan';
+  if (
+    lower.includes('administrasi') ||
+    lower.includes('surat') ||
+    lower.startsWith('c.') ||
+    lower === 'c'
+  ) {
+    return 'C. Administrasi';
+  }
+  return '';
+}
+
+function parseDynamicFieldsString(raw: string): Array<{
+  LABEL_PERTANYAAN: string;
+  TIPE_ISIAN: FormFieldType;
+  OPSI_PILIHAN: string[];
+  WAJIB: boolean;
+  PLACEHOLDER: string;
+  URUTAN: number;
+}> {
+  if (!raw.trim()) return [];
+  return raw
+    .split(/[;\n]+/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((entry, idx) => {
+      const [labelPart, typePart, reqPart, opsiPart] = entry.split('|').map((s) => s.trim());
+      const matchedType = FORM_FIELD_TYPES.includes(typePart as FormFieldType)
+        ? (typePart as FormFieldType)
+        : 'text';
+      const reqLower = (reqPart || '').toLowerCase();
+      const wajib = reqLower ? !['opsional', 'optional', 'tidak', 'no', '0'].includes(reqLower) : true;
+      const opsi = opsiPart
+        ? opsiPart
+            .split(',')
+            .map((o) => o.trim())
+            .filter(Boolean)
+        : [];
+      return {
+        LABEL_PERTANYAAN: labelPart || `Pertanyaan ${idx + 1}`,
+        TIPE_ISIAN: matchedType,
+        OPSI_PILIHAN: opsi,
+        WAJIB: wajib,
+        PLACEHOLDER: '',
+        URUTAN: idx + 1,
+      };
+    })
+    .filter((f) => f.LABEL_PERTANYAAN.length >= 2);
+}
+
+export function parseServicesImportExcel(
+  buffer: ArrayBuffer | Uint8Array,
+  petugasList: SheetPetugas[] = []
+): ParsedImportRow[] {
+  const rows = readTargetSheetRows(buffer, [
+    'Daftar Layanan',
+    'Jenis Layanan',
+    'KATEGORI_LAYANAN',
+    'Layanan',
+  ]);
+  return rows.map((raw, idx) => {
+    const n = normalizeRowKeys(raw);
+    const rowNumber = idx + 2;
+
+    const namaLayanan = pickStr(n, [
+      'Nama Layanan',
+      'Layanan',
+      'Jenis Layanan',
+      'NAMA_LAYANAN',
+    ]);
+    const grupRaw = pickStr(n, [
+      'Kategori Grup',
+      'Grup',
+      'Kategori',
+      'Kategori Layanan',
+      'KATEGORI_GRUP',
+    ]);
+    const kategoriGrup = normalizeServiceGroupInput(grupRaw);
+    const deskripsi = pickStr(n, ['Deskripsi', 'Keterangan', 'Deskripsi Singkat', 'DESKRIPSI']);
+    const persyaratanDokumen =
+      pickStr(n, [
+        'Persyaratan Dokumen',
+        'Persyaratan',
+        'Syarat',
+        'Syarat Dokumen',
+        'PERSYARATAN_DOKUMEN',
+      ]) || 'Opsional';
+    const pjInput = pickStr(n, [
+      'Nama Petugas PJ',
+      'PJ Petugas',
+      'Petugas PJ',
+      'Penanggung Jawab',
+      'NAMA_PETUGAS_PJ',
+      'ID_PETUGAS_PJ',
+    ]);
+    const ikonRaw = pickStr(n, ['Ikon', 'Icon', 'IKON']);
+    const ikon = ['file-text', 'heart', 'road', 'building'].includes(ikonRaw.toLowerCase())
+      ? ikonRaw.toLowerCase()
+      : kategoriGrup === 'B. Bantuan'
+      ? 'heart'
+      : kategoriGrup === 'A. Pengaduan'
+      ? 'road'
+      : 'file-text';
+    const statusAktif = pickBool(n, ['Status Aktif', 'Status', 'Aktif', 'STATUS_AKTIF'], true);
+    const fieldsRaw = pickStr(n, ['Pertanyaan Dinamis', 'Pertanyaan', 'Form Dinamis', 'FIELDS']);
+    const fields = parseDynamicFieldsString(fieldsRaw);
+
+    const matchedPetugas = pjInput
+      ? petugasList.find(
+          (p) =>
+            p.ID_PETUGAS === pjInput ||
+            p.NAMA_PETUGAS.trim().toLowerCase() === pjInput.trim().toLowerCase()
+        )
+      : petugasList[0];
+
+    let error: string | null = null;
+    if (namaLayanan.length < 3) {
+      error = 'Nama Layanan wajib diisi minimal 3 karakter.';
+    } else if (!kategoriGrup) {
+      error = grupRaw
+        ? `Kategori Grup "${grupRaw}" tidak dikenal (isi: A. Pengaduan, B. Bantuan, atau C. Administrasi).`
+        : 'Kolom Kategori Grup wajib diisi (A. Pengaduan, B. Bantuan, atau C. Administrasi).';
+    }
+
+    return {
+      rowNumber,
+      label: namaLayanan || `(Baris ${rowNumber})`,
+      detail: `${kategoriGrup || grupRaw || '?'}${fields.length > 0 ? ` · ${fields.length} pertanyaan` : ''}`,
+      payload: {
+        namaLayanan,
+        kategoriGrup,
+        deskripsi,
+        ikon,
+        persyaratanDokumen,
+        idPetugasPj: matchedPetugas?.ID_PETUGAS || petugasList[0]?.ID_PETUGAS || 'PTG-001',
+        namaPetugasPj:
+          matchedPetugas?.NAMA_PETUGAS || pjInput || petugasList[0]?.NAMA_PETUGAS || 'Petugas Desa',
+        statusAktif,
+        fields,
       },
       error,
     };

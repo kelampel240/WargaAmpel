@@ -321,6 +321,27 @@ export async function apiFetch<T>(url: string, options: RequestInit = {}): Promi
           return { files: [], gasOutdated: true } as unknown as T;
         }
 
+        if (spec.action === 'importServicesBatch') {
+          const items = Array.isArray(parsedBody.items) ? parsedBody.items : [];
+          let importedCount = 0;
+          for (const item of items) {
+            if (item && typeof item === 'object') {
+              const created = await executeGasAction(
+                targetUrl,
+                'createService',
+                item as Record<string, unknown>,
+                spec.token || '',
+                false
+              );
+              if (!created.ok || created.data.error) {
+                throw new Error(String(created.data.error || errMsg));
+              }
+              importedCount++;
+            }
+          }
+          return { ok: true, count: importedCount, savedViaFallback: true } as unknown as T;
+        }
+
         const berandaActions = [
           'getBerandaContent',
           'getAdminBeranda',

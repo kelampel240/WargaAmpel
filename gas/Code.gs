@@ -150,6 +150,8 @@ function doPost(e) {
         return jsonResponse(updateService(payload, token));
       case 'deleteService':
         return jsonResponse(deleteService(payload.idLayanan, token));
+      case 'importServicesBatch':
+        return jsonResponse(importServicesBatch(payload, token));
       case 'getWarga':
         return jsonResponse(getWarga(token));
       case 'verifyWarga':
@@ -1594,17 +1596,96 @@ function updateService(payload, token) {
 }
 
 function deleteService(idLayanan, token) {
-  var actor = verifyTokenAndRole_(token, ['SUPER_ADMIN']);
+  var actor = verifyTokenAndRole_(token, ['SUPER_ADMIN', 'OPERATOR']);
   var rows = sheetToObjects_('KATEGORI_LAYANAN');
   var sh = getSheet_('KATEGORI_LAYANAN');
+  var deleted = false;
   for (var i = 0; i < rows.length; i++) {
     if (rows[i].ID_LAYANAN === idLayanan) {
       sh.deleteRow(rows[i]._rowIndex);
-      logActivity_(actor, 'DELETE_SERVICE', idLayanan, 'Menghapus layanan ' + idLayanan);
-      return { ok: true };
+      deleted = true;
+      break;
     }
   }
-  throw new Error('Layanan tidak ditemukan.');
+  if (!deleted) {
+    throw new Error('Layanan tidak ditemukan.');
+  }
+  // Bersihkan pertanyaan dinamis terkait pada KONFIGURASI_FORM (hapus dari bawah agar rowIndex tidak bergeser)
+  var formRows = sheetToObjects_('KONFIGURASI_FORM');
+  var shForm = getSheet_('KONFIGURASI_FORM');
+  for (var f = formRows.length - 1; f >= 0; f--) {
+    if (formRows[f].ID_LAYANAN === idLayanan) {
+      shForm.deleteRow(formRows[f]._rowIndex);
+    }
+  }
+  logActivity_(actor, 'DELETE_SERVICE', idLayanan, 'Menghapus layanan ' + idLayanan);
+  return { ok: true, deletedId: idLayanan };
+}
+
+function importServicesBatch(payload, token) {
+  var actor = verifyTokenAndRole_(token, ['SUPER_ADMIN', 'OPERATOR']);
+  var items = payload.items || [];
+  if (!items.length) throw new Error('Daftar layanan untuk diimpor kosong.');
+  var shSvc = getSheet_('KATEGORI_LAYANAN');
+  var shForm = getSheet_('KONFIGURASI_FORM');
+  var baseTs = Date.now();
+  var now = new Date().toISOString();
+  var svcRowsToAppend = [];
+  var formRowsToAppend = [];
+  var count = 0;
+
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i] || {};
+    var nama = String(item.namaLayanan || '').trim();
+    var grup = String(item.kategoriGrup || '').trim();
+    if (nama.length < 3 || !isAllowedServiceGroupGas_(grup)) continue;
+    var idLayanan = 'LAY-' + baseTs + '-' + i;
+    var statusAktif = item.statusAktif !== false;
+    svcRowsToAppend.push([
+      idLayanan,
+      'SRV-' + Math.floor(100 + Math.random() * 900),
+      nama,
+      grup,
+      String(item.deskripsi || '').trim(),
+      String(item.ikon || 'file-text').trim(),
+      String(item.persyaratanDokumen || 'Opsional').trim(),
+      String(item.idPetugasPj || 'PTG-001').trim(),
+      String(item.namaPetugasPj || 'Petugas Layanan Desa Ampel').trim(),
+      JSON.stringify(item.alurStatus || []),
+      statusAktif,
+      100 + i,
+      now
+    ]);
+    if (Array.isArray(item.fields)) {
+      for (var f = 0; f < item.fields.length; f++) {
+        var fld = item.fields[f];
+        if (!fld || !fld.LABEL_PERTANYAAN) continue;
+        formRowsToAppend.push([
+          'FLD-' + baseTs + '-' + i + '-' + f,
+          idLayanan,
+          String(fld.LABEL_PERTANYAAN).trim(),
+          String(fld.TIPE_ISIAN || 'text'),
+          JSON.stringify(fld.OPSI_PILIHAN || []),
+          Boolean(fld.WAJIB),
+          String(fld.PLACEHOLDER || ''),
+          f + 1
+        ]);
+      }
+    }
+    count++;
+  }
+
+  if (count === 0) {
+    throw new Error('Tidak ada baris layanan valid yang dapat diimpor.');
+  }
+  if (svcRowsToAppend.length > 0) {
+    shSvc.getRange(shSvc.getLastRow() + 1, 1, svcRowsToAppend.length, svcRowsToAppend[0].length).setValues(svcRowsToAppend);
+  }
+  if (formRowsToAppend.length > 0) {
+    shForm.getRange(shForm.getLastRow() + 1, 1, formRowsToAppend.length, formRowsToAppend[0].length).setValues(formRowsToAppend);
+  }
+  logActivity_(actor, 'IMPORT_SERVICES', 'KATEGORI_LAYANAN', 'Mengimpor ' + count + ' jenis layanan dari Excel.');
+  return { ok: true, count: count };
 }
 
 // --- 7. WARGA, PETUGAS, DRIVE EXPLORER, PENGUMUMAN, PENGATURAN, LOG ---

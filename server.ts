@@ -1135,6 +1135,103 @@ async function startServer() {
     });
   });
 
+  app.post('/api/admin/services/import', requireAuth(['SUPER_ADMIN', 'OPERATOR']), (req: AuthedRequest, res) => {
+    const items = req.body?.items;
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'Daftar layanan untuk diimpor kosong.' });
+    }
+    const db = loadDatabase();
+    const now = new Date().toISOString();
+    const baseTs = Date.now();
+    const createdIds: string[] = [];
+
+    items.forEach((raw: Record<string, unknown>, idx: number) => {
+      const namaLayanan = String(raw?.namaLayanan || '').trim();
+      const kategoriGrup = raw?.kategoriGrup as (typeof SERVICE_GROUPS)[number];
+      if (namaLayanan.length < 3 || !SERVICE_GROUPS.includes(kategoriGrup)) return;
+
+      const idLayanan = `LAY-${baseTs}-${idx}`;
+      const requestedPj = String(raw?.idPetugasPj || '').trim();
+      const requestedPjName = String(raw?.namaPetugasPj || '').trim();
+      const officer =
+        db.PETUGAS.find((p) => p.ID_PETUGAS === requestedPj) ||
+        db.PETUGAS.find((p) => p.NAMA_PETUGAS.trim().toLowerCase() === requestedPjName.toLowerCase()) ||
+        db.PETUGAS[0];
+
+      const newService: SheetKategoriLayanan = {
+        ID_LAYANAN: idLayanan,
+        KODE_LAYANAN: `SRV-${Math.floor(100 + Math.random() * 900)}`,
+        NAMA_LAYANAN: namaLayanan,
+        KATEGORI_GRUP: kategoriGrup,
+        DESKRIPSI: typeof raw?.deskripsi === 'string' ? raw.deskripsi.trim() : '',
+        IKON: typeof raw?.ikon === 'string' && raw.ikon ? raw.ikon : 'file-text',
+        PERSYARATAN_DOKUMEN:
+          typeof raw?.persyaratanDokumen === 'string' && raw.persyaratanDokumen.trim()
+            ? raw.persyaratanDokumen.trim()
+            : 'Opsional',
+        ID_PETUGAS_PJ: officer?.ID_PETUGAS || 'PTG-001',
+        NAMA_PETUGAS_PJ: officer?.NAMA_PETUGAS || requestedPjName || 'Petugas Layanan Desa Ampel',
+        ALUR_STATUS: [...REPORT_STATUSES],
+        STATUS_AKTIF: raw?.statusAktif !== false,
+        URUTAN: db.KATEGORI_LAYANAN.length + 1,
+        CREATED_AT: now,
+      };
+      db.KATEGORI_LAYANAN.push(newService);
+
+      if (Array.isArray(raw?.fields)) {
+        raw.fields.forEach((f: Partial<SheetKonfigurasiForm>, fIdx: number) => {
+          if (!f || typeof f.LABEL_PERTANYAAN !== 'string' || !f.LABEL_PERTANYAAN.trim()) return;
+          const tipe =
+            f.TIPE_ISIAN && FORM_FIELD_TYPES.includes(f.TIPE_ISIAN) ? f.TIPE_ISIAN : 'text';
+          db.KONFIGURASI_FORM.push({
+            ID_FIELD: `FLD-${baseTs}-${idx}-${fIdx}`,
+            ID_LAYANAN: idLayanan,
+            LABEL_PERTANYAAN: f.LABEL_PERTANYAAN.trim(),
+            TIPE_ISIAN: tipe,
+            OPSI_PILIHAN: Array.isArray(f.OPSI_PILIHAN) ? f.OPSI_PILIHAN.filter(Boolean) : [],
+            WAJIB: Boolean(f.WAJIB),
+            PLACEHOLDER: typeof f.PLACEHOLDER === 'string' ? f.PLACEHOLDER : '',
+            URUTAN: fIdx + 1,
+          });
+        });
+      }
+      createdIds.push(idLayanan);
+    });
+
+    if (createdIds.length === 0) {
+      return res.status(400).json({ error: 'Tidak ada baris layanan valid yang dapat diimpor.' });
+    }
+
+    appendActivityLog(
+      db,
+      { idUser: req.sessionUser!.idUser, nama: req.sessionUser!.namaLengkap, role: req.sessionUser!.role },
+      'IMPORT_SERVICES',
+      createdIds[0],
+      `Mengimpor ${createdIds.length} jenis layanan dari Excel.`
+    );
+    saveDatabase(db);
+    return res.status(201).json({ ok: true, count: createdIds.length, ids: createdIds });
+  });
+
+  app.delete('/api/admin/services/:id', requireAuth(['SUPER_ADMIN', 'OPERATOR']), (req: AuthedRequest, res) => {
+    const db = loadDatabase();
+    const targetIdx = db.KATEGORI_LAYANAN.findIndex((s) => s.ID_LAYANAN === req.params.id);
+    if (targetIdx === -1) {
+      return res.status(404).json({ error: 'Layanan tidak ditemukan.' });
+    }
+    const [removed] = db.KATEGORI_LAYANAN.splice(targetIdx, 1);
+    db.KONFIGURASI_FORM = db.KONFIGURASI_FORM.filter((f) => f.ID_LAYANAN !== removed.ID_LAYANAN);
+    appendActivityLog(
+      db,
+      { idUser: req.sessionUser!.idUser, nama: req.sessionUser!.namaLengkap, role: req.sessionUser!.role },
+      'DELETE_SERVICE',
+      removed.ID_LAYANAN,
+      `Menghapus layanan "${removed.NAMA_LAYANAN}" (${removed.KATEGORI_GRUP}).`
+    );
+    saveDatabase(db);
+    return res.json({ ok: true, deletedId: removed.ID_LAYANAN });
+  });
+
   // ===========================================================================
   // 7. WARGA, PETUGAS, DRIVE TREE, ANNOUNCEMENTS, SETTINGS, LOGS, EXPORT, GAS
   // ===========================================================================

@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import {
   AdminDashboardStats,
   AdminOrgStructureResponse,
+  ServiceWithForm,
   SheetLaporan,
   SheetPetugas,
   SheetWarga,
@@ -584,4 +585,130 @@ export function downloadPetugasTemplate(): void {
     ],
     'TEMPLATE_PETUGAS_WARGA_AMPEL.xlsx'
   );
+}
+
+export function buildServicesRows(services: ServiceWithForm[]): Array<Record<string, unknown>> {
+  return services.map((svc, idx) => ({
+    No: idx + 1,
+    'Nama Layanan': svc.NAMA_LAYANAN,
+    'Kategori Grup': svc.KATEGORI_GRUP,
+    Deskripsi: svc.DESKRIPSI || '-',
+    'Persyaratan Dokumen': svc.PERSYARATAN_DOKUMEN || 'Opsional',
+    'Nama Petugas PJ': svc.NAMA_PETUGAS_PJ || '-',
+    Ikon: svc.IKON || 'file-text',
+    'Status Aktif': svc.STATUS_AKTIF ? 'Ya' : 'Tidak',
+    'Pertanyaan Dinamis':
+      Array.isArray(svc.fields) && svc.fields.length > 0
+        ? svc.fields
+            .map(
+              (f) =>
+                `${f.LABEL_PERTANYAAN}|${f.TIPE_ISIAN}|${f.WAJIB ? 'Wajib' : 'Opsional'}`
+            )
+            .join('; ')
+        : '',
+  }));
+}
+
+export function exportServicesToExcel(
+  services: ServiceWithForm[],
+  filename = `DAFTAR_LAYANAN_WARGA_AMPEL_${todayFileStamp()}.xlsx`
+): void {
+  downloadExcelFile([{ name: 'Daftar Layanan', rows: buildServicesRows(services) }], filename);
+}
+
+export function getServicesTemplateSheets(): ExcelSheetSpec[] {
+  return [
+    {
+      name: 'Daftar Layanan',
+      rows: [
+        {
+          'Nama Layanan': 'Surat Keterangan Domisili',
+          'Kategori Grup': 'C. Administrasi',
+          Deskripsi: 'Pengajuan surat keterangan tempat tinggal untuk warga Desa Ampel',
+          'Persyaratan Dokumen': 'Fotokopi KTP-el, Fotokopi KK, Pengantar RT/RW',
+          'Nama Petugas PJ': 'Petugas Layanan Desa Ampel',
+          Ikon: 'file-text',
+          'Status Aktif': 'Ya',
+          'Pertanyaan Dinamis': 'Alamat Domisili Saat Ini|textarea|Wajib; Keperluan Surat|text|Wajib',
+        },
+        {
+          'Nama Layanan': 'Pengaduan Saluran Air Tersumbat',
+          'Kategori Grup': 'A. Pengaduan',
+          Deskripsi: 'Laporan penyumbatan selokan atau drainase lingkungan warga',
+          'Persyaratan Dokumen': 'Foto kondisi lokasi (opsional)',
+          'Nama Petugas PJ': 'Petugas Layanan Desa Ampel',
+          Ikon: 'road',
+          'Status Aktif': 'Ya',
+          'Pertanyaan Dinamis': 'Lokasi / Patokan Jalan|text|Wajib; Kondisi Genangan|dropdown|Wajib',
+        },
+        {
+          'Nama Layanan': 'Permohonan Bantuan Pendidikan Siswa',
+          'Kategori Grup': 'B. Bantuan',
+          Deskripsi: 'Usulan bantuan perlengkapan sekolah bagi keluarga kurang mampu',
+          'Persyaratan Dokumen': 'Fotokopi KK, KTP Orang Tua, Surat Keterangan Sekolah',
+          'Nama Petugas PJ': 'Petugas Layanan Desa Ampel',
+          Ikon: 'heart',
+          'Status Aktif': 'Ya',
+          'Pertanyaan Dinamis': 'Nama Sekolah|text|Wajib; Kelas / Jenjang|text|Wajib',
+        },
+      ],
+    },
+    {
+      name: 'Panduan Pengisian',
+      rows: [
+        {
+          Kolom: 'Nama Layanan',
+          Wajib: 'Ya',
+          Contoh: 'Surat Keterangan Domisili',
+          Keterangan: 'Minimal 3 karakter.',
+        },
+        {
+          Kolom: 'Kategori Grup',
+          Wajib: 'Ya',
+          Contoh: 'C. Administrasi',
+          Keterangan: 'Isi salah satu: A. Pengaduan, B. Bantuan, atau C. Administrasi.',
+        },
+        {
+          Kolom: 'Deskripsi',
+          Wajib: 'Opsional',
+          Contoh: 'Pengajuan surat domisili warga',
+          Keterangan: 'Penjelasan singkat layanan dan formulir/berkas.',
+        },
+        {
+          Kolom: 'Persyaratan Dokumen',
+          Wajib: 'Opsional',
+          Contoh: 'KTP-el, KK, Pengantar RT/RW',
+          Keterangan: 'Daftar syarat yang harus disiapkan pemohon.',
+        },
+        {
+          Kolom: 'Nama Petugas PJ',
+          Wajib: 'Opsional',
+          Contoh: 'Petugas Layanan Desa Ampel',
+          Keterangan: 'Nama petugas penanggung jawab (kosongkan untuk petugas default).',
+        },
+        {
+          Kolom: 'Ikon',
+          Wajib: 'Opsional',
+          Contoh: 'file-text',
+          Keterangan: 'Pilihan: file-text, heart, road, building.',
+        },
+        {
+          Kolom: 'Status Aktif',
+          Wajib: 'Opsional',
+          Contoh: 'Ya',
+          Keterangan: 'Isi Ya (tampil) atau Tidak (nonaktif). Default Ya.',
+        },
+        {
+          Kolom: 'Pertanyaan Dinamis',
+          Wajib: 'Opsional',
+          Contoh: 'Keperluan Surat|text|Wajib; Catatan|textarea|Opsional',
+          Keterangan: 'Pisahkan antar pertanyaan dengan tanda titik koma (;). Format: Label|tipe|Wajib/Opsional.',
+        },
+      ],
+    },
+  ];
+}
+
+export function downloadServicesTemplate(): void {
+  downloadExcelFile(getServicesTemplateSheets(), 'CONTOH_IMPORT_LAYANAN_WARGA_AMPEL.xlsx');
 }

@@ -125,6 +125,9 @@ export function mapRestToGasCall(
   if (pathname === '/api/admin/services' && upperMethod === 'POST') {
     return { action: 'createService', payload: bodyObj, token: token || undefined };
   }
+  if (pathname === '/api/admin/services/import' && upperMethod === 'POST') {
+    return { action: 'importServicesBatch', payload: bodyObj, token: token || undefined };
+  }
   const svcMatch = pathname.match(/^\/api\/admin\/services\/([^/]+)$/);
   if (svcMatch && upperMethod === 'PUT') {
     return {

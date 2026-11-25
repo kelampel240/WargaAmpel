@@ -177,4 +177,17 @@ test('mapRestToGasCall maps public, auth, reporting, and admin routes accurately
   const deleteTemplate = mapRestToGasCall('/api/admin/template-files/CF-001', 'DELETE', {}, 'tok-sa');
   assert.equal(deleteTemplate.action, 'deleteTemplateFile');
   assert.equal(deleteTemplate.payload.idFile, 'CF-001');
+
+  const importServices = mapRestToGasCall(
+    '/api/admin/services/import',
+    'POST',
+    { items: [{ namaLayanan: 'Domisili', kategoriGrup: 'C. Administrasi' }] },
+    'tok-sa'
+  );
+  assert.equal(importServices.action, 'importServicesBatch');
+  assert.equal(importServices.token, 'tok-sa');
+
+  const delService = mapRestToGasCall('/api/admin/services/LAY-001', 'DELETE', {}, 'tok-sa');
+  assert.equal(delService.action, 'deleteService');
+  assert.equal(delService.payload.idLayanan, 'LAY-001');
 });

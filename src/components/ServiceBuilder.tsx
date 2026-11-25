@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Download, FileSpreadsheet, Plus, Trash2, Upload, X } from 'lucide-react';
 import {
   FORM_FIELD_TYPES,
   FormFieldType,
@@ -11,6 +11,9 @@ import {
   SheetPetugas,
 } from '../shared/types';
 import { apiFetch } from '../lib/api';
+import { downloadServicesTemplate, exportServicesToExcel } from '../lib/excelExport';
+import { ParsedImportRow, parseServicesImportExcel } from '../lib/excelImport';
+import { ExcelImportModal } from './ExcelImportModal';
 
 interface ServiceBuilderProps {
   services: ServiceWithForm[];
@@ -36,6 +39,9 @@ export const ServiceBuilder: React.FC<ServiceBuilderProps> = ({
   onRefresh,
 }) => {
   const [showCreator, setShowCreator] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [confirmDeleteSvc, setConfirmDeleteSvc] = useState<ServiceWithForm | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [namaLayanan, setNamaLayanan] = useState('');
   const [kategoriGrup, setKategoriGrup] = useState<ServiceGroup>('C. Administrasi');
   const [deskripsi, setDeskripsi] = useState('');
@@ -118,6 +124,7 @@ export const ServiceBuilder: React.FC<ServiceBuilderProps> = ({
   };
 
   const toggleActive = async (svc: ServiceWithForm) => {
+    setError('');
     try {
       await apiFetch(`/api/admin/services/${encodeURIComponent(svc.ID_LAYANAN)}`, {
         method: 'PUT',
@@ -129,19 +136,109 @@ export const ServiceBuilder: React.FC<ServiceBuilderProps> = ({
     }
   };
 
+  const handleConfirmDelete = async () => {
+    if (!confirmDeleteSvc) return;
+    setDeleting(true);
+    setError('');
+    setMessage('');
+    try {
+      await apiFetch(`/api/admin/services/${encodeURIComponent(confirmDeleteSvc.ID_LAYANAN)}`, {
+        method: 'DELETE',
+      });
+      const removedName = confirmDeleteSvc.NAMA_LAYANAN;
+      setConfirmDeleteSvc(null);
+      setMessage(`Layanan "${removedName}" telah dihapus dari daftar layanan Kelurahan Ampel.`);
+      onRefresh();
+    } catch (err) {
+      setError((err as Error).message || 'Gagal menghapus layanan.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleConfirmExcelImport = async (validRows: ParsedImportRow[]) => {
+    setError('');
+    setMessage('');
+    const res = await apiFetch<{ ok: boolean; count: number }>('/api/admin/services/import', {
+      method: 'POST',
+      body: JSON.stringify({
+        items: validRows.map((row) => ({
+          ...row.payload,
+          alurStatus: [...REPORT_STATUSES],
+        })),
+      }),
+    });
+    setShowImportModal(false);
+    setMessage(
+      `${res.count || validRows.length} jenis layanan berhasil diimpor dari Excel dan langsung aktif di portal warga.`
+    );
+    onRefresh();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <p className="text-sm text-slate-600 max-w-2xl">
-          Tambah jenis layanan dan pertanyaan formulir dinamis tanpa mengubah kode sumber. Layanan aktif langsung tampil di halaman warga.
+          Tambah jenis layanan, impor massal via Excel, atau hapus layanan yang sudah tidak berlaku tanpa mengubah kode sumber. Layanan aktif langsung tampil di halaman warga.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={downloadServicesTemplate}
+            className="px-3.5 py-2.5 bg-white text-[#0F2942] border border-slate-300 text-xs sm:text-sm font-semibold rounded-lg hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            <Download className="w-4 h-4 text-[#0B6E4F]" aria-hidden="true" />
+            <span>Contoh Excel</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowImportModal(true)}
+            className="px-3.5 py-2.5 bg-sky-50 text-[#0F2942] border border-sky-300 text-xs sm:text-sm font-semibold rounded-lg hover:bg-sky-100 transition-colors inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            <Upload className="w-4 h-4 text-sky-800" aria-hidden="true" />
+            <span>Import Excel</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => exportServicesToExcel(services)}
+            disabled={services.length === 0}
+            className="px-3.5 py-2.5 bg-emerald-50 text-[#0B6E4F] border border-emerald-300 text-xs sm:text-sm font-semibold rounded-lg hover:bg-emerald-100 disabled:opacity-50 transition-colors inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            <FileSpreadsheet className="w-4 h-4" aria-hidden="true" />
+            <span>Export Excel</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowCreator((v) => !v)}
+            className="px-4 py-2.5 bg-[#0B6E4F] text-white text-xs sm:text-sm font-bold rounded-lg hover:bg-[#08553d] transition-colors inline-flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" aria-hidden="true" />
+            <span>TAMBAH LAYANAN BARU</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Ringkasan Contoh Format Excel Import */}
+      <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-700">
+        <p className="leading-relaxed">
+          <span className="font-semibold text-[#0F2942]">Format Import Excel (.xlsx/.csv):</span>{' '}
+          Kolom wajib <span className="font-mono font-semibold">Nama Layanan</span> dan{' '}
+          <span className="font-mono font-semibold">Kategori Grup</span>{' '}
+          (isi: <span className="font-mono">A. Pengaduan</span>,{' '}
+          <span className="font-mono">B. Bantuan</span>, atau{' '}
+          <span className="font-mono">C. Administrasi</span>), dilengkapi kolom opsional{' '}
+          <span className="font-mono">Deskripsi</span>,{' '}
+          <span className="font-mono">Persyaratan Dokumen</span>,{' '}
+          <span className="font-mono">Nama Petugas PJ</span>,{' '}
+          <span className="font-mono">Status Aktif</span>, dan{' '}
+          <span className="font-mono">Pertanyaan Dinamis</span>.
         </p>
         <button
           type="button"
-          onClick={() => setShowCreator((v) => !v)}
-          className="px-4 py-2.5 bg-[#0B6E4F] text-white text-sm font-bold rounded-lg hover:bg-[#08553d] transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer"
+          onClick={downloadServicesTemplate}
+          className="font-semibold text-[#0B6E4F] hover:underline whitespace-nowrap shrink-0 cursor-pointer"
         >
-          <Plus className="w-4 h-4" aria-hidden="true" />
-          <span>TAMBAH LAYANAN BARU</span>
+          Unduh Contoh Import (.xlsx)
         </button>
       </div>
 
@@ -440,19 +537,105 @@ export const ServiceBuilder: React.FC<ServiceBuilderProps> = ({
                   </span>
                 </td>
                 <td className="py-3 px-4 text-right">
-                  <button
-                    type="button"
-                    onClick={() => toggleActive(svc)}
-                    className="px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-lg hover:bg-slate-100 whitespace-nowrap cursor-pointer"
-                  >
-                    {svc.STATUS_AKTIF ? 'Nonaktifkan' : 'Aktifkan'}
-                  </button>
+                  <div className="inline-flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => toggleActive(svc)}
+                      className="px-3 py-1.5 text-xs font-semibold border border-slate-300 rounded-lg hover:bg-slate-100 whitespace-nowrap shrink-0 cursor-pointer"
+                    >
+                      {svc.STATUS_AKTIF ? 'Nonaktifkan' : 'Aktifkan'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteSvc(svc)}
+                      aria-label={`Hapus layanan ${svc.NAMA_LAYANAN}`}
+                      className="px-3 py-1.5 text-xs font-semibold border border-rose-300 text-rose-700 rounded-lg hover:bg-rose-50 inline-flex items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                      <span>Hapus</span>
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {showImportModal && (
+        <ExcelImportModal
+          title="Import Jenis Layanan dari Excel"
+          subtitle="Unggah file Excel (.xlsx/.xls/.csv) sesuai contoh template. Anda dapat meninjau hasil pembacaan sebelum data layanan disimpan."
+          onClose={() => setShowImportModal(false)}
+          onDownloadTemplate={downloadServicesTemplate}
+          onParseFile={(buf) => parseServicesImportExcel(buf, petugasList)}
+          onConfirmImport={handleConfirmExcelImport}
+        />
+      )}
+
+      {confirmDeleteSvc && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-delete-svc-title"
+          className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4"
+          onClick={() => !deleting && setConfirmDeleteSvc(null)}
+        >
+          <div
+            className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold text-rose-700">
+                  Konfirmasi Penghapusan Layanan
+                </p>
+                <h3
+                  id="confirm-delete-svc-title"
+                  className="mt-1 font-display text-lg font-bold text-[#0F2942]"
+                >
+                  Hapus &ldquo;{confirmDeleteSvc.NAMA_LAYANAN}&rdquo;?
+                </h3>
+              </div>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setConfirmDeleteSvc(null)}
+                aria-label="Tutup dialog konfirmasi"
+                className="p-1.5 text-slate-500 hover:bg-slate-100 rounded-lg cursor-pointer"
+              >
+                <X className="w-4 h-4" aria-hidden="true" />
+              </button>
+            </div>
+
+            <p className="text-sm text-slate-700 leading-relaxed">
+              Layanan pada grup{' '}
+              <span className="font-semibold text-[#0F2942]">{confirmDeleteSvc.KATEGORI_GRUP}</span>{' '}
+              beserta pertanyaan dinamisnya akan dihapus permanen dari daftar layanan warga. Riwayat laporan atau permohonan yang sudah masuk tetap aman.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setConfirmDeleteSvc(null)}
+                className="px-4 py-2 text-sm font-semibold border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 text-sm font-bold bg-rose-700 hover:bg-rose-800 disabled:opacity-60 text-white rounded-xl inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" aria-hidden="true" />
+                <span>{deleting ? 'Menghapus...' : 'Ya, Hapus Layanan'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

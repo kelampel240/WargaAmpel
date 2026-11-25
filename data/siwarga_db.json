@@ -1009,6 +1009,46 @@
   ],
   "LOG_AKTIVITAS": [
     {
+      "ID_LOG": "LOG-1795574579546-861",
+      "WAKTU": "2026-11-25T02:42:59.546Z",
+      "ID_USER": "USR-ADMIN-01",
+      "NAMA_PENGGUNA": "Super Admin Desa Ampel",
+      "ROLE": "SUPER_ADMIN",
+      "AKSI": "DELETE_SERVICE",
+      "ID_TERKAIT": "LAY-1795574579527-1",
+      "DETAIL": "Menghapus layanan \"Uji Import Drainase\" (A. Pengaduan)."
+    },
+    {
+      "ID_LOG": "LOG-1795574579541-211",
+      "WAKTU": "2026-11-25T02:42:59.541Z",
+      "ID_USER": "USR-ADMIN-01",
+      "NAMA_PENGGUNA": "Super Admin Desa Ampel",
+      "ROLE": "SUPER_ADMIN",
+      "AKSI": "DELETE_SERVICE",
+      "ID_TERKAIT": "LAY-1795574579527-0",
+      "DETAIL": "Menghapus layanan \"Uji Import Domisili\" (C. Administrasi)."
+    },
+    {
+      "ID_LOG": "LOG-1795574579527-446",
+      "WAKTU": "2026-11-25T02:42:59.527Z",
+      "ID_USER": "USR-ADMIN-01",
+      "NAMA_PENGGUNA": "Super Admin Desa Ampel",
+      "ROLE": "SUPER_ADMIN",
+      "AKSI": "IMPORT_SERVICES",
+      "ID_TERKAIT": "LAY-1795574579527-0",
+      "DETAIL": "Mengimpor 2 jenis layanan dari Excel."
+    },
+    {
+      "ID_LOG": "LOG-1795574579517-825",
+      "WAKTU": "2026-11-25T02:42:59.517Z",
+      "ID_USER": "USR-ADMIN-01",
+      "NAMA_PENGGUNA": "Super Admin Desa Ampel",
+      "ROLE": "SUPER_ADMIN",
+      "AKSI": "LOGIN",
+      "ID_TERKAIT": "USR-ADMIN-01",
+      "DETAIL": "Super Admin Desa Ampel berhasil masuk ke WARGA AMPEL."
+    },
+    {
       "ID_LOG": "LOG-1795571574122-515",
       "WAKTU": "2026-11-25T01:52:54.122Z",
       "ID_USER": "USR-ADMIN-01",

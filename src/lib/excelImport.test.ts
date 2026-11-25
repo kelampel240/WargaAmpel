@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createWorkbookBuffer } from './excelExport.ts';
-import { parseOrgImportExcel, parsePetugasImportExcel } from './excelImport.ts';
+import { createWorkbookBuffer, getServicesTemplateSheets } from './excelExport.ts';
+import { parseOrgImportExcel, parsePetugasImportExcel, parseServicesImportExcel } from './excelImport.ts';
 import type { AdminOrgStructureResponse } from '../shared/types.ts';
 
 const sampleOrgRef: Pick<AdminOrgStructureResponse, 'rw' | 'rt' | 'sekolah'> = {
@@ -277,4 +277,40 @@ test('parseOrgImportExcel parses TP PKK rows and infers Pembina / POKJA automati
   assert.equal(parsed[1].error, null);
   assert.equal(parsed[1].payload.pokja, 'POKJA III');
 });
+
+test('parseServicesImportExcel parses service template rows, normalizes group, and validates invalid rows', () => {
+  const templateBuf = createWorkbookBuffer(getServicesTemplateSheets());
+  const parsedTemplate = parseServicesImportExcel(templateBuf);
+  assert.equal(parsedTemplate.length, 3);
+  assert.equal(parsedTemplate[0].error, null);
+  assert.equal(parsedTemplate[0].payload.namaLayanan, 'Surat Keterangan Domisili');
+  assert.equal(parsedTemplate[0].payload.kategoriGrup, 'C. Administrasi');
+  assert.equal((parsedTemplate[0].payload.fields as Array<unknown>).length, 2);
+
+  const customBuf = createWorkbookBuffer([
+    {
+      name: 'Daftar Layanan',
+      rows: [
+        {
+          'Nama Layanan': 'Pengaduan Lampu Gang',
+          'Kategori Grup': 'Pengaduan',
+          Deskripsi: 'Lampu gang mati',
+          'Status Aktif': 'Tidak',
+        },
+        {
+          'Nama Layanan': 'AB',
+          'Kategori Grup': 'Tidak Jelas',
+        },
+      ],
+    },
+  ]);
+
+  const parsedCustom = parseServicesImportExcel(customBuf);
+  assert.equal(parsedCustom.length, 2);
+  assert.equal(parsedCustom[0].error, null);
+  assert.equal(parsedCustom[0].payload.kategoriGrup, 'A. Pengaduan');
+  assert.equal(parsedCustom[0].payload.statusAktif, false);
+  assert.ok(parsedCustom[1].error !== null);
+});
+
 
